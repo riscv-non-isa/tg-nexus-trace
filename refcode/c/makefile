@@ -2,7 +2,7 @@ NexRv.exe : NexRv.c NexRvDeco.c NexRvEnco.c NexRvDump.c NexRvInfo.c NexRvConv.c 
 	gcc NexRv.c NexRvDeco.c NexRvEnco.c NexRvDump.c NexRvInfo.c NexRvConv.c -o NexRv.exe
 
 # Below are two test-cases
-#  We 
+#  TODO: This below is just example (t1-*.* files are not in GIT yet)
 
 t1: 
 	rem Running test t1 ...
@@ -11,8 +11,8 @@ t1:
 	rem ****************************************************************
 	rem NexTr -conv t1.elf 
 	rem ****************************************************************
-	NexRv -deco nohist-nex.bin -info nohist-info.txt >nohist-pc1.txt
-	tail nohist-pc1.txt
-	NexRv -enco nohist-pc1.txt -nex  nohist-nex2.bin
+	NexRv -deco t1-nex.bin -info t1-info.txt >t1-pc1.txt
+	tail ta-pc1.txt
+	NexRv -enco t1-pc1.txt -nex t1-nex2.bin
 
 
