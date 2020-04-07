@@ -1,5 +1,5 @@
 # TG RISC-V Nexus Trace
-Working draft of the RISC-V Nexus Trace TG report.
+Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus)
 
 Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) - documentation as README.md file is provided.
 
