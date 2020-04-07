@@ -35,7 +35,7 @@ Reference code for RISC-V Nexus Trace TG recommendations.<br>
 5.	Here is usage:<br>
 
 * NexRv -dump \<nex\> [-msg|-none] - dump Nexus file<br>
-* NexRv -deco \<nex\> -info <info> [-stat|-all|-msg|-none] - decode trace<br>
+* NexRv -deco \<nex\> -info \<info\> [-stat|-all|-msg|-none] - decode trace<br>
 * NexRv -enco \<pcseq\> -nex \<nex\> - encode trace<br>
 * NexRv -conv - create info-file from objdump -d output (stdin => stdout)<br>
 
