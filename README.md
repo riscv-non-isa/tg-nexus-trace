@@ -1,11 +1,11 @@
 # TG RISC-V Nexus Trace
-Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus)
+Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus).
 
 Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) - documentation as README.md file is provided.
 
 File with Nexus Messages is [NexusTrace-TG-Messages.adoc](./docs/NexusTrace-TG-Messages.adoc).
 
-NOTE: Above file will be later replaced by master file, but for know I do not know how to do it.
+NOTE: Above file will be later replaced by master ADOC file, but for now I do not know how to do it.
 
 Clicking on ADOC file in the github repo viewer will render a usable version as markdown.
 
