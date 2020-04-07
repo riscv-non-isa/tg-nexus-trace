@@ -183,49 +183,5 @@ int NexusDump(int disp)
   return msgCnt; // Number of messages handled
 }
 
-#if 0
-
-static int error(const char *err)
-{
-  printf("\n");
-  printf("NexRvDump ERROR: %s\n", err);
-  return 9;
-}
-
-static int usage(const char *err)
-{
-  if (err != NULL)
-  {
-    error(err);
-  }
-  printf("\n");
-  printf("Usage:\n");
-  printf("  NexRvDump <nex> [-all|-msg|-stat|-none] - dump Nexus file\n");
-  return 1;
-}
-
-int main(int argc, char *argv[])
-{
-  if (argc < 2) return usage(NULL);
-
-  fNex = fopen(argv[1], "rb");
-  if (fNex == NULL) return error("Cannot open nex-file");
-
-  int disp = 4 | 2 | 1; // Default (-all)
-  if (argc > 2 && strcmp(argv[2], "-all") == 0)   disp = 4 | 2 | 1; // All
-  if (argc > 2 && strcmp(argv[2], "-msg") == 0)   disp = 4 | 2;     // TCODE and stat.
-  if (argc > 2 && strcmp(argv[2], "-stat") == 0)  disp = 4;         // Only statistics
-  if (argc > 2 && strcmp(argv[2], "-none") == 0)  disp = 0;         // Nothing
-
-  int ret = NexusDump(disp);
-  fclose(fNex); fNex = NULL;
-
-  if (ret <= 0) return error("Nexus Trace dump failed");
-
-  return 0; // All OK
-}
-
-#endif
-
 //****************************************************************************
 // End of NexRvDump.c file
