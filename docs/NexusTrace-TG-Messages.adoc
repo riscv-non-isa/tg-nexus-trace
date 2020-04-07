@@ -1,0 +1,167 @@
+== Version History
+
+[cols=",,",options="header",]
+|===
+|Version |Date (y/m/d) |Changes
+|0.01 |2020/3/2 |Based on original PDF spec from 2019/10/29 (before conversion to ADOC)
+|0.02 |2020/3/?? |TODO: Convert to ADOC and place in GIT
+|===
+
+== Overview and key assumptions
+
+[arabic]
+. This document provides analysis and qualification of Nexus trace messages and potential applicability for RISC-V trace.
+. This document is based on following Nexus specification (called *_Nexus spec_* later on):
+
+http://nexus5001.org/wp-content/uploads/2018/05/IEEE-ISTO-5001-2012-v3.0.1-Nexus-Standard.pdf
+
+[arabic, start=3]
+. Terminology compatible with *_Nexus spec_* will be used.
+. It is not required that the reader is familiar with *_Nexus spec_* itself, but in case of doubt it is suggested to read it as things are well explained there.
+[arabic]
+.. Certain details of the *_Nexus spec_* may not be applicable to RISC-V, so be careful.
+. Some sections of this document may directly refer to appropriate parts of *_Nexus spec_*. This will be done as follows *_Nexus spec [SECTION 6]._*
+
+== Nexus trace messages - classification
+
+[arabic]
+. *_Nexus spec [Table 4-5—Nexus Public Messages]_* shows list of all nexus messages.
+. Here is this table with added extra column detailing relevance of trace messages for RISC-V:
+
+[cols=",,,",]
+|===
+|*Message Name* |*TCODE* |*Direction* |*RISC-V sub-set*
+|Debug Status |0 |From target |Not used (debug)
+|Device ID |1 |From target |Not used (debug)
+|Ownership Trace |2 |From target |Level 1.2 (for RTOS context)
+|Program Trace - Direct Branch |3 |From target |Level 1 (basic set)
+|Program Trace - Indirect Branch |4 |From target |Level 1 (basic set)
+|Data Trace - Data Write |5 |From target |Level 4 (data trace)
+|Data Trace - Data Read |6 |From target |Level 4 (data trace)
+|Data Acquisition |7 |From target |Level 3 (instrumentation trace)
+|Error |8 |From target |Level 1 (basic set)
+|Program Trace - Synchronization |9 |From target |Level 1 (basic set)
+|Program Trace – Correction |10 |From target |Level 1.1 (for cancelling)
+|Program Trace - Direct Branch with Sync |11 |From target |Level 1 (basic set)
+|Program Trace - Indirect Branch with Sync |12 |From target |Level 1 (basic set)
+|Data Trace - Data Write with Sync |13 |From target |Level 4 (data trace)
+|Data Trace - Data Read with Sync |14 |From target |Level 4 (data trace)
+|Watchpoint Hit |15 |From target |Not used (debug)
+|Reserved |16-19 |-- |Not used (reserved)
+|Port Replacement – Output |20 |From target |Not used (not applicable)
+|Port Replacement – Input |21 |From tool |Not used (not applicable)
+|Auxiliary Access – Read |22 |Both ways |Not used (debug)
+|Auxiliary Access – Write |23 |Both ways |Not used (debug)
+|Auxiliary Access - Read Next |24 |Both ways |Not used (debug)
+|Auxiliary Access - Write Next |25 |Both ways |Not used (debug)
+|Auxiliary Access – Response |26 |Both ways |Not used (debug)
+|Program Trace - Resource Full |27 |From target |Level 1.1 (better error reason)
+|Program Trace - Indirect Branch History |28 |From target |Level 2.1 (better compression)
+|Program Trace - Indirect Branch History with Sync |29 |From target |Level 2.1 (better compression)
+|Program Trace - Repeat Branch |30 |From target |Level 2.3 (rare use case)
+|Program Trace - Repeat Instruction |31 |From target |Level 2.2 (best compression)
+|Program Trace - Repeat Instruction with Sync |32 |From target |Level 2.2 (best compression)
+|Program Trace – Correlation |33 |From target |Level 4 (correlate data trace)
+|In-Circuit Trace |34 |From target |Level 5 (bus trace)
+|In-Circuit Trace with Sync |35 |From target |Level 5 (bus trace)
+|Reserved |36-55 |-- |Not used (reserved)
+|Vendor-Defined Message |56-62 |Both ways |Not used (reserved)
+|Vendor-Defined Extension Message |63/0x3F |Both ways |Not used (reserved)
+|===
+
+Explanation of levels (color coded)
+
+* Level 1 Provides basic PC trace (may be even more trimmed for primitive trace).
+* Level 2 Provides more compressed PC trace (2 options).
+* Level 3 Instrumentation trace (substitute for full data trace).
+* Level 4 Data trace (addresses and values of transfers can be traced).
+* Level 5 Adds trace of buses in the system (advanced topic for future).
+
+Short explanation of all Level1 .. Level5 messages (*_Nexus spec_* provides a lot of details):
+
+* Ownership Trace (*TCODE=2*) – used to track context switching (when OS/RTOS changes task).
+* Program Trace - Direct/Indirect Branch (*TCODE=3, 4*) – simplest form of program trace.
+* Data Trace - … (*TCODE=5, 6*) – data trace (addresses and values).
+* Data Acquisition (*TCODE=7*) – can be used for instrumentation trace (for different purposes).
+* Error (*TCODE=8*) - reports different overrun error conditions.
+* Program Trace - … (*TCODE=9, 11, 12*) – different forms of program trace synchronization.
+* Program Trace - Correction (*TCODE=10*) – allow cancelling of instructions (for advanced cores).
+* Program Trace - Resource Full (*TCODE=27*) – enhances error handling.
+* Program Trace - Indirect Branch History … (*TCODE=28, 29*) – better compression of branches.
+* Program Trace - Repeat Branch (*TCODE=30*) – not much usable.
+* Program Trace - Repeat Instruction (*TCODE=31.32*) – best good compression of loops in code.
+* Program Trace - Correlation (*TCODE=33*) – correlate trace flow with data trace
+
+== Nexus Message Fields
+
+[arabic]
+. Nexus spec define several fields which are common for all messages:
+[arabic]
+.. *SRC* - optional, fixed size field which denotes source of message.
+[arabic]
+... Compulsory when trace of multi-core/multi-hart system.
+... Especially when there is other
+... Width must be known to decoder (discoverable would be the best). TODO: More here.
+.. *I-CNT* - this is field denoting number of instructions executed.
+[arabic]
+... Nexus spec permits this field to be either as instruction count or address-span. Encoding this field as number of 16-bit units will allow end-address of linear section of code to be quickly calculated (without analysis of all instructions).
+.. *F-ADDR/U-ADDR* - LSB bit of PC should not be sent as on RISC-V it is always 0.
+[arabic]
+... Nexus messages are skipping 0-s on MSB side (in variable size fields), so this is really not important for decoder to be aware if this is trace of 32-bit or 64-bit system.
+... However from efficiency reasons, it may be good that XLEN is known to decoder.
+.. *TSTAMP* – this is variable size fields
+[arabic]
+... It is always at end of packet and as such is optional.
+... When used it must be known what are timestamp units.
+.. TODO: Elaborate on other fields SYNC/B-TYPE/EVCODE for Level1 and Level2 messages.
+
+== Nexus MSEO/MDO
+
+[arabic]
+. When RISC-V Nexus Trace exists with other Nexus implementation on the system MSEO/MDO must be common.
+[arabic]
+.. SRC field should be defined for RISC-V
+. Nexus messages are encoded as two logically parallel streams of data.
+
+____
+MSEO - 2-bit field for detection of idle/start of message/ variable size fields.
+
+MDO - N-bit field which carries payload of message (6-bit TCODE followed by other TCODE-dependent fields: addresses, counters, statuses etc.).
+____
+
+[arabic, start=3]
+. *_Nexus spec_* permits 1-bit MSEO (being sequence of 2 bits …), but in order to reduce complexity (on both SoC and trace tool sides) this should not be utilized for RISC-V.
+[arabic]
+.. STS (Serial Trace Sink) and PTS (Parallel Trace Sink) chapters define how single-bit transport is handled.
+. *_Nexus spec_* permits any number of MDO bits, but for simplicity RISC-V should permits ‘even’ number of MDO bits, so entire Nexus message will be always N*8 bits (i.e. N bytes) long.
+[arabic]
+.. Handling generic bit-sized in trace decoding software would be complex and slow.
+.. Said so, permitted supported MDO sizes will be 6/14/22/30-bit + 2bit MSEO (1/2/3/4-byte).
+.. Bigger MDO widths have less MSEO-related overhead, but from other hand the necessary padding (due to fact that all fields must be MDO bits-aligned) may nullify any gain.
+.. Said so it is *strongly recommended* to use MSEO=2 and MDO=6 configuration. If case of wider export port (16/32-bit), several Nexus bytes (possibly from different Nexus messages will be packed together). TODO: Should we consider only perming 2+6 configuration?
+. When we have 8-bit packet (MSEO+MDO) Nexus messages can be easily saved into RAM as sequence of bytes – also parallel transport (off-chip) using 8/4/2/1 is easy.
+[arabic]
+.. In case of 16 bit transport, two bytes will fit. Wider transport (24-bit, 32-bit) is also possible, but number of hardware tools providing such capture is limited.
+
+== Nexus trace messages – details
+
+TODO: This chapter should list all Nexus messages so this document can be used without looking at (complex!) descriptions in *_Nexus spec_*.
+
+== Nexus trace messages – examples
+
+TODO: This chapter should provide examples of several trace messages (encoded in MSEO=2/MDO=6 format) to sever as additional explanation and provide corner cases.
+
+== Nexus trace messages – reference software
+
+TODO: Some software module to dump/encode/decode Nexus trace messages may be donated to GIT. It should be enough to only handle MSEO=2/MDO=6 format.
+
+== Possible Nexus Extensions (controversial topic …)
+
+TODO: Nexus is extendible format (providing a lot of reserved and vendor specific messages). These may be utilized to provide better handling of some RISC-V specific details. The following extensions are possible (each with own pros and cons – not listed). Some of them may be rather called Nexus-inspired.
+
+[arabic]
+. Define some fixed fields (EVCODE, SYNC) to be as small as possible as not all Nexus defined values are applicable.
+. Adding some more messages (for better compression of frequently used combinations).
+[loweralpha]
+.. One use case is tracing of interrupt entry/return, which is useful for RTOS monitoring.
+. Provide some ways to enable return-stack and consider ‘return’ as ‘ordinary’ instruction. Decoder has ability to analyze instructions so it is aware that return is not ordinary instruction and as such it will know that address (pushed by call) should be taken from top of return-stack.
