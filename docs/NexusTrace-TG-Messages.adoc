@@ -4,7 +4,7 @@
 |===
 |Version |Date (y/m/d) |Changes
 |0.01 |2020/3/2 |Based on original PDF spec from 2019/10/29 (before conversion to ADOC)
-|0.02 |2020/3/?? |TODO: Convert to ADOC and place in GIT
+|0.02 |2020/4/7 |Convert to ADOC and placed in GIT.
 |===
 
 == Overview and key assumptions
