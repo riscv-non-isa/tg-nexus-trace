@@ -5,6 +5,8 @@ Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) -
 
 File with Nexus Messages is [NexusTrace-TG-Messages.adoc](./docs/NexusTrace-TG-Messages.adoc).
 
+NOTE: Above file will be later replaced by master file, but for know I do not know how to do it.
+
 Clicking on ADOC file in the github repo viewer will render a usable version as markdown.
 
 For a better rendering, use "asciidoctor name.adoc".
