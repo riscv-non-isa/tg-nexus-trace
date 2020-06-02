@@ -1,0 +1,45 @@
+..\..\NexRv -conv -objd test-OBJD.txt -pcinfo ./output/test-PCINFO.txt
+Converted OK (619 instructions)
+
+..\..\NexRv -conv -pcinfo ./output/test-PCINFO.txt -pconly test-PCONLY.txt -pcseq ./output/test-PCSEQ.txt
+Converted OK (164959 instructions)
+
+echo ** No Branch History Message (only Direct Branch Message)
+** No Branch History Message (only Direct Branch Message)
+..\..\NexRv -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -nobhm
+Stat: 164959 instr, level=1.0 => 12980 bytes, 6233 messages, 0.63 bits/instr
+Encoded OK (6233 messages)
+
+..\..\NexRv -dump ./output/test-NEX.bin  >./output/test-DUMP.txt
+..\..\NexRv -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
+Stat: 12980 bytes, 6233 messages, 0 error messages, 2.08 bytes/message, 164959 instr, 0.63 bits/instr
+Decoded OK (164959 instructions)
+
+diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
+Files ./test-PCONLY.txt and ./output/test-PCOUT.txt are identical
+echo ** No Repeat Branch Message ...
+** No Repeat Branch Message ...
+..\..\NexRv -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -norbm
+Stat: 164959 instr, level=2.0 => 4994 bytes, 485 messages, 0.24 bits/instr
+Encoded OK (485 messages)
+
+..\..\NexRv -dump ./output/test-NEX.bin  >./output/test-DUMP.txt
+..\..\NexRv -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
+Stat: 4994 bytes, 485 messages, 0 error messages, 10.30 bytes/message, 164959 instr, 0.24 bits/instr
+Decoded OK (164959 instructions)
+
+diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
+Files ./test-PCONLY.txt and ./output/test-PCOUT.txt are identical
+echo ** With Repeat Branch Message (default)
+** With Repeat Branch Message (default)
+..\..\NexRv -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin
+Stat: 164959 instr, level=2.1 => 4906 bytes, 485 messages, 0.24 bits/instr
+Encoded OK (485 messages)
+
+..\..\NexRv -dump ./output/test-NEX.bin  >./output/test-DUMP.txt
+..\..\NexRv -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
+Stat: 4906 bytes, 485 messages, 0 error messages, 10.12 bytes/message, 164959 instr, 0.24 bits/instr
+Decoded OK (164959 instructions)
+
+diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
+Files ./test-PCONLY.txt and ./output/test-PCOUT.txt are identical
