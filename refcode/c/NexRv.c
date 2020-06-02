@@ -31,7 +31,7 @@
 
 FILE *fNex  = NULL;     // Used by NexusDump/NexusDeco/NexusEnco
 
-extern int NexusDump(int disp);
+extern int NexusDump(FILE *f, int disp);
 extern int NexusDeco(FILE *f, int disp);
 extern int NexusEnco(FILE *f, int level, int disp);
 extern int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo);
@@ -72,14 +72,24 @@ int main(int argc, char *argv[])
     if (argc < 3) return usage("Nexus bin-file is expected");
 
     fNex = fopen(argv[2], "rb");
-    if (fNex == NULL) return error("Cannot open nex-file");
+    if (fNex == NULL) return error("Cannot open NEX-file");
+
+    int opt = 3;
+    FILE *fDump = stdout;
+    if (argc > 3 && argv[3][0] != '-')
+    {
+      fDump = fopen(argv[3], "wt");
+      if (fDump == NULL) return error("Cannot create DUMP-file");
+      opt = 4;
+    }
 
     int disp = 4 | 2 | 1; // Default (all)
-    if (argc > 3 && strcmp(argv[3], "-msg") == 0)   disp = 4 | 2; // TCODE and stat.
-    if (argc > 3 && strcmp(argv[3], "-none") == 0)  disp = 4;     // Only statistics
+    if (argc > opt && strcmp(argv[opt], "-msg") == 0)   disp = 4 | 2; // TCODE and stat.
+    if (argc > opt && strcmp(argv[opt], "-none") == 0)  disp = 4;     // Only statistics
 
-    int ret = NexusDump(disp);
+    int ret = NexusDump(fDump, disp);
     fclose(fNex); fNex = NULL;
+    if (fDump != stdout) fclose(fDump);
 
     if (ret <= 0) return error("Nexus Trace dump failed");
 

@@ -36,7 +36,7 @@ extern FILE *fNex; // Nexus messages (binary bytes)
 
 // Dump all Nexus messages (from 'fNex' file)
 //  disp  - display options bit-mask (1-packets, 2-only TCODE+names, 4-summary)
-int NexusDump(int disp)
+int NexusDump(FILE *f, int disp)
 {
   int fldDef  = -1;          
   int fldBits = 0;          
@@ -64,15 +64,15 @@ int NexusDump(int disp)
     { 
       if (msgCnt > 0 && fldDef < 0)
       {
-        printf("\n");
+        fprintf(f, "\n");
       }
-      printf("0x%02X ", msgByte);
+      fprintf(f, "0x%02X ", msgByte);
       for (int b = 0x80; b != 0; b >>= 1)
       {
-        if (b == 0x2) printf("_");
-        if (msgByte & b) printf("1"); else printf("0");
+        if (b == 0x2) fprintf(f, "_");
+        if (msgByte & b) fprintf(f, "1"); else fprintf(f, "0");
       }
-      printf(":");
+      fprintf(f, ":");
     }
 
     unsigned int mdo  = msgByte >> 2;
@@ -88,7 +88,7 @@ int NexusDump(int disp)
     {
       if (mseo == 0x3) 
       {
-        if (disp & 1) printf(" IDLE\n");
+        if (disp & 1) fprintf(f, " IDLE\n");
         continue;
       }
 
@@ -114,7 +114,7 @@ int NexusDump(int disp)
         return -3;
       }
 
-      if (disp & 3) printf(" TCODE[6]=%d (MSG #%d) - %s\n", mdo, msgCnt, nexusMsgDef[fldDef].name);
+      if (disp & 3) fprintf(f, " TCODE[6]=%d (MSG #%d) - %s\n", mdo, msgCnt, nexusMsgDef[fldDef].name);
       msgCnt++;
       msgBytes++;
 
@@ -136,7 +136,7 @@ int NexusDump(int disp)
     while ((nexusMsgDef[fldDef].def & 0x200) && fldBits >= (nexusMsgDef[fldDef].def & 0xFF))
     {
       int fldSize = nexusMsgDef[fldDef].def & 0xFF;
-      if (disp & 1) printf(" %s[%d]=0x%X", nexusMsgDef[fldDef].name, fldSize, fldVal & ((1 << fldSize) - 1));
+      if (disp & 1) fprintf(f, " %s[%d]=0x%X", nexusMsgDef[fldDef].name, fldSize, fldVal & ((1 << fldSize) - 1));
       fldDef++;
       fldVal >>= fldSize;
       fldBits -= fldSize;
@@ -144,14 +144,14 @@ int NexusDump(int disp)
 
     if (mseo == 0x0)
     {
-      if (disp & 1) printf("\n");
+      if (disp & 1) fprintf(f, "\n");
       continue;
     }
 
     if (nexusMsgDef[fldDef].def & 0x400)
     {
       // Variable size field
-      if (disp & 1) printf(" %s[%d]=0x%X\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
+      if (disp & 1) fprintf(f, " %s[%d]=0x%X\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
 
       if (mseo == 3)
       {
