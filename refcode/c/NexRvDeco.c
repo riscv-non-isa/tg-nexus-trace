@@ -48,7 +48,7 @@ static int EmitErrorMsg(const char *err)
 // This function is called with -1 parameter to reach next BRANCH.
 // Otherwise it is 'n' 16-bit steps (over direct JUMP/CALL as well).
 // It should never step over INDIRECT instruction (RET or JUMP/CALL)
-static int EmitICNT(int n, unsigned int hist, int disp)
+static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
 {
   if (disp & 1) printf(". PC=0x%X, EmitICNT(n=%d,hist=0x%X)\n", nexdeco_pc, n, hist);
 
@@ -57,31 +57,59 @@ static int EmitICNT(int n, unsigned int hist, int disp)
   unsigned int histMask = 0;  // MSB is first in history, so we need sliding mask
   if (hist != 0)
   {
-    histMask = 0x1; while (histMask < hist) histMask <<= 1; histMask >>= 2;
+    if (hist & (1 << 31))
+    {
+      histMask = (1 << 30); // All 32-bits of history are valid
+    }
+    else
+    {
+      histMask = 0x1; while (histMask < hist) histMask <<= 1; histMask >>= 2;
+    }
   }
 
   while (n != 0)
   {
-    printf("0x%08X", nexdeco_pc);
+    fprintf(f, "0x%08X", nexdeco_pc);
     nInstr++; // Statistics (for compression display)
 
     unsigned int a;
     unsigned int info = InfoGet(nexdeco_pc, &a);
     if (info == 0) return EmitErrorMsg("info is unknown");
 
-#if 1 // Append type of instruction to plain PC value
-    if (info & INFO_CALL)         printf(",C");
-    else if (info & INFO_RET)     printf(",R");
-    else if (info & INFO_JUMP)    printf(",J");
-    else if (info & INFO_BRANCH)  printf(",B");
-    else                          printf(",L");
+    if (0) // Append type of instruction to plain PC value
+    {
+      int nt = 0;
+      char t[8];
 
-    // Report non-taken branch as BN
-    if (info & INFO_BRANCH && !(histMask & hist)) printf("N");
+      if (info & INFO_CALL)         t[nt++] = 'C';
+      else if (info & INFO_RET)     t[nt++] = 'R';
+      else if (info & INFO_JUMP)    t[nt++] = 'J';
+      else if (info & INFO_BRANCH)  t[nt++] = 'B';
+      else                          t[nt++] = 'L';
 
-    if (info & (INFO_INDIRECT) && !(info & INFO_RET)) printf("I");
-    if (info & INFO_4) printf("4\n"); else printf("2\n");
-#endif
+      // Report non-taken branch as BN
+      if (info & INFO_BRANCH)
+      {
+        // This is a little more demanding as it is different if we have history messages or not
+        if (hist == 0)
+        {
+          if (n > (int)((info & INFO_4) + 2))  // Tricky: '(info & INFO_4)' is either 2 or 0
+          {
+            t[nt++] = 'N';  // Only last branch is considered taken - all before are not
+          }
+        }
+        else if (!(histMask & hist))
+        {
+          t[nt++] = 'N';  // Not taken branch in history
+        }
+      }
+
+      if (info & (INFO_INDIRECT) && !(info & INFO_RET)) t[nt++] = 'I';
+      if (info & INFO_4) t[nt++] = '4'; else t[nt++] = '2';
+      t[nt] = '\0';
+      fprintf(f, ",%s", t);
+    }
+    fprintf(f, "\n");
 
     if (n > 0)
     {
@@ -101,11 +129,22 @@ static int EmitICNT(int n, unsigned int hist, int disp)
 
     if (info & INFO_BRANCH)
     {
-      if (histMask & hist)
+      if (hist == 0)
       {
-        info |= INFO_JUMP;  // Force PC change below
+        // This is calling as DirectBranch
+        if (n == 0)
+        {
+          info |= INFO_JUMP;  // Force PC change below
+        }
       }
-      histMask >>= 1;
+      else
+      {
+        if (histMask & hist)
+        {
+          info |= INFO_JUMP;  // Force PC change below
+        }
+        histMask >>= 1;
+      }
     }
 
     if (info & INFO_JUMP)   nexdeco_pc = a;   // Direct jump/call/branch
@@ -139,7 +178,7 @@ static int NexusFieldGet(const char *name, unsigned int *p)
 
 #define NEX_FLDGET(n) unsigned int n = 0; if (!NexusFieldGet(#n, &n)) return (-1)
 
-static int MsgHandle(int disp)
+static int MsgHandle(FILE *f, int disp)
 {
   int TCODE = msgFields[0];
   switch (TCODE)
@@ -147,7 +186,7 @@ static int MsgHandle(int disp)
     case NEXUS_TCODE_DirectBranch:
       {
         NEX_FLDGET(ICNT);
-        if (EmitICNT(ICNT, 0x3, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
       }
       break;
 
@@ -156,7 +195,7 @@ static int MsgHandle(int disp)
         // NEX_FLDGET(BTYPE); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(UADDR);
-        if (EmitICNT(ICNT, 0x0, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
         nexdeco_lastAddr ^= (UADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -168,7 +207,7 @@ static int MsgHandle(int disp)
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
 
-        if (EmitICNT(ICNT, 0, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, 0, disp) != 1) return (-2);
         nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -179,7 +218,7 @@ static int MsgHandle(int disp)
         // NEX_FLDGET(SYNC); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
-        if (EmitICNT(ICNT, 0x0, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
         nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -191,7 +230,7 @@ static int MsgHandle(int disp)
         // NEX_FLDGET(BTYPE); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
-        if (EmitICNT(ICNT, 0x0, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
         nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -204,7 +243,7 @@ static int MsgHandle(int disp)
         NEX_FLDGET(UADDR);
         NEX_FLDGET(HIST);
 
-        if (EmitICNT(ICNT, HIST, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
         nexdeco_lastAddr ^= (UADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -219,7 +258,7 @@ static int MsgHandle(int disp)
         NEX_FLDGET(FADDR);
         NEX_FLDGET(HIST);
 
-        if (EmitICNT(ICNT, HIST, disp) != 1) return (-2);
+        if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
         nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -243,7 +282,7 @@ static int MsgHandle(int disp)
 // This function is an extension of 'NexusDump'
 // It adds all fields (for each message) into fldArray and at end of each message
 // it calls 'MsgHandle()' function.
-int NexusDeco(int disp)
+int NexusDeco(FILE *f, int disp)
 {
   int fldDef = -1;
   int fldBits = 0;
@@ -400,7 +439,7 @@ int NexusDeco(int disp)
 
         while (cnt > 0) // Handle (1 or many times ...)
         {
-          int err = MsgHandle(disp);
+          int err = MsgHandle(f, disp);
           if (err < 0) return err;
           cnt--;
         }
@@ -425,7 +464,7 @@ int NexusDeco(int disp)
 
   if (disp & 4)
   {
-    printf(". Stat: %d bytes, %d messages, %d error messages", msgBytes, msgCnt, msgErrors);
+    printf("Stat: %d bytes, %d messages, %d error messages", msgBytes, msgCnt, msgErrors);
     if (msgCnt > 0) printf(", %.2lf bytes/message", ((double)msgBytes) / msgCnt);
     if (nInstr > 0) printf(", %d instr, %.2lf bits/instr", nInstr, ((double)msgBytes * 8) / nInstr);
     printf("\n");

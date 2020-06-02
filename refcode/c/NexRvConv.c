@@ -30,6 +30,8 @@
 
 #include "NexRv.h"  //  Common NEXUS_... #define (RISC-V specific subset)
 
+#include "NexRvInfo.h"  // We need info 
+
 // It converst GNU-objdump file (with -d option) to info-file
 
 // This is example line (<t> denotes TAB) - line must start from space!
@@ -56,12 +58,12 @@ static unsigned int GetParAddr(const char *l)
   return addr;
 }
 
-int ConvGnuObjdump(FILE *objdumpFile)
+int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
 {
   char line[1000];
 
   int nInstr = 0;
-  while (fgets(line, sizeof(line), objdumpFile) != NULL)
+  while (fgets(line, sizeof(line), fObjd) != NULL)
   {
     const char *l = line;
     while (isspace(*l)) l++;
@@ -136,7 +138,7 @@ int ConvGnuObjdump(FILE *objdumpFile)
     }
 
     // Produce output record
-    printf("0x%0X,%s%d", addr, iType, size);
+    fprintf(fPcInfo, "0x%0X,%s%d", addr, iType, size);
 
     if (iType[1] == 'D')
     {
@@ -144,11 +146,99 @@ int ConvGnuObjdump(FILE *objdumpFile)
       // from parameters. Address may be first or after last ','
       unsigned int destAddr = GetParAddr(instr);
       if (destAddr & 1) return -(30 + (int)destAddr);
-      printf(",0x%X", destAddr);
+      fprintf(fPcInfo, ",0x%X", destAddr);
     }
-    printf("\n");
+    fprintf(fPcInfo, "\n");
 
     nInstr++;
+  }
+
+  return nInstr;
+}
+
+int ConvAddInfo(FILE *fIn, FILE *fOut)
+{
+  // Scan PC-sequence file and add INFO for each PC
+  char line[1000];
+
+  unsigned int branchAddr = 0;  // Address of branch instruction
+  unsigned int branchSize = 0;  // Size of previous branch
+
+  int nInstr = 0;
+  while (fgets(line, sizeof(line), fIn) != NULL)
+  {
+    const char *l = line;
+    while (isspace(*l)) l++;
+
+    // It must be PC in format '0xHHH'
+    if (l[0] != '0' || !(l[1] == 'x' || l[1] == 'X'))
+    {
+      fprintf(fOut, "ERROR: Line %s does not have PC with 0x prefix\n", line);
+      return -1;
+    }
+
+    unsigned int a;
+    if (sscanf(l, "%x", &a) != 1)
+    {
+      fprintf(fOut, "ERROR: Line %s does not have PC with 0x prefix\n", line);
+      return -2;
+    }
+
+    unsigned int aa;
+    unsigned int info = InfoGet(a, &aa);
+    if (info == 0)
+    {
+      fprintf(fOut, "ERROR: Instruction at address 0x%X not found in <info-file>\n", a);
+      return -3;
+    }
+
+    if (branchSize != 0)
+    {
+      // Previous instruction was branch - let's see if branch was taken or not
+      if (branchAddr + branchSize == a)
+      {
+        // Branch was not taken
+        fprintf(fOut, "N");
+      }
+      fprintf(fOut, "%d\n", branchSize);
+      branchSize = 0; // One time deal
+    }
+
+    nInstr++;
+
+    fprintf(fOut, "0x%08X", a); // Output PC value
+    // Append type of instruction to plain PC value
+    if (info & INFO_CALL)         fprintf(fOut, ",C");
+    else if (info & INFO_RET)     fprintf(fOut, ",R");
+    else if (info & INFO_JUMP)    fprintf(fOut, ",J");
+    else if (info & INFO_BRANCH)  fprintf(fOut, ",B");
+    else                          fprintf(fOut, ",L");
+
+    // Report non-taken branch as BN
+
+    if (info & (INFO_INDIRECT) && !(info & INFO_RET)) fprintf(fOut, "I");
+
+    if (info & INFO_BRANCH)
+    {
+      // Special handling of branch - we must know next address
+      branchAddr = a;
+      if (info & INFO_4) branchSize = 4; else branchSize = 2;
+      continue;  // B<s> or BN<s> will be displayed in next loop
+    }
+
+    if (info & INFO_4) fprintf(fOut, "4"); else fprintf(fOut, "2");
+
+#if 0 // No need to report direct address
+    if (info & (INFO_BRANCH | INFO_JUMP | INFO_CALL))
+    {
+      if (!(info & INFO_INDIRECT))
+      {
+        fprintf(fOut, ",0x%08X", aa); // Direct address
+      }
+    }
+#endif
+
+    fprintf(fOut, "\n");
   }
 
   return nInstr;
