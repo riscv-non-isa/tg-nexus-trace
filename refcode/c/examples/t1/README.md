@@ -43,6 +43,6 @@ Programs provided by [Embench](https://github.com/embench/embench-iot) will be a
 
 * Get xrle.c and xrle.h from here: https://github.com/algorithm314/xrle
 * Make sure you have RISC-V GNU tools in path
-* Run 'make test.elf' to compile and link 'test.elf'
+* Run 'make ELF' to compile and link 'test.elf'
 * Run 'make OBJD' to run objdump -d utility
 
