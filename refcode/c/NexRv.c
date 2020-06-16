@@ -25,7 +25,7 @@
 
 #include <stdio.h>  //  For NULL, 'printf', 'fopen, ...'
 #include <stdlib.h> //  For 'exit'
-#include <string.h> //  For 'strcmp', 'strchr' 
+#include <string.h> //  For 'strcmp', 'strchr'
 
 #include "NexRvInfo.h"  // For 'InfoInit/InfoTerm'
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 
   if (strcmp(argv[1], "-deco") == 0) // Decode?
   {
-    if (argc < 5) return error("Incorrect number of parameters");
+    if (argc < 7) return error("Incorrect number of parameters");
     if (strcmp(argv[3], "-pcinfo") != 0) return error("-pcinfo must be provided");
     if (strcmp(argv[5], "-pcout") != 0) return error("-pcout must be provided");
 
