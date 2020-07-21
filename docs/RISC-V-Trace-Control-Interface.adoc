@@ -197,9 +197,10 @@ The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates 
 
 Most features of the Trace Encoder are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
 
+*Register: 0x0000 teControl: Trace Encoder Control Register (Required)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0000 teControl: Trace Encoder Control Register (Required)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |teActive |Master enable for trace system. 0 resets the TE and it may be powered down or clocks may be gated off. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. When teActive=0, all other registers may not be accessible. |RW |0
 |1 |teEnable |1=TE enabled. Allows teTracing to turn all tracing on and off. Setting teEnable to 0 flushes any queued trace data to the designated sink. |RW |0
@@ -267,12 +268,13 @@ Which sink to send trace to.
 |===
 
 ____
-^(1)^ SD = System-Dependent
+SD^(1)^ = System-Dependent
 ____
+
+*Register: 0x0004 teImpl: Trace Encoder Implementation Register (Required)*
 
 [cols=",,,,",options="header",]
 |===
-|*0x0004 teImpl: Trace Encoder Implementation Register (Required)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |version |TE Version |R |SD
 |4 |hasSRAMSink |1 if this TE has an on-chip SRAM sink. Size of SRAM may be determined by writing all 1s to teSinkWP, then reading the value back. |R |SD
@@ -289,45 +291,51 @@ ____
 |31-28 | |Reserved for vendor-specific features |-- |--
 |===
 
+*Register: 0x0010 teSinkBase: Trace Encoder Sink Base Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0010 teSinkBase: Trace Encoder Sink Base Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teSinkBase |Base address of trace sink circular buffer. Fixed to natural boundary implied by width of trace sink. This register may not be implemented if the sink type doesn't require an address. An SRAM sink may have teSinkBase fixed at 0. |WARL |0
 |===
 
+*Register: 0x0014 teSinkBaseHigh: Trace Encoder Sink Base High Bits Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0014 teSinkBaseHigh: Trace Encoder Sink Base High Bits Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teSinkBaseH |High order bits (N:32) of address of trace sink circular buffer. This register may not be present if no connected sinks require more than 32 address bits. |WARL |0
 |===
 
+*Register: 0x0018 teSinkLimit: Trace Encoder Sink Limit Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0018 teSinkLimit: Trace Encoder Sink Limit Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teSinkLimit |Highest address of trace circular buffer. Fixed to natural boundary. The teSinkWP register is reset to teSinkBase after a trace word has been written to this address. This register may not be present if the sink type doesn't require a limit address. |WARL |0
 |===
 
+*Register: 0x001C teSinkWP: Trace Encoder Sink Write Pointer Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x001C teSinkWP: Trace Encoder Sink Write Pointer Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teSinkWP |Address in trace sink where next trace message will be written. Fixed to natural boundary. When a trace word write occurs while teSinkWP=teSinkLimit, teSinkWP is set to teSinkBase. This register may not be present if no sinks require it. |WARL |0
 |0 |teWrap |Set to 1 by hardware when teSinkWP wraps. |WARL |0
 |===
 
+*Register: 0x0020 teSinkRP: Trace Encoder SRAM Sink Access Pointer Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0020 teSinkRP: Trace Encoder SRAM Sink Access Pointer Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teSinkRP |Address in trace circular buffer visible through teSinkData. Auto-increments following an access to teSinkData. Required for SRAM sink and optional for all other sink types. |WARL |0
 |===
 
+*Register: 0x0024 teSinkData: Trace Encoder SRAM Sink Data Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0024 teSinkData: Trace Encoder SRAM Sink Data Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |teSinkData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
@@ -347,9 +355,10 @@ In a single-hart system with an Internal Timestamp counter, it may be desirable 
 
 == Timestamp Register Interface
 
+*Register: 0x0040 tsControl: Timestamp Control Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0040 tsControl: Timestamp Control Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |tsActive |Master reset/enable for timestamp unit |RW |0
 |1 |tsCount |Internal Timestamp only. 1=counter runs, 0=counter stopped |WARL |0
@@ -376,16 +385,18 @@ Type of Timestamp unit
 |31-24 |tsWidth |Width of timestamp in bits |R |SD
 |===
 
+*Register: 0x0044 tsLower: Timestamp Lower Bits (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0044 tsLower: Timestamp Lower Bits (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |tsLower |Lower 32 bits of timestamp counter. |R |0
 |===
 
+*Register: 0x0048 tsUpper: Timestamp Upper Bits (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0048 tsUpper: Timestamp Upper Bits (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |tsUpper |Upper bits of timestamp counter, zero-extended. |R |0
 |===
@@ -398,9 +409,10 @@ External Trigger Outputs may also be present. A trigger out may be generated by 
 
 == External Trigger Register Interface
 
+*Register: 0x0050 xtiControl: External Trigger Input Control Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0050 xtiControl: External Trigger Input Control Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |xtiAction0 a|
 Select action to perform when external trigger input 0 fires. If external trigger input 0 does not exist, then its action is fixed at 0.
@@ -421,9 +433,10 @@ Select action to perform when external trigger input 0 fires. If external trigge
 |31-4 |xtiAction__n__ |Select actions for external triggers 1 through 7. If an external trigger input does not exist, then its action is fixed at 0. |WARL |0
 |===
 
+*Register: 0x0054 xtoControl: External Trigger Output Control Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0054 xtoControl: External Trigger Output Control Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |xtoEvent0 a|
 Bitmap to select which event(s) cause external trigger 0 output to fire. If external trigger output 0 does not exist, then all bits are fixed at 0. Bits 2 and 3 may be fixed at 0 if the corresponding feature is not implemented.
@@ -459,9 +472,10 @@ If there are vendor-specific features that require control, the wpControl regist
 
 == Core Watchpoint Register Interface
 
+*Register: 0x0058 wpControl: Core Watchpoint Control Register*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0058 wpControl: Core Watchpoint Control Register* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-1 |-- |Vendor-specific watchpoint setup |WARL |0
 |===
@@ -476,9 +490,10 @@ The Trace Funnel combines messages from multiple sources into a single trace str
 
 == TF Register Interface
 
+*Register: 0x0000 tfControl: Trace Funnel Control Register*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0000 tfControl: Trace Funnel Control Register* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |tfActive |Master enable for trace funnel. 0 resets the TF and it may be powered down or clocks may be gated off. |RW |0
 |1 |tfEnable |1=TF enabled. Messages arriving at each input will be accepted, combined, and sent to the designated sink. When the funnel is disabled, input messages will be accepted but dropped. Setting tfEnable to 0 will flush any partially-filled trace words to the sink. |RW |0
@@ -506,9 +521,10 @@ Which sink to send trace to.
 |WARL |SD
 |===
 
+*Register: 0x0004 tfImpl: Trace Funnel Implementation Register*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0004 tfImpl: Trace Funnel Implementation Register* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |version |Version (0 is this version) |R |0
 |4 |hasSRAMSink |1 if this TF has an on-chip SRAM sink. Size of SRAM may be determined by writing all 1s to teSinkWP, then reading the value back. |R |SD
@@ -530,9 +546,10 @@ The modes and behavior described here are intended to be compatible with trace p
 
 == PIB Register Interface
 
+*Register: 0x0F00 pibControl: PIB Sink Control Register (Optional)*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0F00 pibControl: PIB Sink Control Register (Optional)* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |pibActive |Master enable/reset for PIB Sink block |RW |0
 |1 |pibEnable a|
@@ -619,9 +636,10 @@ image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image]
 
 Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace produced by other components. In such systems, it is feasible to route RISC-V trace output to the ATB through an ATB Trace Sink. This module manages the interface to ATB, generating ATB trace records that encapsulate RISC-V trace produced by the TE. There is a control register that includes trace on/off control and a field allowing software to set the DeviceID to be used on the ATB. This DeviceID allows software to extract RISC-V trace from the combined trace. This interface is compatible with AMBA 4 ATB v1.1.
 
+*Register: 0x0E00 atbControl: ATB Sink Control Register*
+
 [cols=",,,,",options="header",]
 |===
-|*0x0E00 atbControl: ATB Sink Control Register* | | | |
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |atbActive |Master enable/reset for ATB Sink block |RW |0
 |1 |atbEnable |Enable trace words to pass through from the Trace Encoder to ATB |RW |0
