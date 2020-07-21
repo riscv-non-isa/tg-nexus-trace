@@ -128,7 +128,7 @@ Registers in the 4K range that are not implemented read as 0 and ignore writes.
 |*Address Offset* |*Trace Encoder* |*Trace Funnel* |*Compliance* |*Description*
 |0x0000 |teControl |tfControl |Required |Trace Encoder/Funnel control register
 |0x0004 |teImpl |tfImpl |Required |Trace Encoder/Funnel implementation information
-|0x0008 .. 0x000F |-- |-- |Optional |Reserved for future trace configuration features
+|0x0008 - 0x000F |-- |-- |Optional |Reserved for future trace configuration features
 |0x0010 |teSinkBase |teSinkBase |Optional |Base address of circular trace buffer
 |0x0014 |teSinkBaseHigh |teSinkBaseHigh |Optional |Bits N:32 of the circular buffer address
 |0x0018 |teSinkLimit |teSinkLimit |Optional |End address of circular trace buffer
@@ -141,16 +141,13 @@ Registers in the 4K range that are not implemented read as 0 and ignore writes.
 |0x0050 |xtiControl |-- |Optional |External Trigger Input control register
 |0x0054 |xtoControl |-- |Optional |External Trigger Output control register
 |0x0058 |wpControl |-- |Optional |Core watchpoint control register
-|0x0060 .. 0x00FF |-- |-- |Optional |Vendor-specific registers
+|0x0060 - 0x00FF |-- |-- |Optional |Vendor-specific registers
 |0x0100 - 0x07FF | | |Optional |Blocks reserved for Vendor-specific Trace Components
 |0x0800 - 0x0DFF | | |Optional |Blocks reserved for Future Trace Components
 |0x0E00 - 0x0EFF |atbSink |atbSink |Optional |Control registers for ATB trace sink, if attached to this TE/TF
 |0x0F00 - 0x0FFF |pibSink |pibSink |Optional |Control registers for PIB trace sink, if attached to this TE/TF
 |===
 
-=== 
-
-===  +
 
 === Trace Encoder Introduction
 
@@ -198,9 +195,6 @@ The Trace Encoder packs trace messages into fixed-width trace words. These are t
 
 The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs and sends the combined trace stream to its designated Trace Sink, which is one or more of the sink types above.
 
-=== 
-
-===  +
 
 === Trace Encoder Register Interface
 
@@ -341,8 +335,6 @@ ____
 |31-0 |teSinkData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
 
-===  +
-
 === Timestamp Unit
 
 Timestamp is an optional feature. An implementation may choose from several types of timestamp unit: Internal, External, Slave, or Vendor-specific. Implementations may have no timestamp, one timestamp type, or more than one type. The WARL field tsType is used to determine the system capability and to set the desired type.
@@ -401,10 +393,6 @@ Type of Timestamp unit
 |31-0 |tsUpper |Upper bits of timestamp counter, zero-extended. |R |0
 |===
 
-=== 
-
-===  +
-
 === External Triggers
 
 The TE may be configured with up to 8 external trigger inputs for controlling trace. These are in addition to the external triggers present in the Debug Module when Halt Groups are implemented. The specific hardware signals comprising an external trigger are implementation-dependent.
@@ -455,10 +443,6 @@ Bitmap to select which event(s) cause external trigger 0 output to fire. If exte
 |31-4 |xtoEvent__n__ |Select events for external trigger outputs 1 through 7. If an external trigger output does not exist, then its event bits are fixed at 0 |WARL |0
 |===
 
-=== 
-
-===  +
-
 === Core Watchpoints
 
 Watchpoints are signals from the core that a breakpoint was hit, but the action associated with that breakpoint is a trace-related action. Action identifiers 2-5 are reserved for trace actions in the RISC-V Debug Spec, where breakpoints are defined. Actions 2-4 are defined by the RISC-V Processor Trace Spec. The desired action is written to the action field of the mcontrol CSR (0x7a1). Not all cores support trace actions; the debugger should read back mcontrol after setting one of these actions to verify that the option exists.
@@ -488,10 +472,6 @@ If there are vendor-specific features that require control, the wpControl regist
 ==== Watchpoint Precedence
 
 It is implementation-dependent what happens when watchpoints or external triggers with conflicting actions occur simultaneously or if watchpoints or external triggers occur too frequently to process.
-
-=== 
-
-===  +
 
 === Trace Funnel
 
@@ -544,8 +524,6 @@ Which sink to send trace to.
 |19-16 | |Reserved for vendor-specific features |R |SD
 |31-20 | |Reserved |R |0
 |===
-
-===  +
 
 === PIB Trace Sink
 
@@ -639,8 +617,6 @@ image:./RISC-V-Trace-Control-Interface-images/pib-ref0.png[image,width=646,heigh
 And an example showing 8-bit parallel mode transmitting a 4-byte packet with pibRefCenter=1.
 
 image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image,width=624,height=236]
-
-===  +
 
 === ATB Trace Sink
 
