@@ -1090,14 +1090,10 @@ ____
 {empty}(1) SD = System-Dependent
 ____
 
+**0x0004 teImpl: Trace Encoder Implementation Register (Required)**
+
 [cols=",,,,",options="header",]
 |===
-a|
-____
-*0x0004 teImpl: Trace Encoder Implementation Register (Required)*
-____
-
-| | | |
 a|
 ____
 *Bit*
@@ -3312,10 +3308,6 @@ ____
 1
 ____
 
-|===
-
-[cols=",,,",options="header",]
-|===
 a|
 ____
 tref + 4 tdata
@@ -3613,8 +3605,7 @@ image:./RISC-V-Trace-Control-Interface-images/swt-manchester.jpg[image]
 
 *SWT UART Protocol*
 
-In UART protocol, the PIB outputs bytes of a trace message encapsulated in a 10-bit packet consisting of a low start bit, 8 data bits, LSB first, and a high stop bit. Another packet may begin im
-tely following the stop bit or there may be an idle period between packets. When no data is being sent, tdata[0] is high in this mode.
+In UART protocol, the PIB outputs bytes of a trace message encapsulated in a 10-bit packet consisting of a low start bit, 8 data bits, LSB first, and a high stop bit. Another packet may begin immediately following the stop bit or there may be an idle period between packets. When no data is being sent, tdata[0] is high in this mode.
 
 image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
 
