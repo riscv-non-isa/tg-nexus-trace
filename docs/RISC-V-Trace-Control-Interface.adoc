@@ -12,7 +12,7 @@ You may remix, transform, and build on the material for any purpose, including c
 
 No warranties are implied.
 
-== Table of Contents
+= Table of Contents
 
 link:#introduction[Introduction]
 
@@ -68,7 +68,7 @@ link:#pib-parallel-protocol[PIB Parallel Protocol]
 
 link:#atb-trace-sink[ATB Trace Sink]
 
-=== Introduction
+= Introduction
 
 This document presents a proposal for one possible control interface for the Trace Encoder described in the _RISC-V Processor Trace_ Specification Version 1.0 and for the RISC-V Nexus Trace specification now in progress. A number of participants in both Trace Working Groups have expressed a desire to standardize the control interface so that software development tools can be used interchangeably with any compliant RISC-V device. This document is intended as a starting point for discussions, not as a final specification.
 
@@ -78,7 +78,7 @@ This proposal does not define the hardware interconnection between the core and 
 
 This proposal allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support branch trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
 
-==== Glossary
+= Glossary
 
 *Trace Encoder* - Hardware module that accepts execution information from a core and generates a stream of trace messages.
 
@@ -96,7 +96,7 @@ This proposal allows a wide range of implementations including low-gate-count mi
 
 *PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
 
-=== Control Interface
+= Control Interface
 
 The Trace Encoder control interface consists of a set of 32-bit registers occupying up to a 4K-byte space. The control interface is used to set up and control a trace session, retrieve collected trace history, and control any trace system components embedded in or directly connected to a Trace Encoder.
 
@@ -110,7 +110,7 @@ There is typically one Trace Encoder per core. A core with multiple harts (i.e.,
 
 The Trace Funnel is a variant of the Trace Encoder and shares many of the same control registers. Each Trace Encoder and the Trace Funnel has its own set of control registers in its own register block.
 
-==== Register Map
+== Register Map
 
 The 4K block occupied by a Trace Encoder or Trace Funnel is divided into eight sections of 256 bytes. Section 0 is required and is used for local control registers. Other sections are used for control registers of trace components that are conceptually separate, even if they are physically part of the Trace Encoder/Funnel. Examples of possible subcomponents are:
 
@@ -147,54 +147,53 @@ Registers in the 4K range that are not implemented read as 0 and ignore writes.
 |===
 
 
-=== Trace Encoder Introduction
+= Trace Encoder Introduction
 
 This section briefly describes features of the Trace Encoder (TE) as background for understanding some of the control interface register fields.
 
-==== Trace Encoder Types
+== Trace Encoder Types
 
 By monitoring the Ingress Port, the TE determines when a program flow discontinuity has occurred and whether the discontinuity is inferable or non-inferable. An inferable discontinuity is one for which the Trace Decoder can statically determine the destination, such as a direct branch instruction in which the destination or offset is included in the opcode. Non-inferable discontinuities include all other types â€“ interrupt, exception, and indirect jump instructions.
 
-==== Branch Trace Messaging
+== Branch Trace Messaging
 
 Branch Trace Messaging is the simplest form of trace. Each discontinuity results in one trace message, either a Direct or Indirect Branch Message.
 
 Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The TE emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
 
-==== Branch History Messaging
+== Branch History Messaging
 
 Both the RISC-V Processor Trace Specification and the Nexus standard define systems of messages intended to improve compression by reporting only whether conditional branches are taken and the destinations of non-inferable jumps and calls. Much better compression can be achieved, but an Encoder implementation will typically require more hardware.
 
-==== Other Optimizations
+== Other Optimizations
 
 Several other optimizations are possible to improve trace compression. These are optional for any Trace Encoder and there should be a way to disable optimizations in case the trace system is used with code that does not follow recommended API rules. Examples of optimizations are a Return-address stack, Branch repetition, Statically-inferable jump, and Branch prediction.
 
-==== Trace Sinks
+== Trace Sinks
 
 The Trace Encoder transmits completed messages to a Trace Sink. This proposal defines a number of different sink types, all optional, and allows an implementation to define other sink types. A Trace Encoder must have at least one sink.
 
-===== SRAM Sink
+=== SRAM Sink
 
 The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a RAM, typically located on-chip, in a circular-buffer fashion. When the RAM has filled, the TE may optionally allow trace to be stopped, or it may wrap and overwrite earlier trace.
 
-===== ATB Sink
-
-The ATB Sink transmits bytes of trace messages as an ATB bus master.
-
-===== PIB Sink
+=== PIB Sink
 
 The Trace Encoder sends trace messages to the PIB Sink. Each message is transmitted off-chip using a specific protocol described later.
 
-===== System Memory (SBA) Sink
+=== System Memory (SBA) Sink
 
 The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a range of system memory reserved for trace using a DMA-type bus master in a circular-buffer fashion. When the memory range has been filled, the TE may optionally allow trace to be stopped, or it may wrap and overwrite earlier trace. This type of sink may also be used to transmit trace off-chip through, for example, a PCIe or USB port.
 
-===== Funnel Sink
+=== ATB Sink
+
+The ATB Sink transmits bytes of trace messages as an ATB bus master.
+
+=== Funnel Sink
 
 The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs and sends the combined trace stream to its designated Trace Sink, which is one or more of the sink types above.
 
-
-=== Trace Encoder Register Interface
+= Trace Encoder Register Interface
 
 Most features of the Trace Encoder are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
 
@@ -333,7 +332,7 @@ ____
 |31-0 |teSinkData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
 
-=== Timestamp Unit
+= Timestamp Unit
 
 Timestamp is an optional feature. An implementation may choose from several types of timestamp unit: Internal, External, Slave, or Vendor-specific. Implementations may have no timestamp, one timestamp type, or more than one type. The WARL field tsType is used to determine the system capability and to set the desired type.
 
@@ -346,7 +345,7 @@ An Internal Timestamp Unit may include a prescale divider, which can extend the 
 
 In a single-hart system with an Internal Timestamp counter, it may be desirable to stop the counter when the hart is halted by a debugger. An optional control bit is provided for this purpose. Most other control bits are also optional. A debugger may determine the specific capabilities by writing and reading back a WARL register field.
 
-==== Timestamp Register Interface
+== Timestamp Register Interface
 
 [cols=",,,,",options="header",]
 |===
@@ -391,13 +390,13 @@ Type of Timestamp unit
 |31-0 |tsUpper |Upper bits of timestamp counter, zero-extended. |R |0
 |===
 
-=== External Triggers
+= External Triggers
 
 The TE may be configured with up to 8 external trigger inputs for controlling trace. These are in addition to the external triggers present in the Debug Module when Halt Groups are implemented. The specific hardware signals comprising an external trigger are implementation-dependent.
 
 External Trigger Outputs may also be present. A trigger out may be generated by trace starting, trace stopping, a watchpoint, or by other system-specific events.
 
-==== External Trigger Register Interface
+== External Trigger Register Interface
 
 [cols=",,,,",options="header",]
 |===
@@ -441,7 +440,7 @@ Bitmap to select which event(s) cause external trigger 0 output to fire. If exte
 |31-4 |xtoEvent__n__ |Select events for external trigger outputs 1 through 7. If an external trigger output does not exist, then its event bits are fixed at 0 |WARL |0
 |===
 
-=== Core Watchpoints
+= Core Watchpoints
 
 Watchpoints are signals from the core that a breakpoint was hit, but the action associated with that breakpoint is a trace-related action. Action identifiers 2-5 are reserved for trace actions in the RISC-V Debug Spec, where breakpoints are defined. Actions 2-4 are defined by the RISC-V Processor Trace Spec. The desired action is written to the action field of the mcontrol CSR (0x7a1). Not all cores support trace actions; the debugger should read back mcontrol after setting one of these actions to verify that the option exists.
 
@@ -458,7 +457,7 @@ If there are vendor-specific features that require control, the wpControl regist
 |5 |Optional vendor-specific action
 |===
 
-==== Core Watchpoint Register Interface
+== Core Watchpoint Register Interface
 
 [cols=",,,,",options="header",]
 |===
@@ -467,15 +466,15 @@ If there are vendor-specific features that require control, the wpControl regist
 |31-1 |-- |Vendor-specific watchpoint setup |WARL |0
 |===
 
-==== Watchpoint Precedence
+== Watchpoint Precedence
 
 It is implementation-dependent what happens when watchpoints or external triggers with conflicting actions occur simultaneously or if watchpoints or external triggers occur too frequently to process.
 
-=== Trace Funnel
+= Trace Funnel
 
 The Trace Funnel combines messages from multiple sources into a single trace stream. The Funnel has the same options for sinks as a single Trace Encoder which are controlled by the same registers as described above. It is implementation-dependent how many incoming messages are accepted per cycle and in what order.
 
-==== TF Register Interface
+== TF Register Interface
 
 [cols=",,,,",options="header",]
 |===
@@ -523,13 +522,13 @@ Which sink to send trace to.
 |31-20 | |Reserved |R |0
 |===
 
-=== PIB Trace Sink
+= PIB Trace Sink
 
 Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-wire Trace). Alternative configurations include a trace reference clock and between 1 and 8 trace data signals timed to that reference. WARL register fields are used to determine specific PIB capabilities.
 
 The modes and behavior described here are intended to be compatible with trace probes available in the market.
 
-==== PIB Register Interface
+== PIB Register Interface
 
 [cols=",,,,",options="header",]
 |===
@@ -566,7 +565,7 @@ Software can determine what modes are available by attempting to write each mode
 |tref + 8 tdata |11 |1 |1/2
 |===
 
-==== Calibration Mode
+== Calibration Mode
 
 In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate. The suggested patterns for each mode are listed here. 
 
@@ -579,7 +578,7 @@ In optional calibration mode, the PIB transmits a repeating pattern. Probes can 
 |8-bit parallel |AA 55 00 FF |AA, 55, 00, FF
 |===
 
-==== SWT Manchester Protocol
+== SWT Manchester Protocol
 
 In this mode, the PIB outputs complete trace messages encapsulated between a start bit and a stop bit. Each bit period is divided into 2 phases and the sequential values of the tdata[0] pin during those 2 phases denote the bit value. Bits of the message are transmitted LSB first. The idle state of tdata[0] is low in this mode.
 
@@ -594,13 +593,13 @@ In this mode, the PIB outputs complete trace messages encapsulated between a sta
 
 image:./RISC-V-Trace-Control-Interface-images/swt-manchester.jpg[image]
 
-==== SWT UART Protocol
+== SWT UART Protocol
 
 In UART protocol, the PIB outputs bytes of a trace message encapsulated in a 10-bit packet consisting of a low start bit, 8 data bits, LSB first, and a high stop bit. Another packet may begin immediately following the stop bit or there may be an idle period between packets. When no data is being sent, tdata[0] is high in this mode.
 
 image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
 
-==== PIB Parallel Protocol
+== PIB Parallel Protocol
 
 Traditionally, off-chip trace has used this protocol. There are a number of parallel data signals and one continuously-running clock reference. The data rate of several parallel signals can be much higher than either of the serial-wire protocols.
 
@@ -616,7 +615,7 @@ And an example showing 8-bit parallel mode transmitting a 4-byte packet with pib
 
 image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image]
 
-=== ATB Trace Sink
+= ATB Trace Sink
 
 Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace produced by other components. In such systems, it is feasible to route RISC-V trace output to the ATB through an ATB Trace Sink. This module manages the interface to ATB, generating ATB trace records that encapsulate RISC-V trace produced by the TE. There is a control register that includes trace on/off control and a field allowing software to set the DeviceID to be used on the ATB. This DeviceID allows software to extract RISC-V trace from the combined trace. This interface is compatible with AMBA 4 ATB v1.1.
 
