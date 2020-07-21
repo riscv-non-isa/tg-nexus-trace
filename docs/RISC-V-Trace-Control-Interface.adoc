@@ -77,11 +77,7 @@ PIB Parallel Protocol ..........................................................
 
 This document presents a proposal for one possible control interface for the Trace Encoder described in the _RISC- V Processor Trace_ Specification Version 1.0 and for the RISC-V Nexus Trace specification now in progress. A number of participants in both Trace Working Groups have expressed a desire to standardize the control interface so that software development tools can be used interchangeably with any compliant RISC-V device. This document is intended as a starting point for discussions, not as a final specification.
 
-Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system is set up and controlled using a register-based interface. Core execution activity appears on the Ingress
-
-Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each core has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to
-
-a single destination.
+Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system is set up and controlled using a register-based interface. Core execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each core has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to a single destination.
 
 This proposal does not define the hardware interconnection between the core and Trace Encoder, as this is defined in the _RISC-V Processor Trace Specification_. This proposal also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink since it is expected that these components are all part of a system provided by a single vendor.
 
@@ -109,11 +105,7 @@ The Trace Encoder control interface consists of a set of 32-bit registers occupy
 
 The Trace Encoder control registers would typically be accessed by a debugger through the debug module. The Trace Encoder may or may not also be accessible through loads and stores performed by one or more harts in the system. Typically, the Trace Encoder connects to the system bus as a peripheral device, but it may use a dedicated bus connection from the Debug Module, or could attach to the DMI bus defined in the RISC-V Debug Specification.
 
-Additional control path(s) may also be implemented, such as a dedicated debug bus or message-passing network. Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace
-
-session independently from an external debugger. A hart may act as an internal debugger or may act in
-
-cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
+Additional control path(s) may also be implemented, such as a dedicated debug bus or message-passing network. Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace session independently from an external debugger. A hart may act as an internal debugger or may act in cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
 
 There is typically one Trace Encoder per core. A core with multiple harts (i.e., multi-threaded) will generate messages with a field indicating which hart is responsible for that message. Cores capable of retiring more than one instruction per cycle are typically accommodated with a single Trace Encoder, though this is not required.
 
@@ -140,27 +132,27 @@ ____
 |===
 a|
 ____
-*Address Offset*
+Address Offset
 ____
 
 a|
 ____
-*Trace Encoder*
+Trace Encoder
 ____
 
 a|
 ____
-*Trace Funnel*
+Trace Funnel
 ____
 
 a|
 ____
-*Compliance*
+Compliance
 ____
 
 a|
 ____
-*Description*
+Description
 ____
 
 a|
@@ -288,10 +280,6 @@ ____
 Bits N:32 of the circular buffer address
 ____
 
-|===
-
-[cols=",,,,",options="header",]
-|===
 a|
 ____
 0x0018
@@ -681,9 +669,7 @@ The Trace Encoder transmits completed messages to a Trace Sink. This proposal de
 
 _SRAM Sink_
 
-The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a RAM, typically located on-chip, in a circular-buffer fashion. When the RAM has filled, the TE may optionally allow trace to be
-
-stopped, or it may wrap and overwrite earlier trace.
+The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a RAM, typically located on-chip, in a circular-buffer fashion. When the RAM has filled, the TE may optionally allow trace to be stopped, or it may wrap and overwrite earlier trace.
 
 _ATB Sink_
 
@@ -801,11 +787,7 @@ ____
 
 a|
 ____
-1=Trace is being generated. Written from tool or controlled by
-
-triggers. When teTracing=1, trace data may be subject to additional filtering
-
-in some implementations.
+1=Trace is being generated. Written from tool or controlled by triggers. When teTracing=1, trace data may be subject to additional filtering in some implementations.
 ____
 
 a|
@@ -994,9 +976,7 @@ ____
 
 a|
 ____
-Maximum number of trace messages between periodic Sync messages. A Sync emitted for another reason will reset this timer. Generate Sync after
-
-2^(teSyncMaxBTM + 5) trace messages.
+Maximum number of trace messages between periodic Sync messages. A Sync emitted for another reason will reset this timer. Generate Sync after 2^(teSyncMaxBTM + 5) trace messages.
 ____
 
 a|
@@ -1034,10 +1014,6 @@ ____
 SD
 ____
 
-|===
-
-[cols=",,,,",options="header",]
-|===
 a|
 ____
 26-24
