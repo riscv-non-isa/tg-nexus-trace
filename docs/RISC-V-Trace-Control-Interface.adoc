@@ -1,3 +1,13 @@
+= History
+
+This document was converted to ADOC from original proposal by SiFive provided here:
+
+https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf
+
+During this conversion (automatic) content was not altered. Later formatting details were (manually) adjusted.
+
+= Original Version and Disclaimer
+
 Document Version 20200612
 
 Copyright (C) 2020 SiFive, Inc.
