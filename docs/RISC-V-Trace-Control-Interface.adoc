@@ -648,11 +648,7 @@ By monitoring the Ingress Port, the TE determines when a program flow discontinu
 
 *Branch Trace Messaging*
 
-Branch Trace Messaging is the simplest form of trace. Each discontinuity results in one trace message, either a
-
-Direct or Indirect Branch Message.
-
-Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The TE emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
+Branch Trace Messaging is the simplest form of trace. Each discontinuity results in one trace message, either a Direct or Indirect Branch Message. Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The TE emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
 
 *Branch History Messaging*
 
@@ -690,9 +686,7 @@ The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates 
 
 Most features of the Trace Encoder are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
 
-**0x0000 teControl: Trace Encoder Control Register (Required)**
-
-____
+**Register: 0x0000 teControl: Trace Encoder Control Register (Required)**
 
 [cols=",,,,",options="header",]
 |===
@@ -1090,7 +1084,7 @@ ____
 {empty}(1) SD = System-Dependent
 ____
 
-**0x0004 teImpl: Trace Encoder Implementation Register (Required)**
+**Register: 0x0004 teImpl: Trace Encoder Implementation Register (Required)**
 
 [cols=",,,,",options="header",]
 |===
@@ -1419,16 +1413,10 @@ ____
 --
 ____
 
-|===
+**Register: 0x0010 teSinkBase: Trace Encoder Sink Base Register (Optional)**
 
 [cols=",,,,",options="header",]
 |===
-a|
-____
-*0x0010 teSinkBase: Trace Encoder Sink Base Register (Optional)*
-____
-
-| | | |
 a|
 ____
 *Bit*
@@ -1479,16 +1467,10 @@ ____
 0
 ____
 
-|===
+**Register: 0x0014 teSinkBaseHigh: Trace Encoder Sink Base High Bits Register (Optional)**
 
 [cols=",,,,",options="header",]
 |===
-a|
-____
-*0x0014 teSinkBaseHigh: Trace Encoder Sink Base High Bits Register (Optional)*
-____
-
-| | | |
 a|
 ____
 *Bit*
