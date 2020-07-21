@@ -594,13 +594,13 @@ In this mode, the PIB outputs complete trace messages encapsulated between a sta
 |stop/idle |0 |0
 |===
 
-image:./RISC-V-Trace-Control-Interface-images/swt-manchester.jpg[image,width=648,height=144]
+image:./RISC-V-Trace-Control-Interface-images/swt-manchester.jpg[image]
 
 ==== SWT UART Protocol
 
 In UART protocol, the PIB outputs bytes of a trace message encapsulated in a 10-bit packet consisting of a low start bit, 8 data bits, LSB first, and a high stop bit. Another packet may begin immediately following the stop bit or there may be an idle period between packets. When no data is being sent, tdata[0] is high in this mode.
 
-image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image,width=637,height=129]
+image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
 
 ==== PIB Parallel Protocol
 
@@ -612,11 +612,11 @@ The clock reference, tref, normally has edges coincident with the tdata edges. T
 
 This example shows 8-bit parallel mode with pibRefCenter=0 transmitting a 5-byte message followed by a 2-byte message.
 
-image:./RISC-V-Trace-Control-Interface-images/pib-ref0.png[image,width=646,height=244]
+image:./RISC-V-Trace-Control-Interface-images/pib-ref0.png[image]
 
 And an example showing 8-bit parallel mode transmitting a 4-byte packet with pibRefCenter=1.
 
-image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image,width=624,height=236]
+image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image]
 
 === ATB Trace Sink
 
