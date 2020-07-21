@@ -68,8 +68,6 @@ link:#pib-parallel-protocol[PIB Parallel Protocol]
 
 link:#atb-trace-sink[ATB Trace Sink]
 
-=== 
-
 === Introduction
 
 This document presents a proposal for one possible control interface for the Trace Encoder described in the _RISC-V Processor Trace_ Specification Version 1.0 and for the RISC-V Nexus Trace specification now in progress. A number of participants in both Trace Working Groups have expressed a desire to standardize the control interface so that software development tools can be used interchangeably with any compliant RISC-V device. This document is intended as a starting point for discussions, not as a final specification.
@@ -82,21 +80,21 @@ This proposal allows a wide range of implementations including low-gate-count mi
 
 ==== Glossary
 
-Trace Encoder Hardware module that accepts execution information from a core and generates a stream of trace messages.
+*Trace Encoder* - Hardware module that accepts execution information from a core and generates a stream of trace messages.
 
-Trace Funnel Hardware module that combines trace streams from multiple Trace Encoders into a single output stream.
+*Trace Funnel* - Hardware module that combines trace streams from multiple Trace Encoders into a single output stream.
 
-Trace Sink Hardware module that accepts a stream of trace messages and records them in memory or forwards them onward in some format.
+*Trace Sink* - Hardware module that accepts a stream of trace messages and records them in memory or forwards them onward in some format.
 
-Trace Decoder Software program that takes a recorded trace and produces readable execution history.
+*Trace Decoder* - Software program that takes a recorded trace and produces readable execution history.
 
-BTM Branch trace message
+*BTM* - Branch trace message
 
-WARL Write any, read legal. If a non-legal value is written, the register will take on a legal value. Used by debugger to determine system capabilities.
+*WARL* - Write any, read legal. If a non-legal value is written, the register will take on a legal value. Used by debugger to determine system capabilities.
 
-ATB Advanced Trace Bus, a protocol described in ARM document IHI0032B.
+*ATB* - Advanced Trace Bus, a protocol described in ARM document IHI0032B.
 
-PIB Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
+*PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
 
 === Control Interface
 
