@@ -555,7 +555,6 @@ ____
 Vendor-specific registers
 ____
 
-| | | | |
 a|
 ____
 0x0100 - 0x07FF
@@ -690,16 +689,13 @@ The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates 
 *Trace Encoder Register Interface*
 
 Most features of the Trace Encoder are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
+
+**0x0000 teControl: Trace Encoder Control Register (Required)**
+
 ____
 
 [cols=",,,,",options="header",]
 |===
-a|
-____
-*0x0000 teControl: Trace Encoder Control Register (Required)*
-____
-
-| | | |
 a|
 ____
 *Bit*
