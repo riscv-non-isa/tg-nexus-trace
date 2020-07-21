@@ -330,8 +330,8 @@ ____
 [cols=",,,,",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|N-2 |teSinkWP |Address in trace sink where next trace message will be written. Fixed to natural boundary. When a trace word write occurs while teSinkWP=teSinkLimit, teSinkWP is set to teSinkBase. This register may not be present if no sinks require it. |WARL |0
 |0 |teWrap |Set to 1 by hardware when teSinkWP wraps. |WARL |0
+|N-2 |teSinkWP |Address in trace sink where next trace message will be written. Fixed to natural boundary. When a trace word write occurs while teSinkWP=teSinkLimit, teSinkWP is set to teSinkBase. This register may not be present if no sinks require it. |WARL |0
 |===
 
 *Register: 0x0020 teSinkRP: Trace Encoder SRAM Sink Access Pointer Register (Optional)*
