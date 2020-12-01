@@ -1,6 +1,5 @@
 = Nexus Trace TG Trace Connectors
-Version 0.1
-
+Version 1.0
 :doctype: book
 :encoding: utf-8
 :lang: en
