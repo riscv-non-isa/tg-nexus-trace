@@ -70,6 +70,10 @@ It adds 4-bit parallel trace, serial trace and some other alternative functions.
 
 TODO: Emphasisis what ‘Cap’ is for (it is not obvious)
 
+=== Possible use of TDI/TDO and TriggerIn/Out for application UART
+
+Some debug probles may allow definition of pin functions and may serve as virtual UART terminal for the target. It is often needed for testing and production and having both debug and UART on single connector is desired.
+
 == Mictor 38 - bit Connector
 
 It has all signals from MIPI20 connectors + more triggers and 16-bit trace.
