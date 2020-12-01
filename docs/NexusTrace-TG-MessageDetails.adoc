@@ -12,6 +12,40 @@ Version 0.1
 
 This chapter is using plain C-style identifiers for messages and message fields. Nexus is using *B-TYPE*, while here we have *BTYPE*. It will make references to code (both C and VHDL) easier. Message fields are shown in ‘sending order’ (left to right => first to last) - Nexus SPEC is showing tables with *TCODE* (as is sent first) in last row.
 
+== TODO (as provided by emails)
+
+From Robert (2020/11/17):
+
+. List "RISC-V applicable" values of key fields (EVCODE ,ETYPE, etc.).
+. Clarify 'ProgramCorrelation' use-cases (so it will not be 'over-used').
+. Provide rationale for max size for variable fields.
+. Elaborate more on 'ICNT' and 'HIST' overflows.
+. Clarify 3 profiles? ('standard' = most compatible with Nexus recommended sizes/values, better=still compatible, but more 'dense', extended=allowing non-compatible 'trickery').
+.. All profiles should be handled by NexRv reference code.
+.Clarify focus on 'standard' as first goal and optimizations and tricks later.
+
+From Jean-Luc (2020/11/18):
+
+. In the message table, some messages that are compulsory in level 1 are no longer generated when we are in higher level. We should make this appear somehow in the table. For instance, if we generate branch history messages, we will not generate direct branch messages (can we say we implement them if they are never generated ?). This may also impact the resource full replacement (below).
+. For ProgramCorrelation field, we should mention that when we are in level3, we will dump HIST messages (doesn’t appear in your table)
+. For EVCODE, those that make sense to us are: entry in debug mode (0), entry in low-power mode (1, after having executed a wfi), program trace disable (4).
+.. This means we plan to send a ProgramCorrelation message when we execute a wfi instructions. This may generate a lot of traffic if we wfi/wake-up very often, but it might be interesting to dump the trace if the processor will idle for a long period. We might consider further control of this feature. But, as the processor will stop for at least a few cycles, it should not be a problem in terms of bandwidth to flush the history. Maybe an issue in multi-core?
+.For the behaviour in case of resource full, we would add a “2b” in case of level 3. Since we don’t generate direct branch messages, we would rather send a “fake” indirect branch message (or a real one if it happen simultaneously to the resource full). The history buffer would be dumped in this indirect branch message. The decoder would see that there is not indirect branch at the current pc and understand that this is a flush. This way we can avoid TCODE=27.
+
+.There are special cases that we should try to illustrate (e.g. ProgramCorreclation to be generated due to debug stop on an indirect branch instruction causing an ICNT overflow…). There might be some priorities to define to know which message should be generated.
+
+From Jay (2020/11/19):
+
+. Could we omit the SYNC fields all together to save on message bandwidth? In previous Freescale/NXP Power ISA based Nexus designs this field was not included. Most of these events could be implied with other messages. Typically when the “event” is seen, the next branch trace was message was “upgraded” to sync type. For example:
+.. Exit from System Reset – Program Trace Sync message with Reset vector
+.. Following a Resource Full message(instruction count), next branch message upgraded to sync. (This will be a level 1 now)
+.. FIFO overrun or Message contention should produce an error message, first trace message following Error message should be upgraded to sync type.
+. Could we also omit the BTYPE fields? Similar, this info could be implied?
+. I like the idea of Optimized Variant, but favor the A,B,C config approach you mentioned in the meeting or enabled via control bit in a Developmental Control Register.
+. In Power ISA, we also used a Program Correlation Message EVCODE(10) for when a “Branch and Link” instruction executed when history trace mode was enabled.
+.. Do we need a message (could be Program Correlation) to convey CPU mode?
+. Further optimization/compression of branch message in history mode can be achieved with a return stack buffer for sub routines, this is more for further discussions.
+
 == Fields in Messages
 
 [#Fields in Messages]
