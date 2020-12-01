@@ -18,7 +18,8 @@ Version 1.0
 
 As you see smallest one with reasonable trace has 50 pins.
 
-There is a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores.Arm defines two standard connectors with trace :
+There is a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores. Arm defines two standard connectors for trace:
+
 . Based on MIPI 20-pin connector (MIPI does not provide that exact pinout) – this is for medium performance trace (4-bit, 100 + MHz double edge captures, max trace bandwidth 800Mbps).
 . Based on Mictor 38-pin connector (also defined by MIPI) – this is for high - performance trace (16-bit, up to 400MHz double edge, max trace bandwidth 12.8Gbps).
 
@@ -77,9 +78,33 @@ Some debug probles may allow definition of pin functions and may serve as virtua
 
 It has all signals from MIPI20 connectors + more triggers and 16-bit trace.
 
-TODO: Provide table with pin-layout.
+[#Mictor-38 Connector Layout]
+.Mictor-38 Connector Layout
+[width = "100%", options = header]
+|==================================
+|Signal     |Pin#|Pin#|Signal
+|NC          | 1 | 2 | NC
+|NC          | 3 | 4 | NC
+|GND         | 5 | 6 | TRC_CLK
+|TRIGIN      | 7 | 8 | TRIGOUT
+|nRESET      | 9 | 10| EXTTRIG
+|TDO         |11 | 12| VREF
+|RTCK        |13 | 14| NC(VSupply)
+|TCK         |15 | 16| TRC_DATA[7]
+|TMS         |17 | 18| TRC_DATA[6]
+|TDI         |19 | 20| TRC_DATA[5]
+|nTRST       |21 | 22| TRC_DATA[4]
+|TRC_DATA[15]|23 | 24| TRC_DATA[3]
+|TRC_DATA[14]|25 | 26| TRC_DATA[2]
+|TRC_DATA[13]|27 | 28| TRC_DATA[1]
+|TRC_DATA[12]|29 | 30| Logic'0'
+|TRC_DATA[11]|31 | 32| Logic'0'
+|TRC_DATA[10]|33 | 34| Logic'1'
+|TRC_DATA[9] |35 | 36| EXT(TRC_CTL)
+|TRC_DATA[8] |37 | 38| TRC_DATA[0]
+|==================================
 
-=== Explanation for pins #32/34/36
+=== Explanation for pins #30/32/34
 
 TODO: Explain why these are fixed.
 
