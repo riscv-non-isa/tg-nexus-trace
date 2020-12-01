@@ -5,8 +5,9 @@ Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) -
 
 File with Nexus Messages is [NexusTrace-TG-Messages.adoc](./docs/NexusTrace-TG-Messages.adoc).
 
+Details of messages is provided here [NexusTrace-TG-MessageDetails.adoc](./docs/NexusTrace-TG-MessageDetails.adoc).
 
-NOTE: Above file will be later replaced by master ADOC file, but for now I do not know how to do it.
+Proposed trace connectors are provided here [NexusTrace-TG-Connectors.adoc](./docs/NexusTrace-TG-Connectors.adoc).
 
 RISC-V Trace Control Interface is [here](./docs/RISC-V-Trace-Control-Interface.adoc) (it was converted from original PDF version [here](https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf)).
 
