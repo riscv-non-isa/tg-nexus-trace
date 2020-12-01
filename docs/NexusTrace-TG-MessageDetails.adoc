@@ -1,0 +1,83 @@
+= Nexus Messages (Details)
+Version 0.1
+:doctype: book
+:encoding: utf-8
+:lang: en
+:toc: left
+:toclevels: 4
+:numbered:
+:xrefstyle: short
+:le: &#8804;
+:rarr: &#8658;
+
+This chapter is using plain C-style identifiers for messages and message fields. Nexus is using *B-TYPE*, while here we have *BTYPE*. It will make references to code (both C and VHDL) easier. Message fields are shown in ‘sending order’ (left to right => first to last) - Nexus SPEC is showing tables with *TCODE* (as is sent first) in last row.
+
+== Fields in Messages
+
+[#Fields in Messages]
+.Fields in Messages
+[width = "100%", options = header]
+|==========================================================================================
+| Message/Field Name   |TCODE|SRC|SYNC|BTYPE|Other(rare)      |ICNT|xADDR|HIST|TSTAMP|Level
+|                  Size|[6]  |[M]|[4] |[2]  |                 |[v] |[v]  |[v] |[v]   |
+|Ownership             |2    |   |    |     |PROCESS[v]       |    |     |    |      |2
+|DirectBranch          |3    |   |    |     |                 |Yes |     |    |      |1
+|IndirectBranch        |4    |   |    |Yes  |                 |Yes |UADDR|    |      |1
+|Error                 |8    |   |    |     |ETYPE[4]+PAD[v]  |    |     |    |      |1
+|ProgamTraceSync       |9    |   |Yes |     |                 |Yes |FADDR|    |      |1
+|DirectBranchSync      |11   |   |Yes |     |                 |Yes |FADDR|    |      |1
+|IndirectBranchSync    |12   |   |Yes |Yes  |                 |Yes |FADDR|    |      |1
+|ResourceFull          |27   |   |    |     |RCODE[4]+RDATA[v]|    |     |    |      |2
+|IndirectBranchHist    |28   |   |    |Yes  |                 |Yes |UADDR|Yes |      |3
+|IndirectBranchHistSync|29   |   |Yes |Yes  |                 |Yes |FADDR|Yes |      |3
+|RepeatBranch          |30   |   |    |     |BCNT[v]          |    |     |    |      |4
+|ProgramCorrelation    |33   |   |    |     |EVCODE[4]+CDF[2] |Yes |     |    |      |1
+|==========================================================================================
+
+*Fields:* [n] – fixed size field, [v] – variable size field, [M] – only for multi-hart/core trace
+
+*Levels:*	1 (compulsory), 2 (optional), 3 (adds branch history), 4 (adds repeated branch)
+
+NOTE: Nexus SPEC define CANCEL and MAP fields. Both are not applicable. CANCEL is used to cancel speculative execution, while ingress-port provides retired instructions. MAP field is for many address spaces (we have only one code space).
+
+== Details of Fields
+
+[#Details of Fields]
+.Details of Fields
+[width = "100%", options = header]
+|======================================================================================================
+| Field Name | Standard Size | Description | Values / Notes | Optimized Variant
+| TCODE      | 6             | Message Type | Provided above | 4 or 3 (for level1)
+| SRC        | Vendor        | Source of message(only for multi - hart trace) | Hart index or trace ID | Max number of harts
+| SYNC       | 4             | Reason for Synchronization|Always with FADDR field | 2
+| BTYPE      | 2             | Branch Type | For indirect branches only | 1
+| ICNT       | Variable      | Number of 16 - bit half - instructions executed | | Max 4 + 6 + 6 bits
+| FADDR      | Variable      | Full PC address(without LSB bit) | Always with SYNC field |
+| UADDR      | Variable      | Update of PC address(XOR with recent xADDR drop) | Always with BTYPE field |
+| HIST       | Variable      | Direct Branch History bit-map (LSB denotes last branch) | MSB = 1 is 'end-guardian' | Max 5 * 6 bits
+| TSTAMP     | Variable      | Timestamp(optional) | See Timestamp chapter |
+5+| Other Fields
+| PROCESS    | Variable      | ID of thread | | Max 6 + 6 bits
+| ETYPE      | 4             | Type of error | | 1 (just overflow)
+| PAD        | Variable      | Just padding(always 0) to assure TSTAMP is aligned | |
+| RCODE      | 4             | Resource full code (ICNT and/or HIST overflow) | | 1
+| RDATA      | Variable      | Data for full resource (either I - CNT or HIST) | | Max 5 + 6 bits
+| BCNT       | Variable      | Number of times previous message is repeated | |
+| EVCODE     | 4             | Reason to generate Program Correlation || 1
+| CDF        | 2             | Number of CDATA | Always '0' | For alignment only
+|======================================================================================================
+
+== Possible Handling of ICNT and HIST Overflows
+
+In case ICNT or HIST counter overflows(for single message), there are the following possibilities:
+
+. Counter keeps counting(from 1 again) and *ResourceFull* message is emitted – it may happen many times.
+.. IMPORTANT : Periodic SYNC-message must ‘break’ this sequence.
+. Normal *DirectBranch* message is emitted (but decoder will know that branch was not reached at PC determined by *ICNT*).
+. Artificial SYNC-message is emitted (this is only OK for *ICNT* overflows in level ‘1’ – this is rare to have a lot of linear instructions).
+
+== Possible Omission of ICNT Field (for better compression)
+
+. This is only idea – may not be correct in all corner cases.
+. In case of *DirecBranch* and *History...* messages, it is really not necessary to know number of instructions needed to reach next branch as it may be found while following types of instructions.
+. This may be variants of *TCODE* which allow skipping *ICNT* to be treated as  pure extension.
