@@ -23,9 +23,7 @@ There is a lot of hardware trace probes, which are being used for debugging and 
 . Based on MIPI 20-pin connector (MIPI does not provide that exact pinout) – this is for medium performance trace (4-bit, 100 + MHz double edge captures, max trace bandwidth 800Mbps).
 . Based on Mictor 38-pin connector (also defined by MIPI) – this is for high - performance trace (16-bit, up to 400MHz double edge, max trace bandwidth 12.8Gbps).
 
-MIPI Defines debug and trace connectors and this specification is based on these recommendations:
-
-  https://mipi.org/sites/default/files/MIPI-Alliance-Recommendation-Debug-Trace-Connectors.pdf[MIPI-Alliance-Recommendation-Debug-Trace-Connectors.pdf]
+MIPI defines debug and trace connectors and this specification is based on [MIPI-Alliance-Recommendation-Debug-Trace-Connectors.pdf](https://mipi.org/sites/default/files/MIPI-Alliance-Recommendation-Debug-Trace-Connectors.pdf).
 
 == MIPI20 Connector
 This connector is an extension of MIPI10 connector as defined by RISC - V Debug Specification (link TBD)
