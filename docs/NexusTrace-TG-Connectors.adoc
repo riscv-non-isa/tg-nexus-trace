@@ -1,0 +1,82 @@
+= Nexus Trace TG Trace Connectors
+Version 0.1
+
+:doctype: book
+:encoding: utf-8
+:lang: en
+:toc: left
+:toclevels: 4
+:numbered:
+:xrefstyle: short
+:le: &#8804;
+:rarr: &#8658;
+
+== Rationale
+. Nexus standard does not define any small connectors with focus on trace.Here these are :
+.. S26x	1 - 104068 - 2	Low performance - 1 MDO signal
+.. S40x1	104549 - 6	Low performance - 6 MDO signals(labelled as “not recommended”)
+.. S50x	104549 - 7	Low performance - 8 MDO signals
+
+As you see smallest one with reasonable trace has 50 pins.
+
+There is a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores.Arm defines two standard connectors with trace :
+. Based on MIPI 20-pin connector (MIPI does not provide that exact pinout) – this is for medium performance trace (4-bit, 100 + MHz double edge captures, max trace bandwidth 800Mbps).
+. Based on Mictor 38-pin connector (also defined by MIPI) – this is for high - performance trace (16-bit, up to 400MHz double edge, max trace bandwidth 12.8Gbps).
+
+== MIPI20 Connector
+This connector is an extension of MIPI10 connector as defined by RISC - V Debug Specification (link TBD)
+It adds 4-bit parallel trace, serial trace and some other alternative functions.
+
+[#MIPI20 Connector Layout]
+.MIPI20 Connector Layout
+[width = "100%", options = header]
+|=========================================================
+|Signal         |Odd Pin|Even Pin|Signal
+|VREF DEBUG     |1	|2	|TMS/TMSC
+|GND	          |3	|4	|TCK/TCKC
+|GND	          |5	|6	|TDO/SerialTrace
+|GND or KEY	    |7	|8	|TDI
+|GNDDetect	    |9	|10	|nRESET/nTRST
+|GND/TgtPwr+Cap	|11	|12	|TraceClk
+|GND/TgtPwr+Cap	|13	|14	|TraceData[0]/SerialTrace
+|GND	          |15	|16	|TraceData[1]/nTRST
+|GND	          |17	|18	|TraceData[2]/TriggerIn
+|GND	          |19	|20	|TraceData[3]/TriggerOut
+|=========================================================
+
+[#Details of Signals]
+.Details of Signals
+[width = "100%", options = header]
+|=================================================================================
+|Pin# | Pin Name	        |Explanation
+| 1 | VREF DEBUG	        |Reference voltage for all other pin and signals.
+| 2 | TMS/TMSC	                |JTAG TMS signal or cJTAG TMSC
+| 4 | TCK/TCKC	                |JTAG TCK signal or cJTAG TMSC
+| 6 | TDO/SerialTrace	        |Either TDO or SerialTrace(available in case cJTAG is used)
+| 7 | GND or KEY	        |May be removed pin(to prevent wrong insertion for non-shrouded connectors and cable with plug in pin#7).In case pin is not removed, it should be GND on target side.
+| 8 | TDI	                |JTAG TDI signal
+| 9 | GNDDetect	                |Must be GND on the probe. On-board debug circuitry can use this pin to disable itself when external debug probe is connected. If not used for that purpose should be GND on target side.
+| 10 | nRESET/nTRST	        |nRESET is primary function.For some targets it may be used as nTRST (connecting both together is not recommended as it may not be possible to halt processor after hardware reset).
+| 11 | GND/TgtPwr+Cap	        |Usually GND - see below for detailed explanation of GND/TgtPwr+Cap
+| 12 | TraceClk	                |Parallel trace clock (from target to probe)
+| 13 | GND/TgtPwr+Cap	        |Usually GND - see below for detailed explanation of GND/TgtPwr+Cap
+| 14 | TraceData[0]/SerialTrace	|Either parallel trace or SerialTtrace.
+| 16 | TraceData[1]/nTRST	|In case nRESET and nTRST is desired, this pin can used. NOTE: Still 1-bit  parallel or serial trace is possible.
+| 18 | TraceData[2]/TriggerIn	|Either trace signal or input trigger (from probe to target).
+| 20 | TraceData[3]/TriggerOut	|Either trace signal or output trigger (from target to probe).
+|=================================================================================
+
+=== Explanation for GND/TrgPwr+Cap pins
+
+TODO: Emphasisis what ‘Cap’ is for (it is not obvious)
+
+== Mictor 38 - bit Connector
+
+It has all signals from MIPI20 connectors + more triggers and 16-bit trace.
+
+TODO: Provide table with pin-layout.
+
+=== Explanation for pins #32/34/36
+
+TODO: Explain why these are fixed.
+
