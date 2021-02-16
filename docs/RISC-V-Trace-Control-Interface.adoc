@@ -171,13 +171,19 @@ Branch Trace Messaging is the simplest form of trace. Each discontinuity results
 
 Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The TE emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
 
+NOTE: RC: Change to more 'generic' (Branch Packet? Simple?)
+
 == Branch History Messaging
 
 Both the RISC-V Processor Trace Specification and the Nexus standard define systems of messages intended to improve compression by reporting only whether conditional branches are taken and the destinations of non-inferable jumps and calls. Much better compression can be achieved, but an Encoder implementation will typically require more hardware.
 
+NOTE: RC: Change to more 'generic' (Branch BitMap/BitFlow, FlowBitMap?)
+
 == Other Optimizations
 
 Several other optimizations are possible to improve trace compression. These are optional for any Trace Encoder and there should be a way to disable optimizations in case the trace system is used with code that does not follow recommended API rules. Examples of optimizations are a Return-address stack, Branch repetition, Statically-inferable jump, and Branch prediction.
+
+NOTE: RC: Change to more 'generic' (Advanced?) - maybe we should 'map' several levels to Nexus (BTM=Branch Trace Messages/HTM=Branch History Messages). We could find 'common denominator' and also allow 'encoder-specific'
 
 == Trace Sinks
 
@@ -187,6 +193,8 @@ The Trace Encoder transmits completed messages to a Trace Sink. This proposal de
 
 The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a RAM, typically located on-chip, in a circular-buffer fashion. When the RAM has filled, the TE may optionally allow trace to be stopped, or it may wrap and overwrite earlier trace.
 
+NOTE: RC: 'fixed-width trace words' - should not we talk about 'packet is sequence of bytes'?
+
 === PIB Sink
 
 The Trace Encoder sends trace messages to the PIB Sink. Each message is transmitted off-chip using a specific protocol described later.
@@ -195,13 +203,19 @@ The Trace Encoder sends trace messages to the PIB Sink. Each message is transmit
 
 The Trace Encoder packs trace messages into fixed-width trace words. These are then stored in a range of system memory reserved for trace using a DMA-type bus master in a circular-buffer fashion. When the memory range has been filled, the TE may optionally allow trace to be stopped, or it may wrap and overwrite earlier trace. This type of sink may also be used to transmit trace off-chip through, for example, a PCIe or USB port.
 
+NOTE: RC: Again - packet is sequence of bytes?
+
 === ATB Sink
 
 The ATB Sink transmits bytes of trace messages as an ATB bus master.
 
+NOTE: RC: ATB has width, which is either 8 or 32-bit (again - should not we limit to 'packet=sequence-of-bytes' definition? In case we have other width say 10-bits, these still cab be considered as bytes with 4 MSB=0).
+
 === Funnel Sink
 
 The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs and sends the combined trace stream to its designated Trace Sink, which is one or more of the sink types above.
+
+NOTE: RC: It is assumed, that each input to funnel has 'SRC' defined (this is te)
 
 = Trace Encoder Register Interface
 
@@ -281,6 +295,43 @@ ____
 SD^(1)^ = System-Dependent
 ____
 
+NOTE: RC: E-Trace defines (table 2.1). 'Active'  is same as 'teActive'. As it is enabling of single ENCODER only 'teActive' seems better name.
+
+NOTE: RC: Single 'teTracing' is split into 'iTracing' and 'dTracing'.
+
+NOTE: RC: Names 'stallEnable', while 'teStallEnable'. In general it would be good to define two iStall/dStall. It is OK to 'drop data' (sometimes ...), while PC being lost is harder to accomodate.
+
+NOTE: RC: E-Trace defines ReSyncMode/ReSyncMax (3 modes), while Nexus has two fields (E-Trace is better).
+
+NOTE: RC: E-Trace defines 'vector' of encoder options/features (table 2.2).
+
+NOTE: RC: Nexus has 3-bit field logically providing 3 BTM/HTM/HTM+callstack instruction tracing levels.
+
+*RC-PROPOSAL (teFeatures)*
+
+teImpl.version=0 - Define 8 levels (0 .. 7) of instruction trace.
+
+    E-Trace may NEVER implement these levels (only teFeatures)
+
+teImpl.version=1 - Allows (optional):
+
+    B7=1    - if set, trace is  controlled by 'teFeatures' register. 
+            - Setting bits B4-B6 may make 'teFeature' read-only and
+            reflect pre-defined set of features.
+
+Alternative:
+
+    B4-B6   - Value 7 defines 'Full Instruction Trace', which can be trimmed by 'teNoFeature' (0=all features allowed)
+
+NOTE: RC: E-Trace table 2.2 defines 9 featues for both instruction (6) and data (4) trace. I would define 12 bits for 'instruction-trace' + 12 for 'data-trace' and 8 as 'reserved'
+
+    B0..B11     - Up to 12 I-trace features
+    B12..B15    - Reserved
+    B16..B27    - Up to 12 D-trace features
+    B28-B31     - Reserved
+
+Some bits may be common (like call/return skipping?) and may occupy LSB bits. Both E-Trace and 'Nexus-Trace' should define these bits.
+
 *Register: 0x0004 teImpl: Trace Encoder Implementation Register (Required)*
 
 [cols=",,,,",options="header",]
@@ -300,6 +351,8 @@ ____
 |27 | |Reserved |-- |--
 |31-28 | |Reserved for vendor-specific features |-- |--
 |===
+
+NOTE: RC: Here we have 0x8 and 0xC unused (0xC can be teFeatures)
 
 *Register: 0x0010 teSinkBase: Trace Encoder Sink Base Register (Optional)*
 
@@ -350,6 +403,8 @@ ____
 |31-0 |teSinkData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
 
+NOTE: RC: Add 64-bit extensions as 32 MSB bits of size (reading 3 times is needed to be certain about 64-bit value). In order to relieve trace software to read 3 times always, there should be a field/bit saying if RAM size over 32-bit is implemented. It may be also WARL field, which must be set to '1' in order to allow 64-bit size. In most cases, it will never be settable (as 4GB or RAM for trace is rare requirement)
+
 = Timestamp Unit
 
 Timestamp is an optional feature. An implementation may choose from several types of timestamp unit: Internal, External, Slave, or Vendor-specific. Implementations may have no timestamp, one timestamp type, or more than one type. The WARL field tsType is used to determine the system capability and to set the desired type.
@@ -362,6 +417,8 @@ Timestamp is an optional feature. An implementation may choose from several type
 An Internal Timestamp Unit may include a prescale divider, which can extend the range of a narrower timestamp and uses less power but has less resolution.
 
 In a single-hart system with an Internal Timestamp counter, it may be desirable to stop the counter when the hart is halted by a debugger. An optional control bit is provided for this purpose. Most other control bits are also optional. A debugger may determine the specific capabilities by writing and reading back a WARL register field.
+
+NOTE: RC: Timestamp is more elaborated in Nexus-Trace.
 
 == Timestamp Register Interface
 
@@ -496,6 +553,8 @@ It is implementation-dependent what happens when watchpoints or external trigger
 
 = Trace Funnel
 
+NOTE: RC: This is generic concept. It should be extended to see what TE[s] are connected to particular funnel (read-only bit in TE register settable by funnel register or other way around ...)
+
 The Trace Funnel combines messages from multiple sources into a single trace stream. The Funnel has the same options for sinks as a single Trace Encoder which are controlled by the same registers as described above. It is implementation-dependent how many incoming messages are accepted per cycle and in what order.
 
 == TF Register Interface
@@ -549,6 +608,10 @@ Which sink to send trace to.
 |===
 
 = PIB Trace Sink
+
+NOTE: RC: This is generic - all is required is byte-stream.
+
+NOTE: RC: It is undefined what is 'idle-byte' for E-Trace. External trace operates on 'continous-clock'.
 
 Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-wire Trace). Alternative configurations include a trace reference clock and between 1 and 8 trace data signals timed to that reference. WARL register fields are used to determine specific PIB capabilities.
 
@@ -631,6 +694,10 @@ image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
 Traditionally, off-chip trace has used this protocol. There are a number of parallel data signals and one continuously-running clock reference. The data rate of several parallel signals can be much higher than either of the serial-wire protocols.
 
 As with SWT modes, this protocol is oriented to full trace messages rather than fixed-width trace words. The idle state of tdata is all-ones for Nexus trace and (TBD) for RISC-V Processor Trace. When a message start is detected, this sample and possibly the next few (depending on the width of tdata) are collected until a complete byte has been received. Bytes are transmitted LSB first, with tdata[0] representing the LSB in each beat of data. The receiver continues collecting bytes until a complete message has been received. The criteria for this depends on the trace format. For Nexus, the last byte of a message is one that has mseo=1,1. For RISC-V Processor Trace, the header byte includes a byte count. After the last byte of a message, the data signals may then go their idle state or a new message may begin in the next bit period.
+
+NOTE: RC: Here we should provide example of two messages back-to-back and with idle[s] in between. For both Nexus-Trace and 'suggested' for E-Trace. As E-Trace suggests message to start from counter, idle message may be some reserved encoding (1 or more bytes).
+
+NOTE: RC: For both cases, there is no definition of main synchronization ... (also needed for wrapped-around RAM captures) as packet boundary is unknown. Nexus-trace is self-sync, but E-Trace may not be.
 
 The clock reference, tref, normally has edges coincident with the tdata edges. Typically, a trace probe will use a PLL to recover a sampling clock that is twice the frequency of tref and shifted 90 degrees so that its rising edges occur near the center of each bit period. If the PIB implementation supports it, the debugger can set pibRefCenter to change the timing of tref so that there is a tref edge at the center of each bit period on tdata. Note that this option cuts the data rate in half relative to normal parallel mode and still requires the probe to sample tdata on both edges of tref.
 
