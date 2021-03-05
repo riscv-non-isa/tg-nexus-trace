@@ -156,9 +156,9 @@ NOTE: Above table is using names compatible with MIPI specifications (however MI
 | 14  | NC/VSupply  |Originally used to power the probe from target. Should be left NC on the target.
 | 21  | nTRST       |Same as MIPI20 #16 alternative function (nTRST).
 | 36  | EXT/TRC_CTL |Not applicable (should be 0). May be also used to denote valid/idle state, but it may not be supported by all trace probes.
-|===============================================================================
+|=================================================================================
 
-=== Explanation for pins #30/32/34/36
+=== Explanation for Mictor-38 pins #30/32/34/36
 
 It may be hard to understand why TRC_DATA[0] is not together with other TRC_DATA[?] signals and why pins #30/32/34 have specific fixed values.
 
