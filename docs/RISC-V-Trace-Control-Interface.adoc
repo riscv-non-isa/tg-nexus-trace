@@ -4,13 +4,13 @@
 
 * Table of Contents is not up to date (needs manual actions or learn how to do it automatically)
 
-* Settle on proposed idle byte (0xFF) with E-Trace group
-
 * Settle on proposed instruction and data controls with E-Trace group
+
+* Settle on proposed idle byte (0xFF) with E-Trace group
 
 * Provide example scripts/pseudo-code to discover/enable/disable trace
 
-* Simplify funnel control chapter (as simple reference/extension of teControl register)
+* Redo funnel control chapter (as variant of teControl register) and elaborate a bit on multi-core system (two TEs, funnel and PIB) to illustrate concept.
 
 = History (newest on top)
 
