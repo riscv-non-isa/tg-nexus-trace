@@ -8,7 +8,7 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 = History (newest on top)
 
-2021/12/13: *Version 0.0.0-Stable*  (compatible with original SiFive proposal). Based on Version 1.0.0-Stable document.
+2021/12/13: *Version 0.1.0-Stable*  (compatible with original SiFive proposal). Based on Version 1.0.0-Stable document.
 
 2021/6/15: *Version 0* ready for review by the group
 
