@@ -27,29 +27,9 @@ Same file in ADOC format is here: [TG-RISC-V-Nexus-Trace.adoc](./docs/initial/RI
 
 - The [Nexus IEEE-ISTO-5001 Standard (2012-v3.0.1)](http://nexus5001.org/wp-content/uploads/2018/05/IEEE-ISTO-5001-2012-v3.0.1-Nexus-Standard.pdf) PDF file.
 
-### Documentation generator (this section was copied as-is from V-extension page)
+### Documentation generator
 
-Requirements
-
-`node v6+`
-
-**Linux**: install using [nvm](https://github.com/creationix/nvm)
-
-**OSX**: `brew install node`
-
-**Windows**: [nodejs.org](https://nodejs.org/en/download/)
-
-Install documentation generator
-
-`npm i`
-
-Build HTML/PDF documents
-
-`npm run build`
-
-Resulted files
-
-`public/*`
+PDF version of specification should be generated using Actions menu. See below for more details.
 
 ### Dependencies
 The PDF built in this project uses AsciiDoctor (Ruby). For more information
