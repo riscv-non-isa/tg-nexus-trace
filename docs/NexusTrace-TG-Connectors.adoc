@@ -35,7 +35,7 @@ As you can see smallest one with reasonable trace has 50 pins.
 ** Based on MIPI 20-pin connector (MIPI does not provide that exact pinout) - this is for medium-performance trace (4-bit, 100 + MHz double edge captures, max trace bandwidth 800Mbps).
 ** Based on Mictor 38-pin connector (also defined by MIPI) - this is for high-performance trace (16-bit, up to 400MHz double edge, max trace bandwidth 12.8Gbps).
 
-* In july 2021 MIPI Alliance released White Paper which updates recommendations for debug and trace connectors. This specification is slight extension of connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations]. Extensions are as follows:
+* In july 2021 MIPI Alliance released White Paper which updated recommendations for debug and trace connectors. This specification is slight extension of connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations White Paper]. Extensions are as follows:
 ** Clarifying dual voltage debug and trace via Mictor 38 connector (re-defining obsolete pin #14).
 ** Defining MIPI20 pins #11 and #13 as optional TgtPwr pins (to supply 5V to evaluation target board).
 ** Allowing MIPI20 TRC_DATA[2] and TRC_DATA[3] to be optionally used as TRIGIN/TRIGOUT pins.
@@ -74,7 +74,7 @@ NOTE: Smaller MIPI10 version of this connector may still provide SerialTrace (as
 |Pin# | Pin Name	        |Explanation
 | 1 | VREF	                |Reference voltage for all other pin and signals (same for debug and trace).
 | 2 | TMS/TMSC	                |JTAG TMS signal or cJTAG TMSC.
-| 4 | TCK/TCKC	                |JTAG TCK signal or cJTAG TMSC.
+| 4 | TCK/TCKC	                |JTAG TCK signal or cJTAG TCKC.
 | 6 | TDO/SerialTrace	        |Either TDO or serial trace (available in case cJTAG is used).
 | 7 | GND or KEY	        |May be removed pin (to prevent wrong insertion for non-shrouded connectors and cable with plug in pin#7). In case pin is not removed, it should be GND on target side.
 | 8 | TDI	                |JTAG TDI signal
