@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  December 13, 2021
-:revnumber: 1.0.0
+:revdate:  May 10, 2022
+:revnumber: 0.9.1
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,12 +47,18 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
+2022/5/10: Version 0.9.1-Stable (control bits are compatible with E-Trace 2.0 specification)
+
 2021/12/13: Version 1.0.0-Stable (control bits are compatible with E-Trace 1.1.3-Frozen specification)
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
 [preface]
-== History (newest on top)
+== History and status
+
+*STATUS:* After approval by the group to be changed from Stable to Frozen. 
+
+2022/5/10: Creation of PDF and adjustments of table columns widths. Referenced "Efficient Trace for RISC-V Version 2.0" 
 
 2021/12/13: *Version 1.0.0-Stable* (candidate for Frozen - compatible with E-Trace 1.1.3-Frozen)
 
@@ -66,7 +72,7 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 == Introduction
 
-This document presents a control interface for the Trace Encoder described in the _RISC-V Processor Trace_ Specification Version 1.1.3-Frozen and for the RISC-V Nexus Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
+This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V Nexus Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
 Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system is set up and controlled using a register-based interface. Core execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each core has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to a single destination.
 
@@ -145,7 +151,7 @@ The 4K block occupied by a Trace Encoder or Trace Funnel is divided into eight s
 
 Registers in the 4K range that are not implemented read as 0 and ignore writes.
 
-[cols=",,,,",options="header",]
+[cols="10%,18%,18%,14%,~",options="header",]
 |===
 |*Address Offset* |*Trace Encoder* |*Trace Funnel* |*Compliance* |*Description*
 |0x000 |teControl |tfControl |Required |Trace Encoder/Funnel control register
@@ -231,7 +237,7 @@ Many features of the Trace Encoder are optional. In most cases, optional feature
 
 *Register: 0x000 teControl: Trace Encoder Control Register (Required)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |teActive |Master enable for given TE. 0 resets the TE and it may be powered down or clocks may be gated off. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. When teActive=0, all other TE registers may not be accessible. |RW |0
@@ -331,7 +337,7 @@ ____
 
 *Register: 0x004 teImpl: Trace Encoder Implementation Register (Required)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |teVersion |TE Version. See 'Control Interface Versions' chapter above.|R |SD
@@ -364,7 +370,7 @@ ____
 
 *Register: 0x008 teInstFeatures: Trace Instruction Features Register (ver=1+)*
 
-[cols=",,,,",options="header",]
+[cols="10%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 
@@ -385,7 +391,7 @@ ____
 
 *Register: 0x00C teDataControl: Data Trace Control Register (for encoders supporting data trace)*
 
-[cols=",,,,",options="header",]
+[cols="10%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 
@@ -403,7 +409,7 @@ ____
 |31-19|Reserved for more data trace features|Bit-mask of allowed/enabled data trace features.|WARL|SD
 |===
 
-== Trace RAM Sink Control Interface =
+== Trace RAM Sink Control Interface
 
 *Register: 0x010 teRamBase: Trace Encoder Ram Sink Base Register (Optional)*
 
@@ -413,7 +419,7 @@ NOTE: FUTURE *(ver=1+)*: As it may be desired to have RAM trace bigger than 4GB 
 
 NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clearing ...) RAM access errors (especially important for System Bus). Maybe we should have a bit in 'WP' register (where we have 'teWrap' already) as this register must be read by decoder anyway.
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
@@ -422,7 +428,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 
 *Register: 0x014 teRamBaseHigh: Trace Encoder Ram Sink Base High Bits Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |M-0 |teRamBaseHigh |High order bits (>=32) of address of trace sink circular buffer. This register may not be present if no connected sinks require more than 32 address bits. |WARL |Undef
@@ -430,7 +436,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 
 *Register: 0x018 teRamLimit: Trace Encoder Sink Limit Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
@@ -439,7 +445,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 
 *Register: 0x01C teRamWP: Trace Encoder Sink Write Pointer Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |teWrap |Set to 1 by hardware when teRamWP wraps. It is only set to 0 if teRamWp is written|WARL |0
@@ -449,7 +455,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 
 *Register: 0x020 teRamRP: Trace Encoder SRAM Sink Access Pointer Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |N-2 |teRamRP |Address in trace circular buffer visible through teRamData. Auto-increments following an access to teRamData. Required for SRAM sink and optional for all other sink types. |WARL |0
@@ -457,7 +463,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 
 *Register: 0x024 teRamData: Trace Encoder SRAM Sink Data Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |teRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
@@ -482,7 +488,7 @@ In a single-hart system with an Internal Timestamp counter, it may be desirable 
 
 *Register: 0x040 tsControl: Timestamp Control Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |tsActive |Master reset/enable for timestamp unit |RW |0
@@ -512,7 +518,7 @@ Type of Timestamp unit
 
 *Register: 0x044 tsLower: Timestamp Lower Bits (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |tsLower |Lower 32 bits of timestamp counter. |R |0
@@ -520,7 +526,7 @@ Type of Timestamp unit
 
 *Register: 0x048 tsUpper: Timestamp Upper Bits (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |tsUpper |Upper bits of timestamp counter, zero-extended. |R |0
@@ -536,7 +542,7 @@ External Trigger Outputs may also be present. A trigger out may be generated by 
 
 *Register: 0x050 xTrigInControl: External Trigger Input Control Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |xTrigInAction0 a|
@@ -560,7 +566,7 @@ Select action to perform when external trigger input 0 fires. If external trigge
 
 *Register: 0x054 xTrigOutControl: External Trigger Output Control Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |xTrigOutEvent0 a|
@@ -584,7 +590,7 @@ Watchpoints are signals from the core that a breakpoint was hit, but the action 
 
 If there are vendor-specific features that require control, the wpControl register is used. 
 
-[cols=",",options="header",]
+[cols="20%,~",options="header",]
 |===
 |*wpAction* |*Effect*
 |0 |Breakpoint exception
@@ -599,10 +605,10 @@ If there are vendor-specific features that require control, the wpControl regist
 
 *Register: 0x058 wpControl: Core Watchpoint Control Register*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-1 |-- |Vendor-specific watchpoint setup |WARL |0
+|31-0 |-- |Vendor-specific watchpoint setup |WARL |0
 |===
 
 === Watchpoint Precedence
@@ -621,7 +627,7 @@ NOTE: FUTURE: Funnel should be extended to see what TE[s] or other funnels are c
 
 *Register: 0x000 tfControl: Trace Funnel Control Register*
 
-[cols=",,",options="header",]
+[cols="10%,~,~",options="header",]
 |===
 |*Bit* |*Field* |*Field in 'teControl'*
 |0 |tfActive |teActive
@@ -633,7 +639,7 @@ NOTE: FUTURE: Funnel should be extended to see what TE[s] or other funnels are c
 
 *Register: 0x004 tfImpl: Trace Funnel Implementation Register*
 
-[cols=",,",options="header",]
+[cols="10%,~,~",options="header",]
 |===
 |*Bit* |*Field* |*Corresponding 'teImpl' field*
 |3-0 |tfVersion |teVersion
@@ -655,7 +661,7 @@ The modes and behavior described here are intended to be compatible with trace p
 
 *Register: 0xF00 pibControl: PIB Sink Control Register (Optional)*
 
-[cols=",,,,",options="header",]
+[cols="10%,16%,~,8%,16%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |pibActive |Master enable/reset for PIB Sink block |RW |0
@@ -705,10 +711,11 @@ NOTE: Above rules allow receiving probe to skip idle messages.
 
 In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (pibContro.pibDivider and pibControl.pibRefCenter). The suggested patterns for each mode are listed here. 
 
-[cols=",,",options="header",]
+[cols="24%,~,~",options="header",]
 |===
 |*Mode* |*Calibration Bytes* |*Wire Sequence*
-|UART, Manchester, 1-bit parallel |AA 55 00 FF |alternating 1/0, then all 0, then all 1
+|UART, Manchester |AA 55 00 FF |alternating 1/0, then all 0, then all 1
+|1-bit parallel |AA 55 00 FF |alternating 1/0, then all 0, then all 1
 |2-bit parallel |66 66 CC 33 |2, 1, 2, 1, 2, 1, 2, 1, 0, 3, 0, 3, 3, 0, 3, 0
 |4-bit parallel |5A 5A F0 0F |A, 5, A, 5, 0, F, F, 0
 |8-bit parallel |AA 55 00 FF |AA, 55, 00, FF
@@ -758,7 +765,7 @@ Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace pr
 
 *Register: 0xE00 atbControl: ATB Sink Control Register*
 
-[cols=",,,,",options="header",]
+[cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |atbActive |Master enable/reset for ATB Sink block |RW |0
@@ -826,12 +833,6 @@ Decoding trace
 * Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from file containg it (binary/hex/srec/ELF)
 * Trace can be read and decoded while trace is captured
 * There is no guarantee that last trace packet is completed until trace is properly flushed and disabled
-
-== Example Scripts
-
-[red big yellow-background]#TODO# Provide example script (in Python?) to illustrate discovery.
-
-[red big yellow-background]#TODO# Provide example script (in Python?) to show enable/disable.
 
 == Original Version Disclaimer
 
