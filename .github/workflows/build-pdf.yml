@@ -1,7 +1,7 @@
 # This workflow installs dependencies for PDF generation, generates the PDF,
 # and uploads the PDF as an artifact.
 
-name: Build Document PDF
+name: Build ALL PDFs (FUTURE)
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
     - name: Generate PDF
       run: |
         PATH=${PATH}:${BUNDLE_BIN}:$(npm bin):$(pwd) \
-        make -C docs/
+        make -C docs/ buildall
     - name: Archive PDF result
       uses: actions/upload-artifact@v2
       with:
