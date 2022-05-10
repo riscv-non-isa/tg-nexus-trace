@@ -1,0 +1,57 @@
+[[header]]
+:company: RISC-V
+:revdate:  May 10, 2022
+:revnumber: 0.9.1
+:revremark: This document is in Stable state. Assume it may change.
+:url-riscv: http://riscv.org
+:doctype: book
+:preface-title: Preamble
+:colophon:
+:appendix-caption: Appendix
+:title-logo-image: image:docs-resources/images/risc-v_logo.svg[pdfwidth=3.25in,align=center]
+// Settings:
+:experimental:
+:reproducible:
+:WaveDromEditorApp: wavedrom-cli
+:icons: font
+:lang: en
+:listing-caption: Listing
+:sectnums:
+:sectnumlevels: 5
+:toclevels: 5
+:toc: left
+:source-highlighter: pygments
+ifdef::backend-pdf[]
+:source-highlighter: coderay
+endif::[]
+:data-uri:
+:hide-uri-scheme:
+:stem: latexmath
+:footnote:
+:xrefstyle: short 
+
+= Specification of RISC-V Trace Connectors
+
+// table of contents
+toc::[]
+
+[NOTE]
+.Copyright and licensure:
+====
+This work is licensed under a
+link:http://creativecommons.org/licenses/by/4.0/[Creative Commons Attribution 4.0 International License].
+
+This work is Copyright 2022 by RISC-V International.
+==== 
+
+[preface]
+== History and status
+
+*STATUS:* After approval be the group to be changed from Stable to Frozen
+
+2022/5/10:  v0.9.1: Created separated PDF (from original ADOC) and adjusted width of all table columns
+
+2022/4/11: v0.9.0: Consolidated all notes discussed by emails and adjusted for MIPI Alliance White Paper
+
+include::NexusTrace-TG-Connectors.adoc[]
+
