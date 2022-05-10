@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
 :revdate:  May 10, 2022
-:revnumber: 0.9.1
+:revnumber: 0.9.2
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,9 +47,9 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
-2022/5/10: Version 0.9.1-Stable (control bits are compatible with E-Trace 2.0 specification)
+2022/5/10: Version 0.9.2-Stable (control bits compatible with E-Trace 2.0 specification)
 
-2021/12/13: Version 1.0.0-Stable (control bits are compatible with E-Trace 1.1.3-Frozen specification)
+2021/12/13: Control bits are compatible with E-Trace 1.1.3-Frozen specification
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
@@ -60,11 +60,7 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 2022/5/10: Creation of PDF and adjustments of table columns widths. Referenced "Efficient Trace for RISC-V Version 2.0" 
 
-2021/12/13: *Version 1.0.0-Stable* (candidate for Frozen - compatible with E-Trace 1.1.3-Frozen)
-
-2021/6/15: *Version 0* ready for review by the group
-
-2021/5/18: Targetting release of "Version 0" (Version 1 still present)
+2021/12/13: Candidate for Frozen - compatible with E-Trace 1.1.3-Frozen
 
 2021/3/02: Changes toward control share with E-Trace specifications
 
@@ -112,34 +108,6 @@ There is typically one Trace Encoder per core. A core with multiple harts (i.e.,
 
 The Trace Funnel is a variant of the Trace Encoder and shares many of the same control registers. Each Trace Encoder and the Trace Funnel has its own set of control registers in its own register block.
 
-=== Control Interface Versions
-
-Some fields in trace control interface are different depending on teImpl.teVersion field.
-
-NOTE: All fields/registers available in both versions are not marked. All fields/registers available in *Version 1* are always marked with *(ver=1+)* marker. Few fields available in *Version 0* only are always marked with *(ver=0)* marker.
-
-*Version 0:* Strictly compatible with original SiFive proposal and initial SiFive Nexus implementation.
-
-* Some registers/fields got renamed for clarity and uniformity
-
-*Version 1:* Adjustments and enhancements to trace encoder control (mainly in teControl register)
-
-* Clarified teInstMode and adding teInstFeatures register (no change in meaning)
-
-* Field teInstTrigEnable added (global enable/disable for instruction trace triggering)
-
-* Field teInstStallDelta added (allows debugger to know if core was ever stalled)
-
-* Fields teSyncMaxBTM and teSyncMaxInst replaced by more generic teSyncMode and teSyncMax
-
-* Added teInstFeatures register (for detailed control of instruction trace)
-
-* Added teDataControl register (to control data trace)
-
-* Added 16-bit parallel mode for PIB
-
-*Version 1* includes functionally complatible with E-Trace specification (PDF labelled 1.1.3-Frozen).
-
 === Register Map
 
 The 4K block occupied by a Trace Encoder or Trace Funnel is divided into eight sections of 256 bytes. Section 0 is required and is used for local control registers. Other sections are used for control registers of trace components that are conceptually separate, even if they are physically part of the Trace Encoder/Funnel. Examples of possible subcomponents are:
@@ -156,15 +124,15 @@ Registers in the 4K range that are not implemented read as 0 and ignore writes.
 |*Address Offset* |*Trace Encoder* |*Trace Funnel* |*Compliance* |*Description*
 |0x000 |teControl |tfControl |Required |Trace Encoder/Funnel control register
 |0x004 |teImpl |tfImpl |Required |Trace Encoder/Funnel implementation information
-|0x008 |teInstFeatures |-- |Optional *(ver=1+)*|Extra instruction trace encoder features
-|0x00C |teDataControl |-- |Optional *(ver=1+)*|Data trace control and features
+|0x008 |teInstFeatures |-- |Optional |Extra instruction trace encoder features
+|0x00C |teDataControl |-- |Optional |Data trace control and features
 |0x010 |teRamBase |teRamBase |Optional |Base address of circular trace buffer
 |0x014 |teRamBaseHigh |teRamBaseHigh |Optional |Bits N:32 of the circular buffer address
 |0x018 |teRamLimit |teRamLimit |Optional |End address of circular trace buffer
 |0x01C |teRamWP |teRamWP |Optional |Current write location for trace data in circular buffer
 |0x020 |teRamRP |teRamRP |Optional |Access pointer for trace readback
 |0x024 |teRamData |teRamData |Optional |Read/write access to trace memory
-|0x02C - 0x03F |-|-|Optional *(ver=1+)*|Reserved for more teRam... registers (64-bit)
+|0x02C - 0x03F |-|-|Optional |Reserved for more teRam... registers (64-bit)
 |0x040 |tsControl |-- |Optional |Timestamp control register
 |0x044 |tsLower |-- |Optional |Lower 32 bits of timestamp counter
 |0x048 |tsUpper |-- |Optional |Upper bits of timestamp counter
@@ -264,8 +232,8 @@ Main instruction trace generation mode
 
 |WARL |SD^(1)^
 |12-7 |-- |Vendor-specific controls |WARL |SD
-|11 *(ver=1+)* |teInstTrigEnable (only for teVersion=1 or newer) |Global enable/disable for instruction trace triggers|WARL |0
-|12 *(ver=1+)* |teInstStallDelta (only for teVersion=1 or newer) |Read as 1 if stall happened. Clears to 0 on reading.|R |0
+|11  |teInstTrigEnable |Global enable/disable for instruction trace triggers|WARL |0
+|12  |teInstStallDelta |Read as 1 if stall happened. Clears to 0 on reading.|R |0
 |13 |teInstStallEnable |
 0 = If TE cannot send a message, an overflow is generated when trace is restarted. 
 
@@ -278,9 +246,7 @@ Main instruction trace generation mode
 
 |WARL |SD
 
-|19-16 *(ver=0)*|teSyncMaxBTM (only for legacy teVersion=0)|Maximum number of trace messages between periodic Sync messages. A Sync emitted for another reason will reset this timer. Generate Sync after 2^(teSyncMaxBTM + 5) trace messages. |WARL |SD
-
-|17-16 *(ver=1+)*|teSyncMode (only for teVersion=1 or newer)|Select periodic synchronization mechanism. At least one non-zero mechanism must be implemented.
+|17-16 |teSyncMode |Select periodic synchronization mechanism. At least one non-zero mechanism must be implemented.
 
 0 = Off
 
@@ -290,11 +256,9 @@ Main instruction trace generation mode
 
 3 = Count instruction half-words (16-bit)|WARL |SD
 
-|19-18 *(ver=1+)*|Reserved (only for teVersion=1 or newer)|--|--|0
+|19-18 |Reserved |--|--|0
 
-|23-20 *(ver=0)*|teSyncMaxInst (only for teVersion=0)|Maximum instruction unit count between Sync messages. Generate Sync when count reaches 2^(teSyncMaxInst + 4) instruction units (halfwords). |WARL |SD
-
-|23-20 *(ver=1+)*|teSyncMax (only for teVersion=1 or newer)|The maximum interval (in units determined by teSyncMode) between synchronization messages/packets. Generate synchronization when count reaches 2^(teSyncMax + 4). If synchronization packet is generated from another reason internal counter should be reset.|WARL |SD
+|23-20 |teSyncMax |The maximum interval (in units determined by teSyncMode) between synchronization messages/packets. Generate synchronization when count reaches 2^(teSyncMax + 4). If synchronization packet is generated from another reason internal counter should be reset.|WARL |SD
 
 |26-24 |teFormat a|
 Trace recording format
@@ -340,7 +304,7 @@ ____
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |teVersion |TE Version. See 'Control Interface Versions' chapter above.|R |SD
+|3-0 |teVersion |TE Version (value 0 means legacy version - see 'Legacy Interface Version' chapter at the end)|R | 1
 
 |4 |hasSRAMSink |1 if this TE has an on-chip SRAM sink. Size of SRAM may be determined by writing all 1s to teRamWP, then reading the value back. |R |SD
 
@@ -368,23 +332,23 @@ ____
 
 |===
 
-*Register: 0x008 teInstFeatures: Trace Instruction Features Register (ver=1+)*
+*Register: 0x008 teInstFeatures: Trace Instruction Features Register*
 
 [cols="10%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 
-|0 *(ver=1+)*|teInstNoAddrDiff|Do not send differential addresses when set (always full address is sent)|WARL|0
+|0 |teInstNoAddrDiff|Do not send differential addresses when set (always full address is sent)|WARL|0
 
-|1 *(ver=1+)*|teInstNoExceptAddr|When set, do not send exception address, only exception cause in Exception packets|WARL|0
+|1 |teInstNoExceptAddr|When set, do not send exception address, only exception cause in Exception packets|WARL|0
 
-|2 *(ver=1+)*|teInstEnaSequentialJump|Treat sequentially inferrable jumps as un-inferable PC discontinuities when set.|WARL|0
+|2 |teInstEnaSequentialJump|Treat sequentially inferrable jumps as un-inferable PC discontinuities when set.|WARL|0
 
-|3 *(ver=1+)*|teInstEnaImplicitReturn|Treat returns as uninferable PC discon-tinuities when set.|WARL|0
+|3 |teInstEnaImplicitReturn|Treat returns as uninferable PC discon-tinuities when set.|WARL|0
 
-|4 *(ver=1+)*|teInstEnaBranchPrediction|Branch predictor enabled when set.|WARL|0
+|4 |teInstEnaBranchPrediction|Branch predictor enabled when set.|WARL|0
 
-|5 *(ver=1+)*|teInstEnaJumpTargetCache|Jump target cache enabled when set.|WARL|0
+|5 |teInstEnaJumpTargetCache|Jump target cache enabled when set.|WARL|0
 
 |===
 
@@ -395,17 +359,17 @@ ____
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 
-|0 *(ver=1+)*|teDataImplemented|Read as 1 if data trace is implemented.|R|SD
-|1 *(ver=1+)*|teDataEnable|Main enable for data trace.|WARL|SD
-|2 *(ver=1+)*|teDataTracing |1=Data trace is being generated. Written from tool or controlled by triggers. When trDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL |SD
-|3 *(ver=1+)* |teDataTrigEnable|Global enable/disable for data trace triggers|WARL |0
-|4 *(ver=1+)*|teDataStallDelta|Set to 1 if data trace caused stall since last read. It is clear on read.|R|0
-|5 *(ver=1+)*|teDataStallEnable|Stall execution if data trace message cannot be generated.|WARL|0
-|6 *(ver=1+)*|teDataDropDelta|Set to 1 if data trace was dropeed since last read. It is clear on read.|R|0
-|7 *(ver=1+)*|teDataDropEnable|Allow dropping data trace to avoid instruction trace overflows. Seting this bit will not guarantee that instuction trace overflows will not happen.|WARL|0
+|0 |teDataImplemented|Read as 1 if data trace is implemented.|R|SD
+|1 |teDataEnable|Main enable for data trace.|WARL|SD
+|2 |teDataTracing |1=Data trace is being generated. Written from tool or controlled by triggers. When trDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL |SD
+|3 |teDataTrigEnable|Global enable/disable for data trace triggers|WARL |0
+|4 |teDataStallDelta|Set to 1 if data trace caused stall since last read. It is clear on read.|R|0
+|5 |teDataStallEnable|Stall execution if data trace message cannot be generated.|WARL|0
+|6 |teDataDropDelta|Set to 1 if data trace was dropeed since last read. It is clear on read.|R|0
+|7 |teDataDropEnable|Allow dropping data trace to avoid instruction trace overflows. Seting this bit will not guarantee that instuction trace overflows will not happen.|WARL|0
 |15-8||Reserved for additional data trace control/status bits.|--|--
-|16 *(ver=1+)*|teDataNoValue|Omit data values from data trace packets when set.|WARL|SD
-|18-17 *(ver=1+)*|teDataAddressMode|'00'=Omit data address from data trace packets. '01'=Compress data addresses in XOR mode (only LSB bits changed), '10'=Compress data addresses in differental mode (+-N offset),'11'-reserved or automatic mode.|WARL|SD
+|16 |teDataNoValue|Omit data values from data trace packets when set.|WARL|SD
+|18-17 |teDataAddressMode|'00'=Omit data address from data trace packets. '01'=Compress data addresses in XOR mode (only LSB bits changed), '10'=Compress data addresses in differental mode (+-N offset),'11'-reserved or automatic mode.|WARL|SD
 |31-19|Reserved for more data trace features|Bit-mask of allowed/enabled data trace features.|WARL|SD
 |===
 
@@ -415,9 +379,9 @@ ____
 
 In table below value 'N' define number of address bits on bus where trace memory is connected. For busses with address larger than 32-bit, N=32 and corresponding 'High' register define MSB part of larger address. 
 
-NOTE: FUTURE *(ver=1+)*: As it may be desired to have RAM trace bigger than 4GB in size, all registers must have high-counterparts. It may be also possible to have just one 'high32' register and use it as 'port' to access one of N physical registers (both read and write). Write 'base+high32' will set 'baseHigh', write 'wp+high' may set 'wpHigh'. As this is very rare use cases (4GB trace is really, really big!), maybe this is good option? To be discussed with Greg (he proposed it).
+NOTE: FUTURE: As it may be desired to have RAM trace bigger than 4GB in size, all registers must have high-counterparts. It may be also possible to have just one 'high32' register and use it as 'port' to access one of N physical registers (both read and write). Write 'base+high32' will set 'baseHigh', write 'wp+high' may set 'wpHigh'. As this is very rare use cases (4GB trace is really, really big!), maybe this is good option? To be discussed with Greg (he proposed it).
 
-NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clearing ...) RAM access errors (especially important for System Bus). Maybe we should have a bit in 'WP' register (where we have 'teWrap' already) as this register must be read by decoder anyway.
+NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) RAM access errors (especially important for System Bus). Maybe we should have a bit in 'WP' register (where we have 'teWrap' already) as this register must be read by decoder anyway.
 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
@@ -469,7 +433,7 @@ NOTE: FUTURE *(ver=1+)*: Another extension should deal with signalling (and clea
 |31-0 |teRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
 
-NOTE: FUTURE *(ver=1+)*: Add 64-bit extensions as 32 MSB bits of size (reading 3 times is needed to be certain about 64-bit value). In order to relieve trace software to read 3 times always, there should be a field/bit saying if RAM size over 32-bit is implemented. It may be also WARL field, which must be set to '1' in order to allow 64-bit size. In most cases, it will never be settable (as 4GB or RAM for trace is rare requirement)
+NOTE: FUTURE: Add 64-bit extensions as 32 MSB bits of size (reading 3 times is needed to be certain about 64-bit value). In order to relieve trace software to read 3 times always, there should be a field/bit saying if RAM size over 32-bit is implemented. It may be also WARL field, which must be set to '1' in order to allow 64-bit size. In most cases, it will never be settable (as 4GB or RAM for trace is rare requirement)
 
 == Timestamp Unit
 
@@ -689,12 +653,12 @@ Software can determine what modes are available by attempting to write each mode
 |tref + 2 tdata |9 |0 |1
 |tref + 4 tdata |10 |0 |1
 |tref + 8 tdata |11 |0 |1
-|tref + 16 tdata |12 *(ver=1+)*|0 |1
+|tref + 16 tdata |12 |0 |1
 |tref + 1 tdata |8 |1 |1/2
 |tref + 2 tdata |9 |1 |1/2
 |tref + 4 tdata |10 |1 |1/2
 |tref + 8 tdata |11 |1 |1/2
-|tref + 16 tdata |12 *(ver=1+)*|1 |1/2
+|tref + 16 tdata |12 |1 |1/2
 
 |===
 
@@ -719,7 +683,7 @@ In optional calibration mode, the PIB transmits a repeating pattern. Probes can 
 |2-bit parallel |66 66 CC 33 |2, 1, 2, 1, 2, 1, 2, 1, 0, 3, 0, 3, 3, 0, 3, 0
 |4-bit parallel |5A 5A F0 0F |A, 5, A, 5, 0, F, F, 0
 |8-bit parallel |AA 55 00 FF |AA, 55, 00, FF
-|16-bit parallel *(ver=1)*|AA AA 55 55 00 00 FF FF|AAAA, 5555, 0000, FFFF
+|16-bit parallel |AA AA 55 55 00 00 FF FF|AAAA, 5555, 0000, FFFF
 |===
 
 === SWT Manchester Protocol
@@ -833,6 +797,26 @@ Decoding trace
 * Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from file containg it (binary/hex/srec/ELF)
 * Trace can be read and decoded while trace is captured
 * There is no guarantee that last trace packet is completed until trace is properly flushed and disabled
+
+== Legacy Interface Version
+
+Value of 'teVersion/tfVersion' as 0 means this is original version of this interface.
+
+As there are some implementations with teVersion = 0 it is important to provide changes, so tools may work with it.
+
+* Some registers/fields got renamed for clarity and uniformity
+
+* Field teInstTrigEnable was not present, so global enable/disable for instruction trace triggers was not possible
+
+* Field teInstStallDelta was not present, so debugger may not know if core was ever stalled
+
+* Fields teSyncMode and teSyncMax were defined as 'teSyncMaxBTM and teSyncMaxInst' 
+
+* Register teInstFeatures was not present (was reading as 0)
+
+* Register teDataControl register was not present (as version 0 did not support data trace)
+
+* 16-bit parallel mode for PIB was not defined (these implementations were using max 8-bit of parallel trace)
 
 == Original Version Disclaimer
 
