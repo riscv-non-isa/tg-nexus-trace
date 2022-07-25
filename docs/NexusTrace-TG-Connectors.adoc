@@ -1,13 +1,13 @@
 == Rationale
-* Nexus standard does NOT define any small connectors with focus on trace as Nexus define message-based debug interface and it require more pins than JTAG. Namely:
+Nexus standard does NOT define any small connectors with focus on trace as Nexus define message-based debug interface and it require more pins than JTAG. Namely:
 
-** S26x 1-104068-2,	Low performance (1 MDO signal).
+* S26x 1-104068-2,	Low performance (1 MDO signal).
 
-** S40x 1-104549-6,	Low performance (6 MDO signals - labelled as “not recommended”).
+* S40x 1-104549-6,	Low performance (6 MDO signals - labelled as “not recommended”).
 
-** S50x	104549-7,	Low performance (8 MDO signals).
+* S50x	104549-7,	Low performance (8 MDO signals).
 
-As you can see smallest one with reasonable trace has 50 pins.
+As smallest connector with reasonable trace bandwidth has 50 pins it was decided that connectors defined by MIPI and Arm will be used for RISC-V trace.
 
 * There is a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores. Arm defines two standard connectors for trace:
 
@@ -19,13 +19,15 @@ As you can see smallest one with reasonable trace has 50 pins.
 
 This specification is slight extension of connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations]. Extensions are as follows:
 
-** Clarifying dual voltage debug and trace via Mictor 38 connector (re-defining obsolete pin #14).
+* Clarifying dual voltage debug and trace via Mictor 38 connector (re-defining obsolete pin #14).
 
-** Defining MIPI20 pins #11 and #13 as optional TgtPwr pins (to supply 5V to evaluation target board).
+* Defining MIPI20 pins #11 and #13 as optional TgtPwr pins (to supply 5V to evaluation target board).
 
-** Allowing MIPI20 TRC_DATA[2] and TRC_DATA[3] to be optionally used as TRIGIN/TRIGOUT pins.
+* Allowing MIPI20 TRC_DATA[2] and TRC_DATA[3] to be optionally used as TRIGIN/TRIGOUT pins.
 
-** Defining some signal as (optional) serial trace and application UART.
+* Defining some signal as (optional) serial trace and application UART.
+
+It is expected that MIPI Alliance will adopt these extensions, but this document will still provided. 
 
 == MIPI20 Connector
 This connector is an extension of MIPI10/MIPI20 connector as defined by RISC-V Debug Specification (version  
@@ -59,7 +61,7 @@ NOTE: Smaller MIPI10 version of this connector may still provide SerialTrace (as
 |Pin# | Pin Name	        |Explanation
 | 1 | VREF	                |Reference voltage for all other pin and signals (same for debug and trace).
 | 2 | TMS/TMSC	                |JTAG TMS signal or cJTAG TMSC.
-| 4 | TCK/TCKC	                |JTAG TCK signal or cJTAG TMSC.
+| 4 | TCK/TCKC	                |JTAG TCK signal or cJTAG TCKC.
 | 6 | TDO/SerialTrace	        |Either TDO or serial trace (available in case cJTAG is used).
 | 7 | GND or KEY	        |May be removed pin (to prevent wrong insertion for non-shrouded connectors and cable with plug in pin#7). In case pin is not removed, it should be GND on target side.
 | 8 | TDI	                |JTAG TDI signal
@@ -119,7 +121,7 @@ Mictor-38 connector provides also an option to have different reference voltages
 |TRIGIN      |Debug| 7 | 8 |Debug| TRIGOUT
 |nRESET      |Debug| 9 | 10|Trace| EXTTRIG
 |TDO         |Debug|11 | 12|Trace| VREF_TRACE
-|RTCK        |Debug|13 | 14|Debug| VREF_DEBUG
+|RTCK/GND    |Debug|13 | 14|Debug| VREF_DEBUG
 |TCK/TCKC    |Debug|15 | 16|Trace| TRC_DATA[7]
 |TMS/TMSC    |Debug|17 | 18|Trace| TRC_DATA[6]
 |TDI         |Debug|19 | 20|Trace| TRC_DATA[5]
@@ -148,7 +150,7 @@ All debug signals share alternate functions as defined for Mictor connector (see
 | 7   | TRIGIN	    |Same as MIPI20 #18 alternative function but not shared with trace.
 | 8   | TRIGOUT	    |Same as MIPI20 #20 alternative function but not shared with trace.
 | 10  | EXTTRIG	    |External trace trigger from target (some trace probes may use it).
-| 13  | RTCK	    |Return trace clock (not applicable to RISC-V, may not be supported by all probes).
+| 13  | RTCK/GND	  |Return test clock (supported by some trace probes from legacy reasons). For RISC-V is is recommented to connect this pin to GND for better signal quality. It is also possile to use this 
 | 21  | nTRST       |Same as MIPI20 #16 alternative function but not shared with trace.
 | 36  | EXT/TRC_CTL |Not applicable (should be 0). May be also used to denote valid/idle state, but it may not be supported by all trace probes.
 |=================================================================================
