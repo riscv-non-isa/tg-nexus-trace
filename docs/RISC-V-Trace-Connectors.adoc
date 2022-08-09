@@ -1,6 +1,6 @@
 [[header]]
 :company: RISC-V
-:revdate:  July 25, 2022
+:revdate:  Aug 9, 2022
 :revnumber: 0.9.3
 :revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
