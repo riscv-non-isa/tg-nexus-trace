@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  May 10, 2022
-:revnumber: 0.9.2
+:revdate:  Aug 9, 2022
+:revnumber: 0.9.3
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,16 +47,22 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
-2022/5/10: Version 0.9.2-Stable (control bits compatible with E-Trace 2.0 specification)
-
-2021/12/13: Control bits are compatible with E-Trace 1.1.3-Frozen specification
+2022/8/9: Version 0.9.3-Stable
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
 [preface]
 == History and status
 
-*STATUS:* After approval by the group to be changed from Stable to Frozen. 
+NOTE: After approval by the group and status change from Stable to Frozen this chapter will be removed.
+
+2022/8/9: Version 0.9.3-Stable. Key changes (after discussions/comments)
+
+* Added dedicated Trace Filter block at offset 0x300
+* Changed 'teTracing' into 'teInstTracing'
+* Removed 'write 0 to clear'
+* Adding 'teControl.teContext'
+* Clarification of disable and flush
 
 2022/5/10: Creation of PDF and adjustments of table columns widths. Referenced "Efficient Trace for RISC-V Version 2.0" 
 
@@ -68,11 +74,11 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 == Introduction
 
-This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V Nexus Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
+This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
-Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system is set up and controlled using a register-based interface. Core execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each core has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to a single destination.
+Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Core execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each core has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to a single destination.
 
-This specification does not define the hardware interconnection between the core and Trace Encoder, as this is defined in the _RISC-V Processor Trace Specification_. This document also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink since it is expected that these components are all part of a system provided by a single vendor.
+This specification does not define the hardware interconnection between the core and Trace Encoder, as this is defined in the _Efficient Trace for RISC-V Specification Version 2.0_. This document also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink.
 
 This specification allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support branch trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
 
@@ -96,17 +102,17 @@ This specification allows a wide range of implementations including low-gate-cou
 
 == Control Interface
 
-The Trace Encoder control interface consists of a set of 32-bit registers occupying up to a 4K-byte space. The control interface is used to set up and control a trace session, retrieve collected trace history, and control any trace system components embedded in or directly connected to a Trace Encoder.
+The Trace Encoder control interface consists of a set of 32-bit registers occupying up to a 4K-byte space. The control interface can be used to set up and control a trace session, retrieve collected trace history, and control any trace system components embedded in or directly connected to a Trace Encoder.
 
-The Trace Encoder control registers would typically be accessed by a debugger through the debug module. The Trace Encoder may or may not also be accessible through loads and stores performed by one or more harts in the system. Typically, the Trace Encoder connects to the system bus as a peripheral device, but it may use a dedicated bus connection from the Debug Module, or could attach to the DMI bus defined in the RISC-V Debug Specification.
+The Trace Encoder control registers will typically be accessed by a debugger through the debug module. The Trace Encoder may also be accessible through loads and stores performed by one or more harts in the system. Typically, the Trace Encoder connects to the system bus as a peripheral device, but it may use a dedicated bus connection from the Debug Module, or could attach to the DMI bus defined in the RISC-V Debug Specification.
 
-Additional control path(s) may also be implemented, such as a dedicated debug bus or message-passing network.
+Additional control path(s) may also be implemented, such as a dedicated debug bus or message-passing network. It is recommended to allow access to trace registers while core is running (using SBA access for example) as otherwise debugger will not be able to monitor trace status.
 
 Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace session independently from an external debugger. A hart may act as an internal debugger or may act in cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
 
 There is typically one Trace Encoder per core. A core with multiple harts (i.e., multi-threaded) will generate messages with a field indicating which hart is responsible for that message. Cores capable of retiring more than one instruction per cycle are typically accommodated with a single Trace Encoder, though this is not required.
 
-The Trace Funnel is a variant of the Trace Encoder and shares many of the same control registers. Each Trace Encoder and the Trace Funnel has its own set of control registers in its own register block.
+The Trace Funnel allows to combine several trace sources into one trace stream. Each Trace Encoder and the Trace Funnel has its own set of control registers in its own register block.
 
 === Register Map
 
@@ -139,7 +145,8 @@ Registers in the 4K range that are not implemented read as 0 and ignore writes.
 |0x050 |xTrigInControl |-- |Optional |External Trigger Input control register
 |0x054 |xTrigOutControl |-- |Optional |External Trigger Output control register
 |0x058 |wpControl |-- |Optional |Core watchpoint control register
-|0x060 - 0x3FF |-- |-- |Optional |Reserved for more registers
+|0x060 - 0x2FF |-- |-- |Optional |Reserved for more registers
+|0x300 - 0x3FF | | |Optional |Control registers for Trace Filter block
 |0x400 - 0x7FF | | |Optional |Blocks reserved for Vendor-specific Trace Components
 |0x800 - 0xDFF | | |Optional |Blocks reserved for Future Trace Components
 |0xE00 - 0xEFF |atbSink |atbSink |Optional |Control registers for ATB trace sink, if attached to this TE/TF
@@ -208,11 +215,12 @@ Many features of the Trace Encoder are optional. In most cases, optional feature
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |teActive |Master enable for given TE. 0 resets the TE and it may be powered down or clocks may be gated off. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. When teActive=0, all other TE registers may not be accessible. |RW |0
+|0 |teActive |Primary enable for the TE. When 0, the TE may have clocks gated off or be powered
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 
-|1 |teEnable |1=TE enabled. Allows teTracing to turn all tracing on and off. Setting teEnable to 0 flushes any queued trace data to the designated sink. This bit can be set to 1 only by direct write to it.|RW |0
+|1 |teEnable |1=TE enabled. Allows teInstTracing to turn all tracing on and off. Setting teEnable to 0 flushes any queued trace data to the designated sink. This bit can be set to 1 only by direct write to it.|RW |0
 
-|2 |teTracing |1=Trace is being generated. Written from tool or controlled by triggers. When teTracing=1, trace data may be subject to additional filtering in some implementations (additional teInstruction modes or data tracing). |RW |0
+|2 |teInstTracing |1=Instruction trace is being generated. Written from tool or controlled by triggers. When teInstTracing=1, instruction trace data may be subject to additional filtering in some implementations (additional teInsMode settings). |RW |0
 
 |3 |teEmpty |Reads as 1 when all generated trace has been emitted. |R |1
 |6-4 |teInstMode |
@@ -231,16 +239,19 @@ Main instruction trace generation mode
 7 = Generate optimized Instruction Trace (teInstFeatures register if present define instruction trace features and optimizations).
 
 |WARL |SD^(1)^
-|12-7 |-- |Vendor-specific controls |WARL |SD
-|11  |teInstTrigEnable |Global enable/disable for instruction trace triggers|WARL |0
-|12  |teInstStallDelta |Read as 1 if stall happened. Clears to 0 on reading.|R |0
-|13 |teInstStallEnable |
+|8-7 |-- |Reserved for futue modes |WARL |SD
+|9 |teContext |Send Ownership messages to indicate processor context when scontext, mcontext, v, or prv changes and full context information immediately after all Sync messages. |WARL |SD
+|10 |-- |Reserved |WARL |SD
+|11  |teInstTrigEn |When 1, allows teInstTracing to be set or cleared by trace-on
+and trace-off Debug module triggers respectively|WARL |0
+|12  |teInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a core stall. Clears to 0 at TE reset or when trace is enabled (teEnable set to 1).|R |0
+|13 |teInstStallEn |
 0 = If TE cannot send a message, an overflow is generated when trace is restarted. 
 
 1 = If TE cannot send a message, the core is stalled until it can.
 
 |WARL |SD
-|14 |teStopOnWrap |Disable trace (teEnable -> 0) when circular buffer fills for the first time. |WARL |SD
+|14 |teStopOnWrap |Disable trace (teInstEnable, teDataEnable -> 0) when circular buffer fills for the first time. |WARL |SD
 
 |15 |teInhibitSrc |1=Disable source field in trace messages. Unless disabled, a trace source field (of teImpl.nSrcBits) is added to every trace message to indicate which TE generated each message. If teImpl.nSrcBit is 0, this bit is not active.
 
@@ -312,7 +323,7 @@ ____
 
 |6 |hasPIBSink |1 if this TE has an off-chip trace port via a Pin Interface Block (PIB) |R |SD
 
-|7 |hasSBASink |1 if this TE has an on-chip system memory bus master trace sink. |R |SD
+|7 |hasSBASink |1 if this TE has an on-chip system memory bus trace sink. |R |SD
 
 |8 |hasFunnelSink |1 if this TE feeds into a trace funnel device. |R |SD
 
@@ -340,15 +351,15 @@ ____
 
 |0 |teInstNoAddrDiff|Do not send differential addresses when set (always full address is sent)|WARL|0
 
-|1 |teInstNoExceptAddr|When set, do not send exception address, only exception cause in Exception packets|WARL|0
+|1 |teInstNoTrapAddr|When set, do not sent trap handler address in trap packets|WARL|0
 
-|2 |teInstEnaSequentialJump|Treat sequentially inferrable jumps as un-inferable PC discontinuities when set.|WARL|0
+|2 |teInstEnSequentialJump|Treat sequentially inferrable jumps as inferable PC discontinuities when set.|WARL|0
 
-|3 |teInstEnaImplicitReturn|Treat returns as uninferable PC discon-tinuities when set.|WARL|0
+|3 |teInstEnCallStack|Treat returns as inferable PC discontinuities when returning from recent call on stack.|WARL|0
 
-|4 |teInstEnaBranchPrediction|Branch predictor enabled when set.|WARL|0
+|4 |teInstEnBranchPrediction|Branch predictor enabled when set.|WARL|0
 
-|5 |teInstEnaJumpTargetCache|Jump target cache enabled when set.|WARL|0
+|5 |teInstEnJumpTargetCache|Jump target cache enabled when set.|WARL|0
 
 |===
 
@@ -455,7 +466,7 @@ In a single-hart system with an Internal Timestamp counter, it may be desirable 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |tsActive |Master reset/enable for timestamp unit |RW |0
+|0 |tsActive |Primary reset/enable for timestamp unit |RW |0
 |1 |tsCount |Internal Timestamp only. 1=counter runs, 0=counter stopped |WARL |0
 |2 |tsReset |Internal Timestamp only. Write 1 to reset the timestamp counter |W1 |0
 |3 |tsDebug |Internal Timestamp only. 1=counter runs when hart is halted, 0=stopped |WARL |0
@@ -516,9 +527,9 @@ Select action to perform when external trigger input 0 fires. If external trigge
 
 1 = reserved
 
-2 = start trace (teTracing -> 1)
+2 = start trace (teInstTracing -> 1)
 
-3 = stop trace (teTracing -> 0)
+3 = stop trace (teInstTracing -> 0)
 
 4 = record Program Trace Sync message
 
@@ -536,9 +547,9 @@ Select action to perform when external trigger input 0 fires. If external trigge
 |3-0 |xTrigOutEvent0 a|
 Bitmap to select which event(s) cause external trigger 0 output to fire. If external trigger output 0 does not exist, then all bits are fixed at 0. Bits 2 and 3 may be fixed at 0 if the corresponding feature is not implemented.
 
-[0] = starting trace (teTracing 0 -> 1)
+[0] = starting trace (teInstTracing 0 -> 1)
 
-[1] = stopping trace (teTracing 1 -> 0)
+[1] = stopping trace (teInstTracing 1 -> 0)
 
 [2] = (Optional) Vendor-specific event
 
@@ -559,8 +570,8 @@ If there are vendor-specific features that require control, the wpControl regist
 |*wpAction* |*Effect*
 |0 |Breakpoint exception
 |1 |Debug exception
-|2 |Start trace (teTracing -> 1)
-|3 |Stop trace (teTracing -> 0)
+|2 |Start trace (teInstTracing -> 1)
+|3 |Stop trace (teInstTracing -> 0)
 |4 |Record Program Trace Sync message
 |5 |Optional vendor-specific action
 |===
@@ -578,6 +589,16 @@ If there are vendor-specific features that require control, the wpControl regist
 === Watchpoint Precedence
 
 It is implementation-dependent what happens when watchpoints or external triggers with conflicting actions occur simultaneously or if watchpoints or external triggers occur too frequently to process.
+
+== Trace Filter Control Interface
+
+All registers with offsets 0x300 .. 0x3FC are reserved for additional trace filtering options (context, addresses, modes etc.).
+
+Specifications for different trace encoders should define registers in this range.
+
+*N-Trace:*    Only Watchpoing based filtering is defined in this version.
+
+*E-Trace:*    Additional trace filtering are defined in chapter 'Filtering'.
 
 == Trace Funnel
 
@@ -617,7 +638,7 @@ NOTE: FUTURE: Funnel should be extended to see what TE[s] or other funnels are c
 
 == PIB Trace Sink
 
-Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-Wire Trace). Alternative configurations include a trace reference clock and  1/2/4/8/16 parallel trace data signals timed to that reference. WARL register fields are used to determine specific PIB capabilities.
+Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-Wire Trace). Alternative configurations include a trace reference clock (tref) and  1/2/4/8/16 parallel trace data signals (tdata) timed to that reference. WARL register fields are used to determine specific PIB capabilities.
 
 The modes and behavior described here are intended to be compatible with trace probes available in the market.
 
@@ -628,13 +649,15 @@ The modes and behavior described here are intended to be compatible with trace p
 [cols="10%,16%,~,8%,16%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |pibActive |Master enable/reset for PIB Sink block |RW |0
+|0 |pibActive |Primary enable/reset for PIB Sink block |RW |0
 |1 |pibEnable |
 0=PIB does not accept input but holds output(s) at idle state defined by pibMode.
 
 1=Enable PIB to generate output
 
 |RW |0
+|2 |Reserved |--|--|0
+|3 |pibEmpty |Reads 1 when PIB internal buffers are empty |R |1
 |7-4 |pibMode |Select mode for output pins. |WARL |0 (PIB is off)
 |8 |pibRefCenter |In parallel modes, adjust tref timing to center of bit period. This can be set only if pibMode selects one of the parallel protocols. Optional. |WARL |SD
 |9 |pibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. The calibration pattern is described below. Optional. |WARL |0
@@ -662,18 +685,25 @@ Software can determine what modes are available by attempting to write each mode
 
 |===
 
-Additional rules:
+Since the PIB supports many different modes, it is necessary to follow a particular programming sequence:
 
-* Nexus messages are always transmitted with LSB bits first.
-* MSEO is transmitted on LSB part and bit#0 first.
+* Activate the PIB by setting pibActive.
+* Set the pibMode, pibDivider, pibRefCenter, and pibCalibrate fields. This will set the tdata outputs to the quiescent state (whether that is high or low depends on pibMode) and start tref running.
+* Activate the receiving device, such as a trace probe.  Allow time for PLL to sync up, if using a PLL with a parallel PIB mode.
+* Set pibEnable.  This enables the PIB to generate output either immediately (calibration mode) or when the trace encoder begins sending trace messages.
+
+Order of bits and bytes:
+
+* Trace essages/packets are considered as sequence of bytes and are always transmitted with LSB bits/bytes first.
+* Nexus MSEO bits are transmitted on LSB part and bit#0 first.
 * Idle state must be transmitted as all MSEO and MDO bits = 1.
-* In 16-bit more first byte of message is transmitted on LSB part and MSEO of second/odd byte will be transmitted on bits #8-#9 and MDO on bits #10-#15.
+* In 16-bit mode first byte of message is transmitted on LSB part and MSEO of second/odd byte will be transmitted on bits #8-#9 and MDO on bits #10-#15.
 
 NOTE: Above rules allow receiving probe to skip idle messages.
 
 === Calibration Mode
 
-In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (pibContro.pibDivider and pibControl.pibRefCenter). The suggested patterns for each mode are listed here. 
+In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (pibContro.pibDivider and pibControl.pibRefCenter). Calibration patterns for each mode are listed here. 
 
 [cols="24%,~,~",options="header",]
 |===
@@ -713,7 +743,9 @@ Traditionally, off-chip trace has used this protocol. There are a number of para
 
 As with SWT modes, this protocol is oriented to full trace messages rather than fixed-width trace words. The idle state of tdata is all-ones for Nexus trace and (TBD) for RISC-V Processor Trace. When a message start is detected, this sample and possibly the next few (depending on the width of tdata) are collected until a complete byte has been received. Bytes are transmitted LSB first, with tdata[0] representing the LSB in each beat of data. The receiver continues collecting bytes until a complete message has been received. The criteria for this depends on the trace format. For Nexus, the last byte of a message is one that has mseo=1,1. For E-Trace, the header byte may include a byte count. After the last byte of a message, the data signals may then go their idle state or a new message may begin in the next bit period.
 
-The clock reference, tref, normally has edges coincident with the tdata edges. Typically, a trace probe will use a PLL to recover a sampling clock that is twice the frequency of tref and shifted 90 degrees so that its rising edges occur near the center of each bit period. If the PIB implementation supports it, the debugger can set pibRefCenter to change the timing of tref so that there is a tref edge at the center of each bit period on tdata. Note that this option cuts the data rate in half relative to normal parallel mode and still requires the probe to sample tdata on both edges of tref.
+NOTE: Trace messages may start on any (positive or negative) edge of trace clock. Once message is started all bits of that message must be transmitted on concecutive trace clock edges (both positive and negative). Said so, idle sequence may be sent consist of any number of trace clocks edges (positive or negative). But some implementations may always send idle sequences using even number of trace clocks - in such a case all packets will always start on positive or negative trace clock.
+
+The clock reference, tref, normally has edges coincident with the tdata edges. Typically, a trace probe will delay trace data or use a PLL to recover a sampling clock that is twice the frequency of tref and shifted 90 degrees so that its rising edges occur near the center of each bit period. If the PIB implementation supports it, the debugger can set pibRefCenter to change the timing of tref so that there is a tref edge at the center of each bit period on tdata. Note that this option cuts the data rate in half relative to normal parallel mode and still requires the probe to sample tdata on both edges of tref.
 
 This example shows 8-bit parallel mode with pibRefCenter=0 transmitting a 5-byte message followed by a 2-byte message.
 
@@ -732,12 +764,14 @@ Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace pr
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |atbActive |Master enable/reset for ATB Sink block |RW |0
+|0 |atbActive |Primary enable/reset for ATB Sink block |RW |0
 |1 |atbEnable |Enable trace words to pass through from the Trace Encoder to ATB |RW |0
+|2 |Reserved |--|--|0
+|3 |atbEmpty |Reads 1 when ATB internal buffers are empty |R |1
 |14-8 |atbId |ID of this node on ATB. Values of 00 and 70-7F are reserved by the ATB specification and may not be used. |RW |0
 |===
 
-An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB master port.
+An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB port.
 
 == Reset and Discovery
 
@@ -785,12 +819,24 @@ NOTE: Discovery may not be necessary to enable and test trace during development
 
 NOTE: Trace tool may verify particular setting once per session, so subsequent starts of trace may be faster.
 
-Disabling trace (captured via PIB) should work as follows:
+Disabling the trace should work as follows:
 
-* Stop TE (teTracing = 0)
-* Wait for TE to flush all trace (teEmpty = 1)
-* Stop PIB (pibEnable = 0)
-* Stop physical capture (probe dependent)
+* In all Trace Encoders, set teControl.teTracing to 0. This inserts a trace-stop message.
+* In all Trace Encoders, set teControl.teEnable to 0. This flushes any partial trace words
+to the sink or funnel.
+* Poll teControl.teEmpty in all Trace Encoders. Wait until all are 1.
+* For any Trace Encoder whose teControl.teSink indicates PIB sink (6), poll
+pibControl.pibEmpty and wait until it reads 1.
+* For any Trace Encoder whose teControl.teSink indicates ATB sink (5), poll
+atbControl.atbEmpty and wait until it reads 1.
+* In all Trace Funnels, set tfControl.tfEnable to 0. This flushes any partial trace words to
+the sink.
+* Poll tfControl.tfEmpty in all Trace Funnels. Wait until all are 1.
+* For any Trace Funnel whose tfControl.tfSink indicates PIB sink (6), poll
+pibControl.pibEmpty and wait until it reads 1.
+* For any Trace Funnel whose tfControl.tfSink indicates ATB sink (5), poll
+atbControl.atbEmpty and wait until it reads 1.
+* Stop physical capture if PIB sink was enabled (probe dependent)
 
 Decoding trace
 
