@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  Aug 9, 2022
-:revnumber: 0.9.3
+:revdate:  Aug 15, 2022
+:revnumber: 0.9.4
 :revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
 :doctype: book
@@ -48,6 +48,8 @@ This work is Copyright 2022 by RISC-V International.
 == History and status
 
 *STATUS:* Frozen (from TG perspective)
+
+2022/8/15:  v0.9.4: Updated after notes from TG members, so this is Frozen state
 
 2022/7/25:  v0.9.3: Updated after notes from TG members, so this is Frozen state
 
