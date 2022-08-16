@@ -140,7 +140,7 @@ NOTE: Above table is using names compatible with MIPI specifications (however MI
 
 === Explanation for additional pins (comparing to MIPI20)
 
-All debug signals share alternate functions as defined for Mictor connector (see above).
+All debug signals share alternate functions as defined for MIPI20 connector.
 
 [#Micror-38 additional pins]
 .Micror-38 additional pins (comparing to MIPI20 defined above)
