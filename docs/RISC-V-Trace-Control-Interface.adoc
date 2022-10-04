@@ -610,11 +610,269 @@ It is implementation-dependent what happens when debug triggers or external trig
 
 All registers with offsets 0x300 .. 0x3FC are reserved for additional trace filtering options (context, addresses, modes etc.).
 
+NOTE: These addresses subject to change.  At time of writing, pace allocated in the register map for filtering is insufficient to accommodate all registers defined in this section
+
 Specifications for different trace encoders should define registers in this range.
 
 *N-Trace:*    Only Debug Trigger based filtering is defined in this version.
 
-*E-Trace:*    Additional trace filtering are defined in chapter 'Filtering'.
+*E-Trace:*    Additional trace filtering are defined in chapter 'Filtering'.  The register map is as shown below.  Provision is made for upto 16 filters and 8 comparators, indexed by _i_ and _j_ respectively (_i_ is in the range 0 - 15; _j_ is in the range 0 - 7).
+
+
+[cols="10%,18%,18%,14%,~",options="header",]
+|===
+|*Address Offset*   |*Trace Encoder*  |*Trace Funnel* |*Compliance* |*Description*
+|0x300 + 0x20__i__ |teFilter__i__Control |-                  |Optional |Filter _i_ control
+|0x304 + 0x20__i__ |teFilter__i__MatchInst |-                |Optional |Filter _i_ instruction match control
+|0x308 + 0x20__i__ |teFilter__i__MatchEcause |-              |Optional |Filter _i_ Ecause match control
+|0x30C + 0x20__i__ |- |-                                     |Optional |reserved
+|0x310 + 0x20__i__ |teFilter__i__MatchValueImpdef |-         |Optional |Filter _i_ impdef value
+|0x314 + 0x20__i__ |teFilter__i__MatchMaskImpdef |-          |Optional |Filter _i_ impdef mask
+|0x318 + 0x20__i__ |teFilter__i__MatchData |-                |Optional |Filter _i_ Data trace match control
+|0x31C + 0x20__i__ |- |-                                      |Optional |reserved
+|| |                                      | |
+|0x500 + 0x20__j__ |teComp__j__Control |-                    |Optional |Comparator _j_ control
+|0x504 + 0x20__j__ |- |-                                      |Optional |reserved
+|0x508 + 0x20__j__ |- |-                                      |Optional |reserved
+|0x50c + 0x20__j__ |- |-                                      |Optional |reserved
+|0x510 + 0x20__j__ |teComp__j__PmatchLo |-                   |Optional |Comparator _j_ primary match (lo)
+|0x514 + 0x20__j__ |teComp__j__PmatchHi |-                   |Optional |Comparator _j_ primary match (hi)
+|0x518 + 0x20__j__ |teComp__j__SmatchLo |-                   |Optional |Comparator _j_ secondary match (lo)
+|0x51C + 0x20__j__ |teComp__j__SmatchHi |-                   |Optional |Comparator _j_ secondary match (hi)
+
+|===
+
+*Register: 0x300 + 0x20__i__ teFilter__i__Control : Filter _i_ Control Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|0     |teFilterEnable | Overall filter enable | WARL | 0 
+|1     |teFilterMatchPrivilege | 
+When set, match privilege levels specified by teFilter__i__MatchInstControl.teMatchChoicePrivilege.
+| WARL | 0
+|2     |teFilterMatchEcause | 
+When set, start matching from exception cause codes specified by teFilter__i__MatchChoiceEcause.teMatchChoiceEcause, and
+stop matching upon return from the 1st matching exception.
+| WARL | 0
+|3     |teFilterMatchInt | 
+When set, start matching from a trap with the interrupt level codes specified by 
+teFilter__i__MatchInstControl.teMatchValueInterrupt, and stop matching upon return from the 1st matching trap.
+| WARL | 0
+|4     |teFilterMatchComp1 | 
+When set, the output of the comparator selected by teFilterMatchComp1 must be high in order for the filter to match.
+| WARL | 0
+|7-5   | teFilterComp1 |
+Specifies the comparator unit to use for the 1st comparison.
+| WARL | SD
+|8     |teFilterMatchComp2 | 
+When set, the output of the comparator selected by teFilterMatchComp2 must be high in order for the filter to match.
+| WARL | 0
+|11-9  | teFilterComp2 |
+Specifies the comparator unit to use for the 2nd comparison.
+| WARL | SD
+|12    |teFilterMatchComp3 | 
+When set, the output of the comparator selected by teFilterMatchComp3 must be high in order for the filter to match.
+| WARL | 0
+|15-13 | teFilterComp3 |
+Specifies the comparator unit to use for the 3rd comparison.
+| WARL | SD
+|16    |teFilterMatchImpdef | 
+When set, match *impdef* values as specified by teFilter__i__MatchValueImpdef.teMatchValueImpdef and 
+teFilter__i__MatchValueImpdef.teMatchMaskImpdef.
+| WARL | 0
+|23-17 | reserved||0|0
+|24    |teFilterMatchDtype | 
+When set, match *dtype* values as specified by teFilter__i__MatchDataControl.teMatchChoiceDtype.
+| WARL | 0
+|25    |teFilterMatchDsize | 
+When set, match *dsize* values as specified by teFilter__i__MatchDataControl.teMatchChoiceDsize.
+| WARL | 0
+|31-26 | reserved||0|0
+|===
+
+*Register: 0x304 + 0x20__i__ teFilter__i__MatchInst : Filter _i_ Instruction Match Control Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|7-0   |teFilterMatchChoicePrivilege | 
+When teFilter__i__Control.teFilterMatchPrivilege is set, match all privilege
+levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value is N
+| WARL | SD 
+|8     |teFilterMatchValueInterrupt |
+When teFilter__i__Control.teFilterMatchInterrupt is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
+respectively.
+| WARL | SD 
+|31-9 | reserved||0|0
+|===
+
+*Register: 0x308 + 0x20__i__ teFilter__i__MatchEcause : Filter _i_ Ecause Match Control Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teFilterMatchChoiceEcause | 
+When teFilter__i__Control.teFilterMatchEcause is set, match all excepion causes for which the corresponding bit is set. For
+example, if bit N is 1, then match if the *ecause* is N.
+| WARL | SD 
+|===
+
+*Register: 0x310 + 0x20__i__ teFilter__i__MatchValueImpdef : Filter _i_ Impdef Match Value Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teFilterMatchValueImpdef | 
+When teFilter__i__Control.teFilterMatchimpdef is set, match if
+(*impdef* & teFilterMatchMaskImpdef) ==
+(teFilterMatchValueImpdef & teFilterMatchMaskImpdef.
+| WARL | SD 
+|===
+
+*Register: 0x314 + 0x20__i__ teFilter__i__MatchMaskImpdef : Filter _i_ Impdef Match Mask Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teFilterMatchMaskImpdef | 
+When teFilter__i__Control.teFilterMatchimpdef is set, match if
+(*impdef* & teFilterMatchMaskImpdef) ==
+(teFilterMatchValueImpdef & teFilterMatchMaskImpdef.
+| WARL | SD 
+|===
+
+*Register: 0x318 + 0x20__i__ teFilter__i__MatchData : Filter _i_ Data Match Control Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|15-0   |teFilterMatchChoiceDtype | 
+When teFilter__i__Control.teFilterMatchDtype is set, match all data access types
+for which the corresponding bit is set. For example, if bit N is 1, then match if the *dtype* value is N.
+| WARL | SD 
+|23-16  |teFilterMatchChoiceDsize |
+When teFilter__i__Control.teFilterMatchDsize is set, match all data access sizes
+for which the corresponding bit is set. For example, if bit N is 1, then match if the *dsize* value is N.
+| WARL | SD 
+|31-24 | reserved||0|0
+|===
+
+
+
+*Register: 0x500 + 0x20__j__ teComp__j__Control : comparator _j_ Control Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|1-0   |teCompPInput | 
+Determines which input to compare against the primary comparator. 
+
+0: *iaddr*
+
+1: *context*
+
+2: *tval*
+
+3: *daddr*
+
+| WARL | SD 
+|3-2   |teCompSInput | Determines which input to compare against the secondary comparator.  Same encoding as teCompPInput. |WARL |SD
+|6-4   |teCompPFunction |
+Selects the primary comparator function.  Primary result is true if input selected via teCompPInput is:
+
+0: equal to teCompPMatch
+
+1: not equal to teCompPMatch
+
+2: less than to teCompPMatch
+
+3: less than or equal to teCompPMatch
+
+4: greater than to teCompPMatch
+
+5: greater than or equal to teCompPMatch
+
+6: Result always false (input ignored).  Prime latch to 1 if teCompMatchMode is 3
+
+7: Result always true (input ignored)
+| WARL | SD
+|7     | reserved||0|0
+|10-8   |teCompSFunction |
+Selects the secondary comparator function.  Secondary result is true if input selected via teCompSInput is:
+0: equal to teCompSMatch
+
+1: not equal to teCompSMatch
+
+2: less than to teCompSMatch
+
+3: less than or equal to teCompSMatch
+
+4: greater than to teCompSMatch
+
+5: greater than or equal to teCompSMatch
+
+6: Result always true (input ignored).  Use teCompSMatch as a mask for teCompPMatch
+
+7: Result always true (input ignored)
+| WARL | SD
+|11     | reserved||0|0
+|13-12   |teCompMatchMode |
+Selects the match condition used to assert the overal comparator output
+
+0: primary result true
+
+1: primary and secondary result both true: (P && S)
+
+2: Either primary or secondary result does not match: !(P && S)
+
+3: Set when primary result is true and continue to assert
+until instruction after secondary result is true
+
+| WARL | SD
+|14   |teCompPNotify | 
+Generate a trace packet explicitly reporting the address
+of the final instruction in a block that causes a
+primary match (requires teCompPInput to be 0). This is also
+known as a watchpoint.
+|WARL |SD
+|15   |teCompSNotify | 
+Generate a trace packet explicitly reporting the address
+of the final instruction in a block that causes a
+secondary match (requires teCompSInput to be 0). This is also
+known as a watchpoint.
+|WARL |SD
+|===
+
+*Register: 0x510 + 0x20__j__ teComp__j__PMatchLo : comparator _j_ Primary match (low) Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teCompPMatchLo | 
+The match value for the primary comparator (bits 31:0).
+| WARL | SD 
+|===
+
+*Register: 0x514 + 0x20__j__ teComp__j__PMatchHi : comparator _j_ Primary match (high) Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teCompPMatchHi | 
+The match value for the primary comparator (bits 63:32).
+| WARL | SD 
+|===
+
+*Register: 0x518 + 0x20__j__ teComp__j__SMatchLo : comparator _j_ Secondary match (low) Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teCompSMatchLo | 
+The match value for the secondary comparator (bits 31:0).
+| WARL | SD 
+|===
+
+*Register: 0x51C + 0x20__j__ teComp__j__SMatchHi : comparator _j_ Secondary match (high) Register*
+[cols="10%,24%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |teCompSMatchHi | 
+The match value for the secondary comparator (bits 63:32).
+| WARL | SD 
+|===
+
 
 == Trace Funnel
 
