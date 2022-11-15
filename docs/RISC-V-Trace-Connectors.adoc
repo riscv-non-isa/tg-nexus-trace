@@ -36,10 +36,10 @@ endif::[]
 :xrefstyle: short
 
 = Specification of RISC-V Trace Connectors
-Robert Chyla (IAR, SiFive); RISC-V Nexus Trace Task Group
+RISC-V Nexus Trace Task Group
 
 // Preamble
-.This document is officially in the link:http://riscv.org/spec-state[Stable state]
+This document is officially in the link:http://riscv.org/spec-state[Stable state]
 ====
 Assume anything could still change, but limited change should be expected.
 ====
@@ -55,7 +55,7 @@ https://creativecommons.org/licenses/by/4.0/.
 [preface]
 == History and status
 
-NOTE: This chapter will be removed before ratification.
+This chapter will be removed before offical freeze (it is here to track changes)
 
 *STATUS:* Frozen (from TG perspective)
 
