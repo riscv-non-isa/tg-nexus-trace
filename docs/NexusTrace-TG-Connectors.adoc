@@ -29,9 +29,9 @@ This specification provides slight extension to connectors described in https://
 
 It is expected that MIPI Alliance will adopt these extensions, but this document will still be provided. 
 
-== MIPI20 Connector
+== MIPI20 Debug and Trace Connector
 
-This connector is an extension of MIPI10/MIPI20 connector as defined by RISC-V Debug Specification (version  
+This connector is an extension of a MIPI20 connector as defined by ratified RISC-V External Debug Support Specification (version  
 https://github.com/riscv/riscv-debug-spec/releases/download/task_group_vote/riscv-debug-draft.pdf[0.13.2]).
 
 This specification adds 1/2/4-bit parallel trace, serial trace and some other alternative pin functions on the same physical MIPI20 connector.
@@ -109,7 +109,7 @@ should work. Middle pin *B* should go to MIPI20, the left pin *A* may be GND and
 
 Some debug probes may allow definition of pin functions and may may provide a virtual UART port/terminal for the target. UART is often needed for testing and production and having both debug and UART on a single connector is desired. Supporting UART over TDI/TDO will require 2-pin cJTAG to be used as a debug interface. Supporting UART over TRIGIN/TRIGOUT pins will limit parallel trace to 1-bit or 2-bit options.
 
-== Mictor 38 - bit Connector
+== Mictor 38-bit Debug and Trace Connector
 
 Mictor-38 connector has all signals from MIPI20 connector and adds up to 16-bit trace and defines more trigger pins. Mictor-38 connector is also designed for high-speed trace (it is rated for 400MHz double edge captures).
 
