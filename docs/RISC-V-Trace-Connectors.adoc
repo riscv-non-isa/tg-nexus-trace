@@ -69,8 +69,5 @@ NOTE: This chapter will be removed before ratification.
 
 2022/4/11: v0.9.0: Consolidated all notes discussed by emails and adjusted for MIPI Alliance White Paper
 
-// table of contents
-toc::[]
-
 include::NexusTrace-TG-Connectors.adoc[]
 
