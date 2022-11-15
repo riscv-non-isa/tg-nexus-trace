@@ -3,7 +3,7 @@
 :company: RISC-V.org
 :revdate: Nov 7, 2022
 :revnumber: 0.9.5
-:revremark: This document is Frozen from TG perspective.
+:revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
