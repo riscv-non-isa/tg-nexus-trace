@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Nov 7, 2022
-:revnumber: 0.9.5
+:revdate: Nov 19, 2022
+:revnumber: 0.9.6
 :revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
 :doctype: book
@@ -58,6 +58,8 @@ https://creativecommons.org/licenses/by/4.0/.
 This chapter will be removed before offical freeze (it is here to track changes)
 
 *STATUS:* Frozen (from TG perspective)
+
+2022/11/15: v0.9.6: More clarification of "GND/TgtPwr+Cap".
 
 2022/11/15: v0.9.5: Clarification of misleading part in chapter explaining "GND/TgtPwr+Cap", spell checked.
 
