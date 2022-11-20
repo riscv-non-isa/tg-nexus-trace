@@ -59,7 +59,7 @@ This chapter will be removed before offical freeze (it is here to track changes)
 
 *STATUS:* Frozen (from TG perspective)
 
-2022/11/15: v0.9.6: More clarification of "GND/TgtPwr+Cap".
+2022/11/19: v0.9.6: More clarification of "GND/TgtPwr+Cap".
 
 2022/11/15: v0.9.5: Clarification of misleading part in chapter explaining "GND/TgtPwr+Cap", spell checked.
 
