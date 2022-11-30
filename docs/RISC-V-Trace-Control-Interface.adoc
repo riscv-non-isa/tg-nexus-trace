@@ -129,7 +129,7 @@ The Trace Control interface consists of a set of 32-bit registers. The control i
 This specification defines the following trace components:
 
 //[cols="15%,15%,10%,~",options="header",]
-[cols="3,6,4,10"]
+[cols="4,6,4,10"]
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a core (via Trace Ingress Port) and generates a stream of trace messages/packets.
