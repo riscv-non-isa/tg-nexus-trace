@@ -163,7 +163,8 @@ NOTE: Additional control path(s) may also be implemented, such as extra JTAG reg
 
 Each  block of 32-bit registers (for each component) has the following layout:
 
-[cols="15%,20%,10%,~",options="header",]
+//[cols="15%,20%,10%,~",options="header",]
+[cols="~,~,~,~"]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |tr??Control |Required |Main control register for trace component ??
