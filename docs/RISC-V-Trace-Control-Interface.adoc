@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  Nov 28, 2022
-:revnumber: 0.9.6
+:revdate:  Nov 29, 2022
+:revnumber: 0.9.7
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,7 +47,7 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
-2022/11/28: Version 0.9.6-Stable
+2022/11/29: Version 0.9.7-Stable
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
@@ -56,11 +56,16 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 NOTE: After approval by the group and status change from Stable to Frozen this chapter will be removed.
 
+2022/11/29: Version 0.9.7-Stable
+
+* Improved "Accessing Trace Control Registers" chapter
+* Fixed too narrow columns in some tables
+
 2022/11/28: Version 0.9.6-Stable
 
 * Big re-structuring (split into separared components) as discussed.
 * Consistent naming for all registers and fields (tr...) - each name of 'unique'.
-* Allowing 64-bit values for RAM Sink WP/RP/Limit registers (allowing trace bigger than 4BG).
+* Allowing 64-bit values for RAM Sink WP/RP/Limit registers (allowing trace bigger than 4GB).
 * Other minor clarifying changes.
 
 2022/11/1: Version 0.9.5-Stable (never generated)
@@ -145,19 +150,13 @@ The Trace Sink (connected to output from Trace Encoder or Trace Funnel) stores t
 
 === Accessing Trace Control Registers
 
-The following methods can be used to access Trace Control registers:
+The following methods are recommented to access memory mapped Trace Control registers:
 
-* Memory accesses through RISC-V debug module using SBA (System Bus Access) as defined in RISC-V Debug Specification
+* Memory accesses through RISC-V debug module using SBA (System Bus Access) as defined in RISC-V Debug Specification. Using SBA access (via debug module) is essential to make sure that trace registers are accessible while core/hart is running. It allows external debugger to monitor trace status and to control trace captures without stopping the core being traced.
 
-* Through loads and stores performed by one or more harts in the system
+* Through loads and stores performed by one or more harts in the system. Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace session independently from an external debugger. A hart may act as an internal debugger or may act in cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
 
-Using SBA access makes trace registers accessible while core is running so debugger will be able to monitor trace status.
-
-Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace session independently from an external debugger. A hart may act as an internal debugger or may act in cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
-
-NOTE: When full SBA access is not implemented and trace modules are present in the system, it may be possible to implement SBA access which will only access trace components. In such a case 'sbasize' field in 'sbcs' register can be smaller than 32-bit and cover range needed to access different trace components. For example when we have 16 trace sub-components, 'sbasize' can be 16 as we need 12 bits to cover 4KB range and 4 bits to cover 16 components.
-
-NOTE: Additional control path(s) may also be implemented, such as a dedicated debug bus or message-passing network. Such an access may require custom implementation by trace probe vendors.
+NOTE: Additional control path(s) may also be implemented, such as extra JTAG registers or devices, a dedicated DMI debug bus or message-passing network. Such an access (which is NOT based on System Bus) may require custom implementation by trace probe vendors as this specification only mandates probe vendors to provide access via SBA commands.
 
 === Trace Component Register Map
 
