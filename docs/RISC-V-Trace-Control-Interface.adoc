@@ -886,7 +886,7 @@ The match value for the secondary comparator (bits 63:32).
 
 == Trace RAM Sink
 
-Registers defined in this chapter are applicable to both SRAM and SBA sinks. SRAM sink type is using dedicated memory, while SBA type is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated register, while SBA memory should be read as any other memory on system bus.
+Trace RAM Sink may be instantiated or configured to support storing trace into dedicated SRAM or system SBA RAM. SRAM mode is using dedicated memory, while SBA mode is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated register, while SBA memory should be read as any other memory on system bus.
 
 Trace data is placed in memory in LSB order (first byte of trace packet/data is placed on LSB). For N-trace packets, MSEO bits are placed on LSB bits of each byte.
 
@@ -902,7 +902,9 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |1 |trRamEnable |1=Trace RAM Sink enabled. Setting trRamEnable to 0 flushes any queued trace data to output.|RW |0
 |2 |Reserved |--|--|0
 |3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty |R |1
-|4 |trRamStopOnWrap |1: Disable capture (trRamEnable -> 0) when circular buffer fills for the first time. |WARL |0
+|4 |trRamModeSBA | 0: This RAM Sink will operate in SRAM mode, 1: This RAM Sink will operate in SBA mode|WARL |SD
+|7-5 | |Reserved |-- |--
+|8 |trRamStopOnWrap |1: Disable capture (trRamEnable -> 0) when circular buffer fills for the first time. |WARL |0
 |===
 
 *Register: trBaseRamSink+0x004 trRamImpl: Trace RAM Sink Implementation Register*
@@ -912,13 +914,17 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |trRamVersion |Trace RAM Sink Component Version. Value 1 means module is compliant with this document. |R | 1
 |7-4 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |R | 0x9
+|8 |trRamHasSRAM | This RAM Sink supports SRAM mode|R | SD
+|9 |trRamHasSBA | This RAM Sink supports SBA mode|R | SD
 |===
+
+NOTE: Single RAM Sink may support both SRAM and SBA modes, but not both of them may be enabled in the same time. It is also possible to have more than one RAM Sink in a system.
 
 *Register: trBaseRamSink+0x010 trRamStartLow: Trace RAM Sink Start Register (Optional)*
 
 For busses with address larger than 32-bit, corresponding 'High' register define MSB part of larger address. 
 
-NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) RAM access errors (especially important for System Bus). Maybe we should have a bit in 'WP' register (where we have 'teWrap' already) as this register must be read by decoder anyway.
+NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) RAM access errors (especially important for System Bus). Maybe we should have a bit in 'WP' register (where we have 'trRawWrap' already) as this register must be read by decoder anyway.
 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
@@ -957,7 +963,7 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |teWrap |Set to 1 by hardware when trRamWP wraps. It is only set to 0 if trRamWPLow is written|WARL |0
+|0 |teRamWrap |Set to 1 by hardware when trRamWP wraps. It is only set to 0 if trRamWPLow is written|WARL |0
 |1 |--|Always 0 (bit B1 of 32-bit address)|R|0
 |32-2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to natural boundary. After a trace word write occurs while trRamWP=trRamLimit, trRamWP is set to trRamStart. This register may not be present if no sinks require it. |WARL |Undef
 |===
@@ -993,6 +999,8 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0 |trRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM Sink and optional for other sink types. |R or RW |SD
 |===
+
+NOTE: When trace capture was wrapped around (trRamWrap=1) beginning of trace is not available and oldest packets/messages in trace buffer (starting at 'trRamWP') will be most likely not complete. Trace decoder must look for start of message. Also when trace is stopped on wrap aroud, last message recorded in trace memory may not be complete.   
 
 Implementations when trace buffer in system memory will be bigger than 4GB is desired will be unlikely. 
 
