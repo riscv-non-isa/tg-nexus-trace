@@ -145,7 +145,7 @@ The Trace Control interface consists of a set of 32-bit registers. The control i
 This specification defines the following trace components:
 
 [cols="15%,15%,10%,~",options="header",]
-===
+|===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a hart (via Trace Ingress Port) and generates a stream of RISC-V trace messages/packets.
 |Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel|Acccepts several RISC-V trace message/packet streams (from Trace Encoders or Trace Funnels) and merges them into single stream of trace messages/packes.
