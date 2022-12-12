@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Nov 19, 2022
-:revnumber: 0.9.6
+:revdate: Dec 12, 2022
+:revnumber: 0.9.7
 :revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
 :doctype: book
@@ -58,6 +58,10 @@ https://creativecommons.org/licenses/by/4.0/.
 This chapter will be removed before offical freeze (it is here to track changes)
 
 *STATUS:* Frozen (from TG perspective)
+
+2022/12/12: v0.9.7: Get rid of RTCK and nTRST_PD (following discussion with Debug Group).
+                    More clarification of TgtPwr.
+                    Chapter 'Rationale' moved to the end.
 
 2022/11/19: v0.9.6: More clarification of "GND/TgtPwr+Cap".
 
