@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  Dec 6, 2022
-:revnumber: 0.9.8
+:revdate:  Dec 19, 2022
+:revnumber: 0.9.9
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,7 +47,7 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
-2022/12/6: Version 0.9.8-Stable
+2022/12/19: Version 0.9.9-Stable
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
@@ -55,6 +55,13 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 == History and status
 
 NOTE: After approval by the group and status change from Stable to Frozen this chapter will be removed.
+
+2022/12/19: Version 0.9.9-Stable
+
+* Expanded Accessing Trace Control Registers
+* Added chapter 'Versioning of Components' and tr??VerMajor and tr??VerMinor (instead of tr??Version)
+* Elaborated 'Reset and Discovery' and 'Enabling and Disabling' chapters
+* Order with width of columns (a lot of pain ...)
 
 2022/12/6: Version 0.9.8-Stable
 
@@ -158,17 +165,21 @@ NOTE: This specification is NOT addressing discovery of base addresses of trace 
 
 Each Trace Component is controlled by set of 32-bit registers occupying up to a 4K-byte space. Base address of each trace component must be aligned on 4K boundary.
 
-Each trace hart being traced must have associated Trace Encoder component block. A core with multiple harts (i.e., multi-threaded) must allow generating messages with a field indicating which hart is responsible for that message.
+Each hart being traced must have its own separate Trace Encoder control block. This also applies to multiple harts that belong to the same core. A system with multiple harts must allow generating messages with a field indicating which hart is responsible for that message.
 
-The Trace Funnel allows to combine several trace sources (from Trace Encoders or other Trace Funnels) into one trace stream. 
+The Trace Funnel allows to combine several trace sources (from Trace Encoders or other Trace Funnels) into one trace stream.
 
 The Trace Sink (connected to output from Trace Encoder or Trace Funnel) stores trace messages/packets to memory or sends them out of SoC.
 
 === Accessing Trace Control Registers
 
-The following methods are recommented to access memory mapped Trace Control registers:
+For the access method to the trace control registers, it makes a difference whether these registers shall be accessed by an external debug/trace tool, or by an internal debugger running on the chip.
 
-* Memory accesses through RISC-V debug module using SBA (System Bus Access) as defined in RISC-V Debug Specification. Using SBA access (via debug module) ensures that trace registers are accessible while hart is running. It allows external debugger to monitor trace status and to control trace captures without stopping the hart being traced.
+Trace control register access by an external debugger (this is the most common use case):
+
+* External debuggers must be able to access all trace control registers independent of whether the traced harts are running or halted. That is why for external debuggers, the recommended access method for memory-mapped control registers is memory accesses through the RISC-V debug module using SBA (System Bus Access) as defined in the RISC-V Debug Specification.
+
+Trace control register access by an internal debugger:
 
 * Through loads and stores performed by one or more harts in the system. Mapping the control interface into physical memory accessible from a hart allows that hart to manage a trace session independently from an external debugger. A hart may act as an internal debugger or may act in cooperation with an external debugger. Two possible use models are collecting crash information in the field and modifying trace collection parameters during execution. If a system has physical memory protection (PMP), a range can be configured to restrict access to the trace system from hart(s).
 
@@ -189,9 +200,11 @@ Each  block of 32-bit registers (for each component) has the following layout:
 |0xE00 - 0xFFF |-- |Optional |Registers reserved for implementation specific details. May allow identification of components on a system bus.
 |===
 
-Each trace component has tr??Impl register (at address offset 0x4) where trace component version and trace component type can be identified. This registers allows debug tool to verify provided component base address and potentially adjust tool behaviour by looking at component version.
+WARNING: Each component has 'tr??Active' bit in 'tr??Control' registers. Accesses to other registers are unpredictable when 'tr??Active' bit is 0. 
 
-NOTE: Each component may have different version. Initial version of this specificiation define all components to specify component version 1.
+Each trace component has tr??Impl register (at address offset 0x4) where trace component version and trace component type can be identified. This register allows debug tool to verify provided component base address and potentially adjust tool behaviour by looking at component version.
+
+NOTE: Each component may have different version. Initial version of this specificiation define all components to specify component version as 1.1 (major=1, minor=1).
 
 Registers in the 4K range that are not implemented are reserved and read as 0 and ignore writes.
 
@@ -283,6 +296,31 @@ Examples of possible additional subcomponents in Trace Encoder are:
 |0x004 |trAtbBridgeImpl |Required |Trace ATB Bridge Implementation information
 |===
 
+== Versioning of Components
+
+Each component has tr??Impl register, which includes two 4-bit 'tr??VerMinor' and 'tr??VerMajor' fields. These fields are guarenteed to be present in all future revisions of a standard, so trace tools will be able to discover compoment version.
+
+* Values 0 in these fields are not allowed (due to compatibility reasons).
+* Different components may report different versions (as some components may be updated more often than others).
+* Major version should change, when some incompatible (which will break older trace software ...) change is introduced.
+* Minor version should change, when change is considered compatible extension (for example adding new field) - from that reason software should always write 0 to undefined bits in registers. 
+* Version 15.x is reserved for non-compatible version encoding.
+* Version n.15 should be used as experimental (in development).
+
+Versions should be reported as two decimal numbers 'major.minor' - initial version of this specification is 1.1.
+
+Trace software should handle versions as follows (let's assume version 2.3 was defined as current version in moment of release of trace software)
+
+* x.0 => Reject as not supported or generate warning and handle as legacy version 0.
+* 2.3 => Accept silently.
+* 2.2 => Accept silently (and trim features or not allow to set newer features).
+* 2.4 => Generate warning but continue using 2.3 features.
+* 2.15 => Generate "experimental version" warning continue using 2.3 features.
+* 1.x => Generate warning and continue or reject as obsolete (referring to last debugger supporting this version).
+* 3.x => Abort with an error (redirecting to tool update page).
+
+NOTE: Displayed messages should report component name, component base address and current and supported version numbers. It is suggested to display full value of 'tr??Impl' register as it may aid in debugging of possibly incorrect/incompatible component configuration.
+
 == Trace Encoder Introduction
 
 This section briefly describes features of the Trace Encoder (TE) as background for understanding some of the control interface register fields.
@@ -368,7 +406,7 @@ Main instruction trace generation mode
 7: Generate optimized Instruction Trace (trTeInstFeatures register if present define instruction trace features and optimizations).
 
 |WARL |SD^(1)^
-|8-7 |-- |Reserved for futue modes |WARL |SD
+|8-7 |-- |Reserved for future modes |-- |0
 |9 |trTeContext |Send Ownership messages to indicate processor context when scontext, mcontext, v, or prv changes and full context information immediately after all Sync messages. |WARL |SD
 |10 |-- |Reserved |WARL |SD
 |11  |trTeInstTrigEn |1: Allows trTeInstTracing to be set or cleared by trace-on
@@ -380,9 +418,9 @@ and trace-off Debug module triggers respectively|WARL |0
 1: If TE cannot send a message, the hart is stalled until it can.
 
 |WARL |SD
-|14 |trteStopOnWrap |1: Disable trace (trTeInstEnable, trTeDataEnable -> 0) when circular buffer fills for the first time. |WARL |SD
+|14 |--|Reserved |--|0
 
-|15 |trTeInhibitSrc |1L Disable source field in trace messages. Unless disabled, a trace source field (of trTeInstFeatures.trTeSrcBits) is added to every trace message to indicate which TE generated each message. If trTeInstFeatures.trTeSrcBits is 0, this bit is not active.
+|15 |trTeInhibitSrc |1: Disable source field in trace messages. Unless disabled, a trace source field (of trTeInstFeatures.trTeSrcBits) is added to every trace message to indicate which TE generated each message. If trTeInstFeatures.trTeSrcBits is 0, this bit is not active.
 
 |WARL |SD
 
@@ -396,11 +434,11 @@ and trace-off Debug module triggers respectively|WARL |0
 
 3: Count instruction half-words (16-bit)|WARL |SD
 
-|19-18 |Reserved |--|--|0
+|19-18 |--|Reserved |--|0
 
 |23-20 |trTeSyncMax |The maximum interval (in units determined by trTeSyncMode) between synchronization messages/packets. Generate synchronization when count reaches 2^(trTeSyncMax + 4). If synchronization packet is generated from another reason internal counter should be reset.|WARL |SD
 
-|26-24 |trTeFormat a|
+|26-24 |trTeFormat |
 Trace recording format
 
 0: Format defined by Efficient Trace for RISC-V (E-Trace) Specification
@@ -412,9 +450,7 @@ Trace recording format
 7: Vendor-specific format
 
 |WARL |SD
-|31-28 |trVer0Marker |
-This field is read only and reads as 0. Older trace control software will report an error (when connected to new trace implementation) as this field was originally used to report type of sink and 0 was not allowed.
-|R |0
+|31-28 |--|Reserved |--|0
 |===
 
 ____
@@ -427,8 +463,11 @@ ____
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trTeVersion |Trace Encoder Version. Value 1 means module is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |R | 1
-|7-4 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |R |0x1
+|3-0 |trTeVerMinor |Trace Encoder Minor Version. Value 1 means component is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |R | 1
+|7-4 |trTeVerMajor |Trace Encoder Major Version. Value 1 means component is compliant with this document. |R | 1
+|11-8 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |R |0x1
+|12-23 |--|Reserved for future versions of this standard|--|0
+|24-31 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
 *Register: trBaseEncoder+0x008 trTeInstFeatures: Trace Instruction Features Register*
@@ -449,7 +488,7 @@ ____
 
 |5 |teInstEnJumpTargetCache|Jump target cache enabled when set.|WARL|0
 
-|23-16 |trTeSrcID |This TE's source ID. If trTeSrcBits>0 and trace source is not disabled by trTeInhibitSrc, then messages will all include a trace source field of trTeSrcBits bits. Messages from this TE will use this value as trace source field. May be fixed or variable.|WARL |SD
+|23-16 |trTeSrcID |This TE's source ID. If trTeSrcBits>0 and trace source is not disabled by trTeInhibitSrc, then trace messages from this TE will all include a trace source field of trTeSrcBits bits and all messages from this TE will use this value as trace source field. May be fixed or variable.|WARL |SD
 
 |27-24 |trTeSrcBits |The number of bits in the trace source field, unless disabled by trTeInhibitSrc. May be fixed or variable. |WARL |SD
 
@@ -886,7 +925,7 @@ The match value for the secondary comparator (bits 63:32).
 
 == Trace RAM Sink
 
-Trace RAM Sink may be instantiated or configured to support storing trace into dedicated SRAM or system SBA RAM. SRAM mode is using dedicated memory, while SBA mode is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated register, while SBA memory should be read as any other memory on system bus.
+Trace RAM Sink may be instantiated or configured to support storing trace into dedicated SRAM or system SBA RAM. SRAM mode is using dedicated memory, while SBA mode is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated 'trRamData' register, while memory in SBA (System Bus Access) mode should be read as any other memory on system bus.
 
 Trace data is placed in memory in LSB order (first byte of trace packet/data is placed on LSB). For N-trace packets, MSEO bits are placed on LSB bits of each byte.
 
@@ -904,7 +943,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty |R |1
 |4 |trRamModeSBA | 0: This RAM Sink will operate in SRAM mode, 1: This RAM Sink will operate in SBA mode|WARL |SD
 |7-5 | |Reserved |-- |--
-|8 |trRamStopOnWrap |1: Disable capture (trRamEnable -> 0) when circular buffer fills for the first time. |WARL |0
+|8 |trRamStopOnWrap |1: Disable storing trace to RAM (trRamEnable -> 0) when circular buffer gets full. |WARL |0
 |===
 
 *Register: trBaseRamSink+0x004 trRamImpl: Trace RAM Sink Implementation Register*
@@ -912,15 +951,18 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trRamVersion |Trace RAM Sink Component Version. Value 1 means module is compliant with this document. |R | 1
-|7-4 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |R | 0x9
-|8 |trRamHasSRAM | This RAM Sink supports SRAM mode|R | SD
-|9 |trRamHasSBA | This RAM Sink supports SBA mode|R | SD
+|3-0 |trRamVerMinor |Trace RAM Sink Component Minor Version. Value 1 means component is compliant with this document. |R | 1
+|7-4 |trRamVerMajor |Trace RAM Sink Component Major Version. Value 1 means component is compliant with this document. |R | 1
+|11-8 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |R | 0x9
+|12 |trRamHasSRAM | This RAM Sink supports SRAM mode|R | SD
+|13 |trRamHasSBA | This RAM Sink supports SBA mode|R | SD
+|14-23 |--|Reserved for future versions of this standard|--|0
+|24-31 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
 NOTE: Single RAM Sink may support both SRAM and SBA modes, but not both of them may be enabled in the same time. It is also possible to have more than one RAM Sink in a system.
 
-*Register: trBaseRamSink+0x010 trRamStartLow: Trace RAM Sink Start Register (Optional)*
+*Register: trBaseRamSink+0x010 trRamStartLow: Trace RAM Sink Start Register*
 
 For busses with address larger than 32-bit, corresponding 'High' register define MSB part of larger address. 
 
@@ -941,7 +983,7 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |31-0 |trRamStartHigh |High order bits (63:32) of trRamStart registeer. |WARL |Undef
 |===
 
-*Register: trBaseRamSink+0x018 trRamLimitLow: Trace RAM Sink Limit Register (Optional)*
+*Register: trBaseRamSink+0x018 trRamLimitLow: Trace RAM Sink Limit Register*
 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
@@ -958,7 +1000,7 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |31-0 |trRamStartHigh |High order bits (63:32) of trRamLimit register. |WARL |Undef
 |===
 
-*Register: trBaseRamSink+0x020 trRamWPLow: Trace RAM Sink Write Pointer Register (Optional)*
+*Register: trBaseRamSink+0x020 trRamWPLow: Trace RAM Sink Write Pointer Register*
 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
@@ -976,7 +1018,7 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |31-0 |trRamWPHigh |High order bits (63:32) of trRamWP register.|WARL |Undef
 |===
 
-*Register: trBaseRamSink+0x028 trRamRPLow: Trace RAM Sink Access Pointer Register (Optional)*
+*Register: trBaseRamSink+0x028 trRamRPLow: Trace RAM Sink Read Pointer Register (Optional)*
 
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
@@ -1006,6 +1048,20 @@ Implementations when trace buffer in system memory will be bigger than 4GB is de
 
 NOTE: FUTURE: Add 64-bit extensions as 32 MSB bits of size (reading 3 times is needed to be certain about 64-bit value). In order to relieve trace software to always read 3 times, there should be a field/bit saying if RAM size over 32-bit is implemented. It may be also WARL field, which must be set to '1' in order to allow 64-bit size. In most cases, it will never be settable (as 4GB of RAM for trace is rare requirement)
 
+=== Typical Trace RAM Sink Configurations
+
+Table below shows typical Trace RAM Sink configurations. Implementing other configurations if not suggested as trace tools may not support it without adjustments.
+
+[cols="~,~,~,~,~,~",options="header",]
+|===
+|*Mode*      |*trRamStart* |*trRamLimit* |*trRamWP* |*trRamRP* |*trRamData*
+|RAM         |0 |Hard coded to max size at reset, but can be possibly trimmed|Required  |Required |Required
+|SBA Generic |Any (2^N aligned) |Any (trRamStart + 2^M - A) - must be set by trace tool |Required  |-- |--
+|SBA Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (trRamStart + 2^N - A), but can be possibly trimmed |Required  |-- |--
+|===
+
+NOTE: Value 'A' means aligment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of 'Limit' register should be 0x...FC. Some implementations may impose bigger alignment of trace (to allow more efficient transfer rates). 
+
 == Trace Funnel
 
 The Trace Funnel combines messages from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages are accepted per cycle and in what order.
@@ -1027,8 +1083,11 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trFunnelVersion |Trace Funnel Component Version. Value 1 means module is compliant with this document. |R | 1
-|7-4 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |R | 0x8
+|3-0 |trFunnelVerMinor |Trace Funnel Component Minor Version. Value 1 means component is compliant with this document. |R | 1
+|7-4 |trFunnelVerMajor |Trace Funnel Component Major Version. Value 1 means component is compliant with this document. |R | 1
+|11-8 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |R | 0x8
+|12-23 |--|Reserved for future versions of this standard|--|0
+|24-31 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
 NOTE: In the future Trace Funnel should be extended to see to allow checking what Trace Encoders (or other Trace Funnels) are connected to particular funnel (settable bit in Trace Encoder/Funnel register connected to readable bit in Trace Funnel register).
@@ -1085,8 +1144,11 @@ Software can determine what modes are available by attempting to write each mode
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trPibVersion |Trace PIB Sink Component Version. Value 1 means module is compliant with this document. |R | 1
-|7-4 |trPibCompType |Trace PIB Sink Component Type (PIB Sink) |R | 0xA
+|3-0 |trPibVerMinor |Trace PIB Sink Component Minor Version. Value 1 means component is compliant with this document. |R | 1
+|7-4 |trPibVerMajor |Trace PIB Sink Component Major Version. Value 1 means component is compliant with this document. |R | 1
+|11-8 |trPibCompType |Trace PIB Sink Component Type (PIB Sink) |R | 0xA
+|12-23 |--|Reserved for future versions of this standard|--|0
+|24-31 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
 Since the PIB supports many different modes, it is necessary to follow a particular programming sequence:
@@ -1181,8 +1243,11 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 [cols="10%,24%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trAtbBridgeVersion |ATB Bridge Component Version. Value 1 means module is compliant with this document. |R | 1
-|7-4 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |R | 0xE
+|3-0 |trAtbBridgeVerMinor |ATB Bridge Component Minor Version. Value 1 means component is compliant with this document. |R | 1
+|7-4 |trAtbBridgeVerMajor |ATB Bridge Component Major Version. Value 1 means component is compliant with this document. |R | 1
+|11-8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |R | 0xE
+|12-23 |--|Reserved for future versions of this standard|--|0
+|24-31 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
 An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB port.
@@ -1191,13 +1256,16 @@ An implementation determines the data widths of the connection from the Trace En
 
 This chapter describes what trace tool should to to discover 
 
+IMPORTANT: Trace tool must be provided with base addresses of all trace components.
+
 There are several (independent) reset bits defined by this specification
 
 * trTeActive - reset for TE block (this will disable encoder from single hart)
+* trFunnelActive - reset for Trace Funnel block
 * trPibActive - reset for PIB block (resets Probe Interface Block only)
 * trAtbBridgeActive - resets ATB Bridge Block (resets ATB Bridge Interface)
 
-All reset bits should (when kept low) reset most of other fields/bits to defined reset values.
+These reset bits should (when kept low) reset most of other registers/fields/bits to defined reset values.
 
 Releasing component from reset may take time - debug tool should monitor (with reasonable timeout) if appropriate bit should changed from 0 to 1. Other fields/bits should remain unchanged (as were set during reset).
 
@@ -1205,47 +1273,66 @@ NOTE: Some of reset values are defined as 'SD' (system dependent) and these valu
 
 NOTE: Some bigger registers (holding RAM addresseses) may not reset - debugger is expected to write to them before enabling trace. These registers have 'Undef' in reset field. It should not prevent some implementations to reset these.
 
-When component is in reset (single 'active' bit = 0), all control bits (and most registers) should reset. 
+Reset and Discovery should be performned as follows:
 
-Discovery should be performned as follows:
+* Reset particular component by setting 'tr??Active = 0'.
+* Read-back and wait until 'tr??Active = 0' is read.
+* Save 'tr??Control' register as it holds all reset values (it may prevent tool to do read-modify operation later).
+* Release from reset set 'tr??Active=1' and wait for'tr??Active=1 to be read as 1 (module NOT in reset) 
+* Read 'tr??Impl' and compare 'tr??ComType' field with expected value.
+* Handle 'tr??VerMinor/Major' as described in 'Versioning of Components' chapter.
+* Set some WARL fields and read back to discover supported component configuration - make sure component is NOT enabled by mistake.
+* Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
 
-* Reset particular component and capture default values of all registers.
-* Release from reset (waiting for acknowledge).
-* Set (interesting) WARL fields and read-back values.
+As we are dealing with several independent components, it is important to assure, that component which is in reset (or powered down) is keeping it's outputs on safe values, so garbage data is not emitted.
+
+In general it is safer to power-up and enable components starting from sinks, followed by Funnel and Encoder as last.
 
 == Enabling and Disabling
 
 Enabling should work as follows:
 
-* Release all needed components from reset (starting from Trace Encoders, followed by Trace Funnels and finally Trace Sinks) by setting 'tr??Active=1'
-** Wait for confirmation (tr??Active=1)
+* Release all needed components from reset (starting from Trace Encoders, followed by Trace Funnels and finally Trace Sinks) by setting 'tr??Active=1' as described above.
 * Set desired mode and verify if that mode is set (regardless of discovery results)
-** For RAM sink, setup addresses (if possible and desired) as these are not reset
+* For RAM Sink
+** Setup needed addresses (if possible and desired) as these may not reset
+* For PIB Sink
 ** Calibrate PIB (if possible and desired)
-* Start physical trace capture (probe dependent)
-* Enable RAM Sink/PIB Sink/ATB Bridge in appropriate mode by setting 'tr??Enable=1'
-** Wait for confirmation (tr??Active=1)
+** Start physical trace capture (probe dependent)
+* Configure RAM Sink/PIB Sink/ATB Bridge in appropriate mode
 ** Verify if particular mode is set 
-* Enable funnel[s] is the same way (set trTfEnable=1 and verify if set)
-* Enable encoder[s] in the same way (set trTeEnable=1 and verify if set)
+* Enable RAM Sink/PIB Sink/ATB Bridge component by setting 'tr??Enable=1'
+** Wait for confirmation (tr??Active=1)
+* Enable Trace Funnel[s] is the same way
+* Configure and Enable Trace Encoder[s] in the same way
 * Start hart[s] to be traced (hart could be already running as well)
-* Periodically read 'trTeControl' for status of trace (as it may stop by itself due to triggers)
+* Periodically read 'trTeControl' for status of trace (as it may stop by itself due to triggers).
 
 NOTE: Discovery may not be necessary to enable and test trace during development of SoC. However discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
 
 NOTE: Trace tool may verify particular setting once per session, so subsequent starts of trace may be faster.
 
+NOTE: Trace tools should provide configuration setting allowing more verbose logging mode during discovery and initialization, so potential compatibility issues may be solved.
+
 Disabling the trace should work as follows:
 
-* Disable and flush trace starting from Encoders, then Funnels and finally Sinks
+* Disable and flush trace starting from Encoders, then Funnels and finally Sinks or Bridges.
 ** Set 'tr??Enable=0' and wait for 'tr??Enable=0' and 'tr??Empty=1' for each trace component
+** It is important to do it in that order as otherwise data may be lost
 * Stop physical capture if PIB sink was enabled (probe dependent)
+* Read trace
+** For RAM Trace Sink read 'trRamWP' - depending on trRamWrap bit, you may read trace from two ranges
+** For RAM Trace Sink in SRAM mode, set 'trRamRP' and read 'trRamData' multiple times
+** For RAM Trace Sink in SBA mode, read trace from SBA using memory read.
+** For PIB Trace Sink read trace from trace probe.
+** For ATB Bridge, read trace using Coresight compoments (ETB/TMC/TPIU ...)
 
 Decoding trace
 
-* Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from file containg it (binary/hex/srec/ELF)
-* Trace can be read and decoded while trace is being captured
-** There is no guarantee that last trace packet is completed until trace is properly flushed and disabled
+* Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from a file containg the code (binary/hex/srec/ELF).
+* Trace collected by trace probes can be read and decoded while trace is being captured (this is called trace streaming mode).
+** There is no guarantee that last trace packet is completed until trace is properly flushed and disabled.
+* Decoding of trace should never affect code being traced.
 
 == Legacy Interface Version
 
