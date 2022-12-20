@@ -151,7 +151,7 @@ The Trace Control interface consists of a set of 32-bit registers. The control i
 
 This specification defines the following trace components:
 
-[cols="15%,15%,10%,~",options="header",]
+[cols="15%,20%,10%,~",options="header",]
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a hart (via Trace Ingress Port) and generates a stream of RISC-V trace messages/packets.
@@ -189,7 +189,7 @@ NOTE: Additional control path(s) may also be implemented, such as extra JTAG reg
 
 Each  block of 32-bit registers (for each component) has the following layout:
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |tr??Control |Required |Main control register for this trace component
@@ -214,7 +214,7 @@ Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields 
 
 *Trace Encoder Registers (trTe..., trTs...)*
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trTeControl |Required |Trace Encoder control register
@@ -246,7 +246,7 @@ Examples of possible additional subcomponents in Trace Encoder are:
 
 *Trace RAM Sink Registers (trRam...)*
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trRamControl |Required |RAM Sink control register
@@ -266,7 +266,7 @@ Examples of possible additional subcomponents in Trace Encoder are:
 
 *Trace PIB Sink Registers (trPib...)*
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trPibControl |Required |Trace PIB Sink control register
@@ -275,7 +275,7 @@ Examples of possible additional subcomponents in Trace Encoder are:
 
 *Trace Funnel Sink Registers (trFunnel..., trTs)*
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trFunnelControl |Required |Trace Funnel control register
@@ -289,7 +289,7 @@ Examples of possible additional subcomponents in Trace Encoder are:
 
 *Trace ATB Bridge Registers (trAtbBridge...)*
 
-[cols="15%,20%,10%,~",options="header",]
+[cols="10%,25%,25%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trAtbBridgeControl |Required |Trace ATB Bridge control register
@@ -379,7 +379,7 @@ Many features of the Trace Encoder are optional. In most cases, optional feature
 
 *Register: trBaseEncoder+0x000 trTeControl: Trace Encoder Control Register (Required)*
 
-[cols="10%,24%,~,8%,8%",options="header",]
+[cols="8%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeActive |Primary enable for the TE. When 0, the TE may have clocks gated off or be powered
@@ -460,7 +460,7 @@ ____
 
 *Register: trBaseEncoder+0x004 trTeImpl: Trace Encoder Implementation Register (Required)*
 
-[cols="10%,24%,~,8%,8%",options="header",]
+[cols="8%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |trTeVerMinor |Trace Encoder Minor Version. Value 1 means component is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |R | 1
@@ -472,7 +472,7 @@ ____
 
 *Register: trBaseEncoder+0x008 trTeInstFeatures: Trace Instruction Features Register*
 
-[cols="10%,24%,~,8%,8%",options="header",]
+[cols="8%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 
