@@ -519,7 +519,17 @@ Determine which filters qualify instruction trace. If bit *__n__* is a 1 then in
 |6 |trTeDataDropEnable|Allow dropping data trace to avoid instruction trace overflows. Seting this bit will not guarantee that instuction trace overflows will not happen.|WARL|0
 |15-7 |--|Reserved for additional data trace control/status bits.|--|0
 |16 |trTeDataNoValue|Omit data values from data trace packets when set.|WARL|SD
-|18-17 |trTeDataAddressMode|'00':Omit data address from data trace packets. '01': Compress data addresses in XOR mode (only LSB bits changed), '10': Compress data addresses in differental mode (+-N offset),'11': reserved or automatic mode.|WARL|SD
+|17 |trTeDataNoAddr|Omit data address from data trace packets when set.|WARL|SD
+|19-18 |trTeDataAddrCompress|Data trace address compression selection:
+
+0: Only send full (unmodified) addresses
+
+1: Use XOR compression
+
+2: Use differential compression
+
+3: Dynamically select XOR or differential on a per-packet basis in order to minimize packet length
+|WARL|SD
 |===
 
 *Register: trBaseEncoder+0x01C trTeDataFilters: Trace Data Filters Register*
@@ -619,7 +629,7 @@ Debug triggers are signals from the hart that a trigger (breakpoint or watchpoin
 |5 |Optional vendor-specific action
 |===
 
-If there are vendor-specific features that require control, the trtrTeTrigDbgControl register is used. 
+If there are vendor-specific features that require control, the trTeTrigDbgControl register is used. 
 
 *Register: trBaseEncoder+0x050 trTeTrigDbgControl: Debug Trigger Control Register*
 
