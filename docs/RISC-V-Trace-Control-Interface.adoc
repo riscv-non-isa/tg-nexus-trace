@@ -332,7 +332,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 |0x004 |trPibImpl |Required |Trace PIB Sink Implementation information
 |===
 
-.*Trace Funnel Registers (trFunnel..., trTs)*
+.*Trace Funnel Registers (trFunnel..., trTs...)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
@@ -1187,7 +1187,7 @@ NOTE: Above rules allow receiving probe to skip idle messages.
 In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (trPibControl.trPibDivider and trPibControl.trPibClkCenter). Calibration patterns for each mode are listed here. 
 
 .*PIB Calibration Patters*
-[cols="25%,30%,~",options="header",align=center,width=80%]
+[cols="25%,30%,~",options="header",align=center,width=95%]
 |===
 |*Mode* |*Calibration Bytes* |*Wire Sequence*
 |UART, Manchester |AA 55 00 FF |alternating 1/0, then all 0, then all 1
