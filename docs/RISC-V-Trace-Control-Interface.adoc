@@ -207,7 +207,7 @@ The Trace Control interface consists of a set of 32-bit registers. The control i
 
 This specification defines the following trace components:
 
-[cols="13%,30%,18%,~",options="header",]
+[cols="15%,28%,18%,~",options="header",]
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a hart (via Trace Ingress Port) and generates a stream of RISC-V trace messages/packets.
@@ -340,7 +340,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trFunnelControl |Required |Trace Funnel control register
 |0x004 |trFunnelImpl |Required |Trace Funnel Implementation information
-4+|_Timestamp control (trTs...)_
+4+|*_Timestamp control (trTs...)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |-- |Reserved |Reserved for extra timestamp control
 |0x048 |trTsCounterLow |Optional |Lower 32 bits of timestamp counter
@@ -800,7 +800,7 @@ When trTeFilter__i__Control.trTeFilterMatchimpdef is set, match if
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0   |trTeFilterMatchMask Impdef | 
+|31-0   |trTeFilterMatchMaskImpdef | 
 When trTeFilter__i__Control.trTeFilterMatchimpdef is set, match if
 (*impdef* & trTeFilterMatchMaskImpdef) ==
 (trTeFilterMatchValueImpdef & trTeFilterMatchMaskImpdef.
@@ -811,11 +811,11 @@ When trTeFilter__i__Control.trTeFilterMatchimpdef is set, match if
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|15-0   |trTeFilterMatchChoice Dtype | 
+|15-0   |trTeFilterMatchChoiceDtype | 
 When trTeFilter__i__Control.trTeFilterMatchDtype is set, match all data access types
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dtype* value is N.
 | WARL | SD 
-|23-16  |trTeFilterMatchChoice Dsize |
+|23-16  |trTeFilterMatchChoiceDsize |
 When trTeFilter__i__Control.trTeFilterMatchDsize is set, match all data access sizes
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dsize* value is N.
 | WARL | SD 
@@ -1190,7 +1190,7 @@ NOTE: Above rules allow receiving probe to skip idle messages.
 
 In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (trPibControl.trPibDivider and trPibControl.trPibClkCenter). Calibration patterns for each mode are listed here. 
 
-[cols="25%,25%,~",options="header",]
+[cols="25%,30%,~",options="header",]
 |===
 |*Mode* |*Calibration Bytes* |*Wire Sequence*
 |UART, Manchester |AA 55 00 FF |alternating 1/0, then all 0, then all 1
