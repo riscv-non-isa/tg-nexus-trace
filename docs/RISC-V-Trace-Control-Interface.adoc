@@ -360,7 +360,7 @@ Examples of possible additional subcomponents in Trace Encoder are:
 
 Each component has a tr??Impl register, which includes two 4-bit 'tr??VerMinor' and 'tr??VerMajor' fields. These fields are guaranteed to be present in all future revisions of a standard, so trace tools will be able to discover a component version.
 
-* Values 0 as 'tr??VerMajor' is allowed (due to compatibility reasons).
+* Values 0 as 'tr??VerMajor' is NOT allowed (due to compatibility reasons).
 * Different components may report different versions (as some components may be updated more often than others).
 * The major version should change, when some incompatible (which will break older trace software ...) change is introduced.
 * The minor version should change, when change is a considered compatible extension (for example adding a new field) - from that reason software should always write 0 to undefined bits in registers. 
