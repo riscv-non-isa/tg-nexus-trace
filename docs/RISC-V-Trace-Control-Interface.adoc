@@ -212,8 +212,8 @@ This specification defines the following trace components:
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a hart (via Trace Ingress Port) and generates a stream of RISC-V trace messages/packets.
-|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel|Acccepts several RISC-V trace message/packet streams (from Trace Encoders or Trace Funnels) and merges them into single stream of trace messages/packes.
-|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and stores them into memory buffer (either dedicated SRAM or System Bus).
+|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel|Acccepts several RISC-V trace message/packet streams (from  multiple Trace Encoder[s] or Trace Funnel[s]) and merges them into single stream of trace messages/packets.
+|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and stores them into RAM buffer (either dedicated SRAM or System Bus).
 |Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and sends them via set of pins (parallel or serial).
 |Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and forwards them to ATB bus in a system.
 |===
@@ -224,9 +224,40 @@ Each Trace Component is controlled by set of 32-bit registers occupying up to a 
 
 Each hart being traced must have its own separate Trace Encoder control component. This also applies to multiple harts that belong to the same core. A system with multiple harts must allow generating messages with a field indicating which hart is responsible for that message.
 
-The Trace Funnel allows to combine several trace sources (from Trace Encoders or other Trace Funnels) into one trace stream.
+==== Connections Between Components
 
-The Trace Sink (connected to output from Trace Encoder or Trace Funnel) stores trace messages/packets to memory or sends them out of SoC.
+Different components must be connected via internal busses and/or FIFO buffers. This specification does not define this interconnect logic, but the following rules must be followed:
+
+* Each component sending a trace message/packet must assure the entire packet can be accepted by the destination component (or pushed into the FIFO buffer).
+** Sending a partial packet is NEVER allowed as it will not be possible to process such a trace.
+* If a component cannot send an entire message/packet it must wait until it will be possible to do so.
+** Trace Encoder may either stall the hart and finally resume execution after sending a packet which caused the stall.
+* In case a stall of the hart is not possible (or is not configured ...), Trace Encoder must drop the packet and wait for the receiver to be ready.
+** Once trace is allowed to resume it must issue a synchronization packet so the decoder will be aware that some (unknown) amount of trace has been lost.
+** Best idea is to wait for complete drain of the trace pipeline before resuming - otherwise a lot of short chunks of trace may be produced.
+* Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
+
+.*Allowed Connections Between Components*
+[cols="20%,20%,~",options="header",]
+|===
+|*Input* |*Output* |*Description*
+|Ingress Port|Trace Encoder|Ingress Port (from hart) providing raw trace trace to be encoded
+
+|Trace Encoder|Trace RAM Sink|Single hart tracing to RAM buffer
+|Trace Encoder|Trace PIB Sink|Single hart tracing via pins
+|Trace Encoder|Trace ATB Bridge|Single hart tracing to Arm ATB infrastructure
+|Trace Encoder|Trace Funnel|Sending trace from single hart to Trace Funnel (to be combined from other RISC-V trace)
+
+|Trace Funnel|Trace Funnel|Sending combined trace from multiple harts to higher level Trace Funnel (to be combined from other RISC-V trace)
+|Trace Funnel|Trace RAM Sink|Sending combined trace from multiple harts to RAM buffer
+|Trace Funnel|Trace PIB Sink|Sending combined trace from multiple harts via pins
+|Trace Funnel|Trace ATB Bridge|Sending combined trace from multiple harts to Arm ATB infrastructure
+
+|Trace ATB Bridge |Arm ATB bus|Sending trace to ATB (to combine RISC-V trace with other Arm components on the system)
+|===
+
+NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible ...) Arm components in the system using RISC-V Trace sub-system.
+One of possible ways of doing so would be to create a custom trace component, configure it to encapsulate it as custom Nexus trace messages and connect it as input to one of trace funnels.
 
 === Accessing Trace Control Registers
 
@@ -952,7 +983,7 @@ The match value for the secondary comparator (bits 63:32).
 
 == Trace RAM Sink
 
-Trace RAM Sink may be instantiated or configured to support storing trace into dedicated SRAM or system SBA RAM. SRAM mode is using dedicated memory, while SBA mode is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated 'trRamData' register, while memory in SBA (System Bus Access) mode should be read as any other memory on system bus.
+Trace RAM Sink may be instantiated or configured to support storing trace into dedicated SRAM or system memory. SRAM mode is using dedicated memory, while system memory mode is accessign memory via system bus (care should be taken to not overwrite application code or data - it is usually done by reserving part of system memory for trace). Dedicated SRAM memory must be read via dedicated 'trRamData' register, while memory in SBA (System Bus Access) mode should be read as any other memory on system bus.
 
 Trace data is placed in memory in LSB order (first byte of trace packet/data is placed on LSB). For N-trace packets, MSEO bits are placed on LSB bits of each byte.
 
@@ -1279,7 +1310,8 @@ There are several (independent) reset bits defined by this specification
 * trTeActive - reset for Trace Encoder component (this will disable encoder from single hart)
 * trFunnelActive - reset for Trace Funnel component
 * trPibActive - reset for PIB component (resets Probe Interface Block only)
-* trAtbBridgeActive - resets ATB Bridge component (resets ATB Bridge Interface)
+* trRamActive - reset for RAM component (resets RAM Sink only)
+* trAtbBridgeActive - resets ATB Bridge component (resets ATB Bridge interface)
 
 These reset bits should (when kept low) reset most of other registers/fields/bits to defined reset values.
 
@@ -1298,9 +1330,10 @@ Reset and Discovery should be performned as follows:
 
 IMPORTANT: When 'tr??Active=1' is set no other bits should be changed. 
 
-* Read 'tr??Impl' and compare 'tr??ComType' field with expected value.
 * Handle 'tr??VerMinor/Major' as described in 'Versioning of Components' chapter.
-* Set some WARL fields and read back to discover supported component configuration - make sure component is NOT enabled by mistake.
+** If tr??VerMajor' is 0 (for Trace Encoder component ...) either handle it as legacy version 0 or abort with an error.
+* Read 'tr??Impl' and compare 'tr??ComType' field with expected value.
+* Set some WARL fields and read back to discover supported component configuration - make sure component is NOT enabled (by setting 'tr??Enabled=1' by mistake).
 * Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
 
 As we are dealing with several independent components, it is important to assure, that component which is in reset (or powered down) is keeping it's outputs on safe values, so garbage trace data is not emitted.
