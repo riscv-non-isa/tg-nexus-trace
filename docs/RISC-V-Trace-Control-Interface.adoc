@@ -47,7 +47,7 @@ This work is Copyright 2022 by RISC-V International.
 [preface]
 == Document State
 
-PDF generated on: {localtime}
+PDF generated on: {localdatetime}
 
 2022/12/20: Version 0.9.10-Stable
 
