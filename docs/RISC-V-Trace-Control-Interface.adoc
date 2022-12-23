@@ -61,9 +61,10 @@ NOTE: After approval by the group and status change from Stable to Frozen this c
 2022/12/22: Version 0.9.11-Stable
 
 * Changed RAM Sink SBA mode to SMEM mode (just rename) to not over use SBA term.
-* Re-arranged some chapters (for better structure)
+* Re-arranged some chapters (for better structure).
 * Added chapter describing possible connections between components.
-* All references to registers `highlighed` so are better visible when referenced in text.
+* Added chapter describing minimal requirements for all components (general without going into protocol details).
+* All references to registers `highlighted` so are better visible when referenced in text.
 * All tables with registers have numbers (for easier reference).
 * Added `teTeProtocolMajor/Minor` to be clarified in E-Trace and N-Trace PDFs.
 * Simplified 'Legacy version 0 chapter' (removed too hard to maintain list of changes and referring to original PDF donated by SiFive instead)
@@ -150,8 +151,8 @@ This document includes chapter 'Minimal Requirements' which include general requ
 
 There are two standard trace protocols which will utilize this interface:
 
-IMPORTANT: *TODO* Provide reference to RATIFIED E-Trace Specification Version 2.0 (*so far there is no such place*)
-.
+IMPORTANT: *TODO* Provide reference to RATIFIED E-Trace Specification Version 2.0 (*so far there is no such place*).
+
 IMPORTANT: *TODO* Provide reference to RATIFIED N-Trace Specification Version 1.0 (*so far there is no such place*) which will be ratified together with this document.
 
 This document (together with details provided in any of above documents) should be considered as a complete guideline for particular trace implementation.
