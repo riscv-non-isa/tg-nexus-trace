@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Dec 19, 2022
-:revnumber: 0.9.9
+:revdate: Dec 27, 2022
+:revnumber: 0.9.10
 :revremark: This document is in internally Frozen state (all notes take into account).
 :url-riscv: http://riscv.org
 :doctype: book
@@ -57,7 +57,11 @@ https://creativecommons.org/licenses/by/4.0/.
 
 This chapter will be removed before offical freeze (it is here to track changes)
 
+PDF generated on: {localdatetime}
+
 *STATUS:* Frozen (from TG perspective)
+
+2022/12/27: v0.9.10: Different `highlight` of trace signals. Changed few 'should' into 'must' (following discussions by email).
 
 2022/12/19: v0.9.9: Ambition to became officially Frozen (history removed)
 
