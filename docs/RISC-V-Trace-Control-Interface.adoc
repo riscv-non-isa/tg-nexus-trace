@@ -287,8 +287,10 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible ...) Arm components in the system using RISC-V Trace sub-system.
 One of possible ways of doing so would be to create a custom trace component, configure it to encapsulate it as custom Nexus trace messages and connect it as input to one of trace funnels.
 
+==== Example Componemt Connection Diagrams 
+
 ////
-TAKEN AS-IS from iommu_intro.adoc
+This comment is taken AS-IS from iommu_intro.adoc file
 Please in ditaa figures don't use the minus key '-' in your keyboard when
 typing text (like 'non-privileged' in the figure below).
 '-' is a special character that is used by ditaa to draw lines, not text.
@@ -305,6 +307,7 @@ Other potential unicode characters might be found in the following links:
 - https://www.compart.com/en/unicode/category/Pd
 - https://www.compart.com/en/unicode/bidiclass/ES
 ////
+
 [[fig:trace-topo-single]]
 .Simplest trace: Single Hart, Trace Encoder and Trace Sink/Bridge
 ["ditaa",shadows=false, separation=false, fontsize: 14]
