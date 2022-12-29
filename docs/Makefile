@@ -15,6 +15,8 @@ buildctrl:
 		--attribute=pdf-fontsdir=docs-resources/fonts \
 		--attribute=pdf-style=docs-resources/themes/riscv-pdf.yml \
 		--failure-level=ERROR \
+		--require=asciidoctor-diagram \
+		--require=asciidoctor-mathematical \
 		--out-file=$(PDF1_RESULT) \
 		$(HEADER1_SOURCE)
 
@@ -25,6 +27,8 @@ buildcon:
 		--attribute=pdf-fontsdir=docs-resources/fonts \
 		--attribute=pdf-style=docs-resources/themes/riscv-pdf.yml \
 		--failure-level=ERROR \
+		--require=asciidoctor-diagram \
+		--require=asciidoctor-mathematical \
 		--out-file=$(PDF2_RESULT) \
 		$(HEADER2_SOURCE)
 
