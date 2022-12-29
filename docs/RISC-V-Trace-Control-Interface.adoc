@@ -287,6 +287,106 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible ...) Arm components in the system using RISC-V Trace sub-system.
 One of possible ways of doing so would be to create a custom trace component, configure it to encapsulate it as custom Nexus trace messages and connect it as input to one of trace funnels.
 
+////
+TAKEN AS-IS from iommu_intro.adoc
+Please in ditaa figures don't use the minus key '-' in your keyboard when
+typing text (like 'non-privileged' in the figure below).
+'-' is a special character that is used by ditaa to draw lines, not text.
+Instead use a different unicode character that looks similar.
+The figure below uses the unicode character with code U+2212 instead of the '-'
+character of your keyboard (which has the unicode code U+002B).
+Note that in your editor both probably look the same, but when rendered by
+ditaa/asciidoc the '-' from your keyboard is used to draw a line, while the
+alternative looks as a minus symbol.
+If you don't know how to type an unicode character in your editor you might
+simply copy the '−' character in the 'non−privileged' word from the drawing
+below.
+Other potential unicode characters might be found in the following links:
+- https://www.compart.com/en/unicode/category/Pd
+- https://www.compart.com/en/unicode/bidiclass/ES
+////
+[[fig:trace-topo-single]]
+.Simplest trace: Single Hart, Trace Encoder and Trace Sink/Bridge
+["ditaa",shadows=false, separation=false, fontsize: 14]
+....
++----------------+
+| Single Hart    |
+|         +----------+    +---------+     +------------+ 
+|         |  Trace   |    |  Trace  |     | Trace Sink |
+|         | Ingress =====>| Encoder |---->|    or      |
+|         |  Port    |    |         |     | ATB Bridge |
+|         +----------+    +---------+     +------------+
+|                |
++----------------+
+....
+
+[[fig:trace-topo-multi]]
+.Multi-hart trace: Three harts, three Encoders, single Funnel and single Sink/Bridge
+["ditaa",shadows=false, separation=false, fontsize: 14]
+....
++-----------+   +---------+
+| Hart with |   |  Trace  |
+| Ingress   |==>| Encoder |---+
+|  Port     |   |         |   |
++-----------+   +---------+   |
+                              |
++-----------+   +---------+   |   +--------+     +-------------+ 
+| Hart with |   |  Trace  |   +-->| Trace  |     | Trace Sink  |
+| Ingress   |==>| Encoder |------>| Funnel |---->|    or       |
+|  Port     |   |         |   +-->|        |     | ATB Bridge  |
++-----------+   +---------+   |   +--------+     +-------------+
+                              |
++-----------+   +---------+   |
+| Hart with |   |  Trace  |   |
+| Ingress   |==>| Encoder |---+
+|  Port     |   |         |
++-----------+   +---------+
+....
+
+[[fig:trace-topo-clusters]]
+.Multi-cluster trace: two three-hart clusters with top-level Funnel and Sink/Bridge  
+["ditaa",shadows=false, separation=false, fontsize: 14]
+....
++-------------------------+
+| 3 Harts with 3 Encoders |
+|   and local Funnel      |---+
+|       (see above)       |   | 
++-------------------------+   |
+                              |   +--------+     +-------------+ 
+                              +-->| Trace  |     | Trace Sink  |
+                                  | Funnel |---->|    or       |
+                              +-->| (top)  |     | ATB Bridge  |
+                              |   +--------+     +-------------+
++-------------------------+   |
+| 3 Harts with 3 Encoders |   | 
+|   and local Funnel      |---+
+|       (see above)       |
++-------------------------+
+....
+
+[[fig:trace-topo-mixed]]
+.Local RAM Sink: Three-hart cluster plus extra hart with own RAM Sink (in SRAM mode)
+["ditaa",shadows=false, separation=false, fontsize: 14]
+....
++-------------------------+
+| 3 Harts with 3 Encoders |
+|     and local Funnel    |---+
+|       (see above)       |   | 
++-------------------------+   |
+                              |
++-----------+   +---------+   |   +--------+     +-------------+ 
+| Hart with |   |  Trace  |   +-->| Trace  |     | Trace Sink  |
+| Ingress   |==>| Encoder |------>| Funnel |---->|    or       |
+|  Port     |   |         |---+   | (top)  |     | ATB Bridge  |
++-----------+   +---------+   |   +--------+     +-------------+
+                              |
+                              v
+                      +----------------+ 
+                      | Trace RAM Sink |
+                      | (in SRAM mode) |
+                      +----------------+ 
+....
+
 === Accessing Trace Control Registers
 
 For the access method to the trace control registers, it makes a difference whether these registers shall be accessed by an external debug/trace tool, or by an internal debugger running on the chip.
