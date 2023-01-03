@@ -1,5 +1,5 @@
 = Nexus Messages (Details)
-Version 0.1
+Version 0.9.1
 :doctype: book
 :encoding: utf-8
 :lang: en
@@ -10,9 +10,335 @@ Version 0.1
 :le: &#8804;
 :rarr: &#8658;
 
-This chapter is using plain C-style identifiers for messages and message fields. Nexus is using *B-TYPE*, while here we have *BTYPE*. It will make references to code (both C and VHDL) easier. Message fields are shown in ‘sending order’ (left to right => first to last) - Nexus SPEC is showing tables with *TCODE* (as is sent first) in last row.
+This specification is using plain C-style identifiers for messages and message fields. Nexus is using *B-TYPE*, while here we have *BTYPE*. It will make references to code (both C and VHDL) easier. Message fields are shown in 'sending order' (left to right => first to last).
 
-== TODO (as provided by emails)
+NOTE: Original Nexus specification is showing tables with *TCODE* (which is sent first) in the last row.
+
+== Fields in Messages
+
+Table below shows all types of messages. Single row shows all fields in particular message. Many messages share fields and these fields are always present in same order. 
+
+[#Fields in Messages]
+.Fields in Messages
+[cols="10%,6%,6%,6%,6%,26%,8%,8%,8%,8%,8%",options="header",]
+
+|===========================================================================================
+| Message/Field:         |TCODE|SRC|SYNC|BTYPE|Other(rare)       |ICNT|xADDR|HIST|TSTAMP|Level
+|*Fld Size [bits]:* |[6]  |[M]|[4] |[2]  |     (different)       |[v] |[v]  |[v] |[v]   |
+|`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
+|`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
+|`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
+|`Error`                 |8    |Opt|    |     |ETYPE[4]+ PAD[v]  |    |     |    | Opt  |1
+|`ProgamTraceSync`       |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
+|`DirectBranchSync`      |11   |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
+|`IndirectBranchSync`    |12   |Opt|Yes |Yes  |                  |Yes |FADDR|    | Opt  |1
+|`ResourceFull`          |27   |Opt|    |     |RCODE[4]+ RDATA[v]|    |     |    | Opt  |2,4
+|`IndirectBranchHist`    |28   |Opt|    |Yes  |                  |Yes |UADDR|Yes | Opt  |3
+|`IndirectBranchHistSync`|29   |Opt|Yes |Yes  |                  |Yes |FADDR|Yes | Opt  |3
+|`RepeatBranch`          |30   |Opt|    |     |BCNT[v]           |    |     |    | Opt  |4
+|`ProgramCorrelation`    |33   |Opt|    |     |EVCODE[4]+ CDF[2] |Yes |     |Opt | Opt  |1,3
+|===========================================================================================
+
+*Fld Size:* [n] - fixed size field n-bit, [v] - variable size field, [M] - SRC is only for multi-hart/core tracing
+
+*Levels:*	1 (basic), 2 (optional), 3 (branch history suport), 4 (adds repeated branch for better compression of long loops)
+
+NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h defines all messages in machine-readable format. Here is part of this header showing how above messages are defined:
+
+[source,c]
+----
+  NEXM_BEG(IndirectBranchwithSync, 12),
+    NEXM_FLD(SYNC, 4),
+    NEXM_FLD(BTYPE, 2),
+    NEXM_VAR(ICNT),
+    NEXM_ADR(FADDR),
+    NEXM_VAR(TSTAMP),
+  NEXM_END(),
+
+  NEXM_BEG(ResourceFull, 27),
+    NEXM_FLD(RCODE, 4),
+    NEXM_VAR(RDATA),
+    NEXM_VAR(TSTAMP),
+  NEXM_END(),
+
+  NEXM_BEG(IndirectBranchHistory, 28),
+    NEXM_FLD(BTYPE, 2),
+    NEXM_VAR(ICNT),
+    NEXM_ADR(UADDR),
+    NEXM_VAR(HIST),
+    NEXM_VAR(TSTAMP),
+  NEXM_END(),
+----
+
+== Details of Fields
+
+[#Details of Fields]
+.Details of Fields
+[cols="10%,10%,40%,20%,20%",options="header",]
+|======================================================================================================
+| Field Name | Standard Size | Description | Values/Notes | Optimized Size
+| TCODE      | 6             | Message Type | Provided above | 4 or 3 (for level1)
+| SRC        | Vendor        | Source of message(only for multi - hart trace) | Hart index or trace ID | Max number of harts
+| SYNC       | 4             | Reason for Synchronization (compatible with Nexus Standard encoding)
+                               
+                               0: External Trigger
+
+                               1: Exit from Reset
+
+                               2: Periodic Synchronization
+
+                               3: Exit from Debug Mode
+
+                               4: Reserved
+
+                               5: Trace Enable (first after gap)
+
+                               6: Trace Event (watchpoint with action=4)
+
+                               7: Restart from FIFO overrun
+                                    |Always with FADDR field | 2
+| BTYPE      | 2             | Branch Type
+
+                                0: Indirect jump or call or return
+
+                                1: Exception or interrupt
+                                    | For indirect flow changes | 1 (same encoding)
+| ICNT       | Variable      | Number of 16 - bit half - instructions executed | | Max 4+6+6 = 16 bits (up to 2^16-1 = 64K-1 instructions)
+| FADDR      | Variable      | Full PC address (LSB=0 skipped) | Always with SYNC field |
+| UADDR      | Variable      | Update of PC address (XOR with recent xADDR drop) | Always with BTYPE field |
+| HIST       | Variable      | Direct Branch History bit-map (LSB denotes last branch) | MSB = 1 is 'end-guardian' | Max 5*6 = 30 bits
+| TSTAMP     | Variable      | Timestamp (optional) | See Timestamp chapter |
+5+|*Field for `Ownership` message*
+| PROCESS    | Variable      | ID of thread | | Max 6+6 = 12 bits
+5+|*Fields for `Error` message*
+| ETYPE      | 4             | Type of error 
+
+                                0: Packet queue overrun
+                                | Can be avoided by stall| 0 (just TCODE)
+| PAD        | Variable      | Padding with 0-s to assure TSTAMP field is aligned | Can be empty (0 bits)|0 (not needed)
+5+|*Fields for `ResourceFull` message*
+| RCODE      | 4             | Resource full code 
+
+                               0: ICNT counter overflown
+
+                               1: HIST buffer overflown
+| | 1
+| RDATA      | Variable      | Data for full resource (either partial ICNT or HIST) | | Max 4+6+6 or 5*6 bits
+5+|*Fields for `RepeatBranch` message*
+| BCNT       | Variable      | Number of times previous message is repeated. This message is generated if ICNT, HIST and target address are the same. | |
+5+|*Fields for `ProgramCorrelation` message*
+| EVCODE     | 4             | Reason to generate Program Correlation
+
+                               0: Entry into debug mode
+
+                               1: Entry into low-power mode
+                                
+                               4: Program trace disabled
+                            || 1 (debug or diabled)
+| CDF        | 2             | Number of CDATA,
+
+                               0=only ICNT field follows
+
+                               1=HIST field follows (for HTM trace)  
+                            || 0 (HIST always present for HTM)
+|======================================================================================================
+
+== Rules of generating messages
+
+. In case generated message includes ICNT/HIST fields, corresponding value is reset.
+. If tracing was disabled and is restarted 'Program Trace Sync' message is generated.
+. Any retired instuction increments ICNT (+1 or +2).
+.. In case ICNT overflows, Resource Full message (with ICNT before overflow) is generated and ICNT is reset to 1 or 2.
+. If this is linear instruction, nothing else is done.
+.. In case this is direct/inferable jump (into fixed address), nothing else is done.
+.. Not taken branch in BTM mode is also considered as an linear instruction.
+. Branch (conditional) either generates DirectBranch (if taken) or adds single bit to branch history buffer. 
+.. In case HIST overflows, Resource Full message (with HIST before overflow) is generated and HIST is trimmed to last bit.
+
+=== Pseudo Code of Simple Encoder
+
+Code below is simplified part of actual C-code used by reference encoder (in C). It defines two functions:
+
+* NTraceEncoderInit(void) - initialize state of encoder
+* NTraceEncoderHandleRetired(uint64_t `addr`, uint32_t `flags`) - handle single retired instruction
+** `addr` - address of retired instruction
+** `info` - information about instruction (type, size, taken/non-taken)
+
+[source,c]
+----
+
+// Use N-trace TCODE messages
+#define NEXUS_TCODE_OwnershipTraceMessage         2
+#define NEXUS_TCODE_DirectBranch                  3
+#define NEXUS_TCODE_IndirectBranch                4
+#define NEXUS_TCODE_Error                         8
+#define NEXUS_TCODE_ProgramTraceSynchronization   9
+#define NEXUS_TCODE_DirectBranchwithSync          11
+#define NEXUS_TCODE_IndirectBranchwithSync        12
+#define NEXUS_TCODE_ResourceFull                  27
+#define NEXUS_TCODE_IndirectBranchHistory         28
+#define NEXUS_TCODE_IndirectBranchHistorywithSync 29
+#define NEXUS_TCODE_RepeatBranch                  30
+#define NEXUS_TCODE_ProgramTraceCorrelation       33
+
+// Functions/macros which encode bits in 'info' (example...)
+#define INFO_LINEAR   0x1   // Linear (plain instruction or not taken BRANCH)
+#define INFO_4        0x2   // If not 4, it must be 2 on RISC-V
+#define INFO_INDIRECT 0x8   // Possible for most types above
+#define INFO_BRANCH   0x10  // Always direct on RISC-V (may have LINEAR too)
+
+#define InfoIsBranchTaken(info) (!((info) & INFO_LINEAR))
+#define InfoIsSize32(info)      ((info) & INFO_4)
+#define InfoIsBranch(info)      ((info) & INFO_BRANCH)
+#define InfoIsIndirect(info)    ((info) & INFO_INDIRECT)
+
+// Function which emit N-trace packets (all are empty here)
+void EmitFix(int nbits, uint32_t value);    // Emit fixed-size field
+void EmitVar(uint64_t value);               // Emit variable size field
+void EmitEnd();                             // Terminate message
+
+// Encoder configuration options
+const bool      enco_opt_branch_history = true;     // Configuration option
+const uint32_t  enco_opt_limICNT    = 0x10000;      // Limit of ICNT (max is 6+6+4 bits)    
+const uint32_t  enco_opt_limHIST    = 0x40000000;   // Limit of HIST (max is 5*6 bits)   
+
+// Encoder state variables
+static uint32_t encoNextEmit = 0;   // TCODE to be emitted next time
+static uint32_t encoICNT = 0;       // ICNT accumulated
+static uint32_t encoHIST = 1;       // HIST accumulated (MSB is guardian bit)
+static uint64_t encoADDR = 0;       // Last emitted address
+
+void NTraceEncoderInit()
+{
+    encoADDR = 0;
+    encoICNT = 0;   // Empty ICNT and HIST
+    encoHIST = 1;
+
+    encoNextEmit = NEXUS_TCODE_ProgramTraceSynchronization;
+}
+
+void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
+{
+    // Optionally emit what was determined previously
+    if (encoNextEmit != 0)
+    {
+        EmitFix(6, encoNextEmit);   // Emit TCODE (as determined)
+
+        // Emit message fields (accordingly ...)
+        if (encoNextEmit == NEXUS_TCODE_ProgramTraceSynchronization)
+        {
+            EmitFix(4, 1);          // Emit SYNC=1  (4-bit)
+            EmitVar(encoICNT);      // Emit ICNT    (variable)
+            EmitVar(addr >> 1);     // Emit FADDR   (variable)
+        }
+        else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory || 
+                 encoNextEmit == NEXUS_TCODE_IndirectBranch)
+        {
+            EmitFix(2, 0);                      // Emit BTYPE=0 (2-bit)
+            EmitVar(encoICNT);                  // Emit ICNT    (variable)
+            EmitVar((encoADDR ^ addr) >> 1);    // Emit UADDR   (variable)
+
+            if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory)
+            {
+                EmitVar(encoHIST);              // Emit HIST    (variable)
+            }
+        }
+        else if (encoNextEmit == NEXUS_TCODE_DirectBranch)
+        {
+            EmitVar(encoICNT);                  // Emit ICNT    (variable)
+        }
+
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        if (encoNextEmit != NEXUS_TCODE_DirectBranch)
+        {
+            encoADDR = addr;  // This is new address
+        }
+        encoNextEmit = 0;   // Only one time
+
+        encoICNT = 0;       // Start from 'empty' ICNT and HIST
+        encoHIST = 1;
+    }
+
+    // Update ICNT
+    uint32_t prevICNT = encoICNT;   // In case ICNT will overflow now, we need to emit previous value ...
+    if (InfoIsSize32(info)) encoICNT += 2; else encoICNT += 1;
+
+    // Determine type of packet (only if this is branch or indirect ...)
+    if (InfoIsBranch(info))
+    {
+        if (enco_opt_branch_history)
+        {
+            // Update branch history buffer (add LSB bit)
+            if (InfoIsBranchTaken(info))
+                encoHIST = (encoHIST << 1) | 0; // Mark branch as taken
+            else
+                encoHIST = (encoHIST << 1) | 1; // Mark branch as not-taken
+        }
+        else
+        {
+            if (InfoIsBranchTaken(info))
+                encoNextEmit = NEXUS_TCODE_DirectBranch;        // Emit destination address (next retired)
+            else
+                ;   // Not taken branch is considered as linear instruction
+        }
+    }
+    else
+    if (InfoIsIndirect(info))
+    {
+        if (enco_opt_branch_history)
+            encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;   // Emit destination address (next retired)
+        else
+            encoNextEmit = NEXUS_TCODE_IndirectBranch;          // Emit destination address (next retired)
+    }
+
+    // Optionally emit ICNT overflow
+    if (encoICNT > enco_opt_limICNT) // Instruction count overflown ...
+    {
+        // Emit ResourceFull with ICNT before this instruction
+        EmitFix(6, NEXUS_TCODE_ResourceFull);
+        EmitFix(4, 0);                          // RCODE=0 (ICNT overflow)
+        EmitVar(prevICNT);                      // RDATA=ICNT
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        // Set ICNT for this instruction
+        if (InfoIsSize32(info)) encoICNT = 2; else encoICNT = 1;
+    }
+
+    // Optionally emit HIST overflow
+    if (encoHIST & enco_opt_limHIST) // Is HIST buffer overflown?
+    {
+        // Emit history BEFORE this instruction (remove LSB bit)
+        EmitFix(6, NEXUS_TCODE_ResourceFull);
+        EmitFix(4, 1);                          // RCODE=1 (HIST overflow)
+        EmitVar(encoHIST >> 1);                 // RDATA=HIST
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        // Keep single HIST for this branch (guardian | single LSB bit from encoHIST)
+        encoHIST = (0x1 << 1) | (encoHIST & 0x1);
+    }
+}
+----
+
+== Optimized Variants
+
+=== Possible Handling of ICNT and HIST Overflows
+
+In case ICNT or HIST counter overflows(for single message), there are the following possibilities:
+
+. Counter keeps counting(from 1 again) and *ResourceFull* message is emitted - it may happen many times.
+.. IMPORTANT : Periodic SYNC-message must 'break' this sequence.
+. Normal *DirectBranch* message is emitted (but decoder will know that branch was not reached at PC determined by *ICNT*).
+. Artificial SYNC-message is emitted (this is only OK for *ICNT* overflows in level '1' - this is rare to have a lot of linear instructions).
+
+=== Possible Omission of ICNT Field (for better compression)
+
+. This is only idea - may not be correct in all corner cases.
+. In case of *DirecBranch* and *History...* messages, it is really not necessary to know number of instructions needed to reach next branch as it may be found while following types of instructions.
+. This may be variants of *TCODE* which allow skipping *ICNT* to be treated as pure extension.
+
+
+=== TODO (as provided by emails)
 
 From Robert (2020/11/17):
 
@@ -46,72 +372,3 @@ From Jay (2020/11/19):
 .. Do we need a message (could be Program Correlation) to convey CPU mode?
 . Further optimization/compression of branch message in history mode can be achieved with a return stack buffer for sub routines, this is more for further discussions.
 
-== Fields in Messages
-
-[#Fields in Messages]
-.Fields in Messages
-[width = "100%", options = header]
-|==========================================================================================
-| Message/Field Name   |TCODE|SRC|SYNC|BTYPE|Other(rare)      |ICNT|xADDR|HIST|TSTAMP|Level
-|                  Size|[6]  |[M]|[4] |[2]  |                 |[v] |[v]  |[v] |[v]   |
-|Ownership             |2    |   |    |     |PROCESS[v]       |    |     |    |      |2
-|DirectBranch          |3    |   |    |     |                 |Yes |     |    |      |1
-|IndirectBranch        |4    |   |    |Yes  |                 |Yes |UADDR|    |      |1
-|Error                 |8    |   |    |     |ETYPE[4]+PAD[v]  |    |     |    |      |1
-|ProgamTraceSync       |9    |   |Yes |     |                 |Yes |FADDR|    |      |1
-|DirectBranchSync      |11   |   |Yes |     |                 |Yes |FADDR|    |      |1
-|IndirectBranchSync    |12   |   |Yes |Yes  |                 |Yes |FADDR|    |      |1
-|ResourceFull          |27   |   |    |     |RCODE[4]+RDATA[v]|    |     |    |      |2
-|IndirectBranchHist    |28   |   |    |Yes  |                 |Yes |UADDR|Yes |      |3
-|IndirectBranchHistSync|29   |   |Yes |Yes  |                 |Yes |FADDR|Yes |      |3
-|RepeatBranch          |30   |   |    |     |BCNT[v]          |    |     |    |      |4
-|ProgramCorrelation    |33   |   |    |     |EVCODE[4]+CDF[2] |Yes |     |    |      |1
-|==========================================================================================
-
-*Fields:* [n] – fixed size field, [v] – variable size field, [M] – only for multi-hart/core trace
-
-*Levels:*	1 (compulsory), 2 (optional), 3 (adds branch history), 4 (adds repeated branch)
-
-NOTE: Nexus SPEC define CANCEL and MAP fields. Both are not applicable. CANCEL is used to cancel speculative execution, while ingress-port provides retired instructions. MAP field is for many address spaces (we have only one code space).
-
-== Details of Fields
-
-[#Details of Fields]
-.Details of Fields
-[width = "100%", options = header]
-|======================================================================================================
-| Field Name | Standard Size | Description | Values / Notes | Optimized Variant
-| TCODE      | 6             | Message Type | Provided above | 4 or 3 (for level1)
-| SRC        | Vendor        | Source of message(only for multi - hart trace) | Hart index or trace ID | Max number of harts
-| SYNC       | 4             | Reason for Synchronization|Always with FADDR field | 2
-| BTYPE      | 2             | Branch Type | For indirect branches only | 1
-| ICNT       | Variable      | Number of 16 - bit half - instructions executed | | Max 4 + 6 + 6 bits
-| FADDR      | Variable      | Full PC address(without LSB bit) | Always with SYNC field |
-| UADDR      | Variable      | Update of PC address(XOR with recent xADDR drop) | Always with BTYPE field |
-| HIST       | Variable      | Direct Branch History bit-map (LSB denotes last branch) | MSB = 1 is 'end-guardian' | Max 5 * 6 bits
-| TSTAMP     | Variable      | Timestamp(optional) | See Timestamp chapter |
-5+| Other Fields
-| PROCESS    | Variable      | ID of thread | | Max 6 + 6 bits
-| ETYPE      | 4             | Type of error | | 1 (just overflow)
-| PAD        | Variable      | Just padding(always 0) to assure TSTAMP is aligned | |
-| RCODE      | 4             | Resource full code (ICNT and/or HIST overflow) | | 1
-| RDATA      | Variable      | Data for full resource (either I - CNT or HIST) | | Max 5 + 6 bits
-| BCNT       | Variable      | Number of times previous message is repeated | |
-| EVCODE     | 4             | Reason to generate Program Correlation || 1
-| CDF        | 2             | Number of CDATA | Always '0' | For alignment only
-|======================================================================================================
-
-== Possible Handling of ICNT and HIST Overflows
-
-In case ICNT or HIST counter overflows(for single message), there are the following possibilities:
-
-. Counter keeps counting(from 1 again) and *ResourceFull* message is emitted – it may happen many times.
-.. IMPORTANT : Periodic SYNC-message must ‘break’ this sequence.
-. Normal *DirectBranch* message is emitted (but decoder will know that branch was not reached at PC determined by *ICNT*).
-. Artificial SYNC-message is emitted (this is only OK for *ICNT* overflows in level ‘1’ – this is rare to have a lot of linear instructions).
-
-== Possible Omission of ICNT Field (for better compression)
-
-. This is only idea – may not be correct in all corner cases.
-. In case of *DirecBranch* and *History...* messages, it is really not necessary to know number of instructions needed to reach next branch as it may be found while following types of instructions.
-. This may be variants of *TCODE* which allow skipping *ICNT* to be treated as  pure extension.
