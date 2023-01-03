@@ -29,7 +29,7 @@ Table below shows all types of messages. Single row shows all fields in particul
 |`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
 |`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
 |`Error`                 |8    |Opt|    |     |ETYPE[4]+ PAD[v]  |    |     |    | Opt  |1
-|`ProgamTraceSync`       |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
+|`ProgramTraceSync`      |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`DirectBranchSync`      |11   |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`IndirectBranchSync`    |12   |Opt|Yes |Yes  |                  |Yes |FADDR|    | Opt  |1
 |`ResourceFull`          |27   |Opt|    |     |RCODE[4]+ RDATA[v]|    |     |    | Opt  |2,4
@@ -53,13 +53,13 @@ NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob
     NEXM_VAR(ICNT),
     NEXM_ADR(FADDR),
     NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  NEXM_END,
 
   NEXM_BEG(ResourceFull, 27),
     NEXM_FLD(RCODE, 4),
     NEXM_VAR(RDATA),
     NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  NEXM_END,
 
   NEXM_BEG(IndirectBranchHistory, 28),
     NEXM_FLD(BTYPE, 2),
@@ -67,7 +67,7 @@ NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob
     NEXM_ADR(UADDR),
     NEXM_VAR(HIST),
     NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  NEXM_END,
 ----
 
 == Details of Fields
