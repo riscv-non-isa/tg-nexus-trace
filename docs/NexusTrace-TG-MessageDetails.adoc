@@ -24,7 +24,7 @@ Table below shows all types of messages. Single row shows all fields in particul
 
 |===========================================================================================
 | Message/Field:         |TCODE|SRC|SYNC|BTYPE|Other(rare)       |ICNT|xADDR|HIST|TSTAMP|Level
-|*Fld Size [bits]:* |[6]  |[M]|[4] |[2]  |     (different)       |[v] |[v]  |[v] |[v]   |
+|*Field Size [bits]:* |[6]  |[M]|[4] |[2]  |     (different)       |[v] |[v]  |[v] |[v]   |
 |`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
 |`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
 |`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
@@ -39,9 +39,9 @@ Table below shows all types of messages. Single row shows all fields in particul
 |`ProgramCorrelation`    |33   |Opt|    |     |EVCODE[4]+ CDF[2] |Yes |     |Opt | Opt  |1,3
 |===========================================================================================
 
-*Fld Size:* [n] - fixed size field n-bit, [v] - variable size field, [M] - SRC is only for multi-hart/core tracing
+*Field Size:* [n] - fixed size field n-bit, [v] - variable size field, [M] - SRC is only for multi-hart/core tracing
 
-*Levels:*	1 (basic), 2 (optional), 3 (branch history suport), 4 (adds repeated branch for better compression of long loops)
+*Level:*	1 (basic), 2 (optional), 3 (branch history suport), 4 (adds repeated branch for better compression of long loops)
 
 NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h defines all messages in machine-readable format. Here is part of this header showing how above messages are defined:
 
