@@ -8,10 +8,15 @@ Programs provided by [Embench](https://github.com/embench/embench-iot) will be a
 ## Results (Nexus Trace compression as displayed by NexRv tool)
 
 * Nexus Level1.0 (only Direct Branch messages):
+
 ** Stat: 12980 bytes, 6233 messages, 0 error messages, 2.08 bytes/message, 164959 instr, 0.63 bits/instr
+
 * Nexus Level2.0 (with Branch History messages):
+
 **Stat: 4994 bytes, 485 messages, 0 error messages, 10.30 bytes/message, 164959 instr, 0.24 bits/instr
+
 * Nexus Level2.1 (with Repeat Branch messages):
+
 **Stat: 4906 bytes, 485 messages, 0 error messages, 10.12 bytes/message, 164959 instr, 0.24 bits/instr
 
 ## Files
