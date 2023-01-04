@@ -79,12 +79,12 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
     prevICNT = 0;
     prevHIST = 0; // Will never match ...
 
-    encoNextEmit = NEXUS_TCODE_ProgramTraceSynchronization;
+    encoNextEmit = NEXUS_TCODE_ProgTraceSync;
   }
 
   if (info == 0 && encoICNT > 0)  // Flush requested
   {
-    encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;
+    encoNextEmit = NEXUS_TCODE_IndirectBranchHist;
     prevHIST = 0; // Make sure repeat will be generated
   }
 
@@ -95,7 +95,7 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
 
     if (level >= 21)  // This piece of code detects and generates Repeat Branch message
     {
-      if ((encoADDR == addr) && (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory) && (prevHIST == encoHIST) && (prevICNT == encoICNT))
+      if ((encoADDR == addr) && (encoNextEmit == NEXUS_TCODE_IndirectBranchHist) && (prevHIST == encoHIST) && (prevICNT == encoICNT))
       {
         // IndirectBranchHistory message back to same address
         encoBCNT++;
@@ -119,14 +119,14 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
     }
 
     msg[pos++] = encoNextEmit << 2;
-    if (encoNextEmit == NEXUS_TCODE_ProgramTraceSynchronization)
+    if (encoNextEmit == NEXUS_TCODE_ProgTraceSync)
     {
       msg[pos++] = 0x1 << 2;  // SYNC:4=1 (always)
       pos = AddVar(encoICNT, 6 - 4, msg, pos);
       pos = AddVar(addr >> NEXUS_PARAM_AddrSkip, 0, msg, pos);
       prevHIST = 0; // Will never match
     }
-    else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory || encoNextEmit == NEXUS_TCODE_IndirectBranch)
+    else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist || encoNextEmit == NEXUS_TCODE_IndirectBranch)
     {
       prevHIST = encoHIST;  // Save to check for repeat next time ...
       prevICNT = encoICNT;
@@ -135,7 +135,7 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
       pos = AddVar(encoICNT, 6 - 2, msg, pos);
       pos = AddVar((encoADDR ^ addr) >> NEXUS_PARAM_AddrSkip, -1, msg, pos);
 
-      if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory)
+      if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist)
       {
         pos = AddVar(encoHIST, 0, msg, pos);
       }
@@ -176,12 +176,12 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
     }
     else if (info & INFO_INDIRECT)
     {
-      encoNextEmit = NEXUS_TCODE_IndirectBranchHistory; // Emit on next address time ...
+      encoNextEmit = NEXUS_TCODE_IndirectBranchHist; // Emit on next address time ...
     }
 
     // Make sure we do not make fields too big (this was never checked ...)
     // if (encoICNT >= (0x3FF - 2))  encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;
-    if (encoHIST & (0x1 << 31))   encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;
+    if (encoHIST & (0x1 << 31))   encoNextEmit = NEXUS_TCODE_IndirectBranchHist;
   }
   else
   {

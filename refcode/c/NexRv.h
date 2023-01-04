@@ -29,18 +29,18 @@
 #define NEXUS_FLDSIZE_TCODE                       6 // This is standard
 
 // Nexus TCODE values applicable to RISC-V
-#define NEXUS_TCODE_OwnershipTraceMessage         2
+#define NEXUS_TCODE_Ownership                     2
 #define NEXUS_TCODE_DirectBranch                  3
 #define NEXUS_TCODE_IndirectBranch                4
 #define NEXUS_TCODE_Error                         8
-#define NEXUS_TCODE_ProgramTraceSynchronization   9
-#define NEXUS_TCODE_DirectBranchwithSync          11
-#define NEXUS_TCODE_IndirectBranchwithSync        12
+#define NEXUS_TCODE_ProgTraceSync                 9
+#define NEXUS_TCODE_DirectBranchSync              11
+#define NEXUS_TCODE_IndirectBranchSync            12
 #define NEXUS_TCODE_ResourceFull                  27
-#define NEXUS_TCODE_IndirectBranchHistory         28
-#define NEXUS_TCODE_IndirectBranchHistorywithSync 29
+#define NEXUS_TCODE_IndirectBranchHist            28
+#define NEXUS_TCODE_IndirectBranchHistSync        29
 #define NEXUS_TCODE_RepeatBranch                  30
-#define NEXUS_TCODE_ProgramTraceCorrelation       33
+#define NEXUS_TCODE_ProgTraceCorrelation          33
 
 // End of standard values
 //****************************************************************************

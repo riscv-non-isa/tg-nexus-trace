@@ -201,7 +201,7 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_ProgramTraceSynchronization:
+    case NEXUS_TCODE_ProgTraceSync:
       {
         // NEX_FLDGET(SYNC); // We ignore this for now
         NEX_FLDGET(ICNT);
@@ -213,7 +213,7 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_DirectBranchwithSync:
+    case NEXUS_TCODE_DirectBranchSync:
       {
         // NEX_FLDGET(SYNC); // We ignore this for now
         NEX_FLDGET(ICNT);
@@ -224,7 +224,7 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_IndirectBranchwithSync:
+    case NEXUS_TCODE_IndirectBranchSync:
       {
         // NEX_FLDGET(SYNC); // We ignore this for now
         // NEX_FLDGET(BTYPE); // We ignore this for now
@@ -236,7 +236,7 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_IndirectBranchHistory:
+    case NEXUS_TCODE_IndirectBranchHist:
       {
         // NEX_FLDGET(BTYPE); // We ignore this for now
         NEX_FLDGET(ICNT);
@@ -249,7 +249,7 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_IndirectBranchHistorywithSync:
+    case NEXUS_TCODE_IndirectBranchHistSync:
       {
         // NEX_FLDGET(SYNC); // We ignore this for now
         // NEX_FLDGET(BTYPE); // We ignore this for now
@@ -266,7 +266,7 @@ static int MsgHandle(FILE *f, int disp)
 
     case NEXUS_TCODE_Error:
     case NEXUS_TCODE_ResourceFull:
-    case NEXUS_TCODE_ProgramTraceCorrelation:
+    case NEXUS_TCODE_ProgTraceCorrelation:
       // We ignore these now - these are either at very end
       // or are followed by full-sync
       break;

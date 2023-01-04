@@ -24,19 +24,19 @@ Table below shows all types of messages. Single row shows all fields in particul
 
 |===========================================================================================
 | Message/Field:         |TCODE|SRC|SYNC|BTYPE|Other(rare)       |ICNT|xADDR|HIST|TSTAMP|Level
-|*Field Size [bits]:* |[6]  |[M]|[4] |[2]  |     (different)       |[v] |[v]  |[v] |[v]   |
+|*Field Size [bits]:*    |[6]  |[M]|[4] |[2]  |   [mixture]      |[v] |[v]  |[v] |[v]   |
 |`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
 |`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
 |`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
 |`Error`                 |8    |Opt|    |     |ETYPE[4]+ PAD[v]  |    |     |    | Opt  |1
-|`ProgramTraceSync`      |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
+|`ProgTraceSync`         |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`DirectBranchSync`      |11   |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`IndirectBranchSync`    |12   |Opt|Yes |Yes  |                  |Yes |FADDR|    | Opt  |1
 |`ResourceFull`          |27   |Opt|    |     |RCODE[4]+ RDATA[v]|    |     |    | Opt  |2,4
 |`IndirectBranchHist`    |28   |Opt|    |Yes  |                  |Yes |UADDR|Yes | Opt  |3
 |`IndirectBranchHistSync`|29   |Opt|Yes |Yes  |                  |Yes |FADDR|Yes | Opt  |3
 |`RepeatBranch`          |30   |Opt|    |     |BCNT[v]           |    |     |    | Opt  |4
-|`ProgramCorrelation`    |33   |Opt|    |     |EVCODE[4]+ CDF[2] |Yes |     |Opt | Opt  |1,3
+|`ProgTraceCorrelation`  |33   |Opt|    |     |EVCODE[4]+ CDF[2] |Yes |     |Opt | Opt  |1,3
 |===========================================================================================
 
 *Field Size:* [n] - fixed size field n-bit, [v] - variable size field, [M] - SRC is only for multi-hart/core tracing
@@ -47,27 +47,27 @@ NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob
 
 [source,c]
 ----
-  NEXM_BEG(IndirectBranchwithSync, 12),
+  NEXM_BEG(IndirectBranchSync, 12),
     NEXM_FLD(SYNC, 4),
     NEXM_FLD(BTYPE, 2),
     NEXM_VAR(ICNT),
     NEXM_ADR(FADDR),
     NEXM_VAR(TSTAMP),
-  NEXM_END,
+  NEXM_END(),
 
   NEXM_BEG(ResourceFull, 27),
     NEXM_FLD(RCODE, 4),
     NEXM_VAR(RDATA),
     NEXM_VAR(TSTAMP),
-  NEXM_END,
+  NEXM_END(),
 
-  NEXM_BEG(IndirectBranchHistory, 28),
+  NEXM_BEG(IndirectBranchHist, 28),
     NEXM_FLD(BTYPE, 2),
     NEXM_VAR(ICNT),
     NEXM_ADR(UADDR),
     NEXM_VAR(HIST),
     NEXM_VAR(TSTAMP),
-  NEXM_END,
+  NEXM_END(),
 ----
 
 == Details of Fields
@@ -168,18 +168,18 @@ Code below is simplified part of actual C-code used by reference encoder (in C).
 ----
 
 // Use N-trace TCODE messages
-#define NEXUS_TCODE_OwnershipTraceMessage         2
+#define NEXUS_TCODE_Ownership                     2
 #define NEXUS_TCODE_DirectBranch                  3
 #define NEXUS_TCODE_IndirectBranch                4
 #define NEXUS_TCODE_Error                         8
-#define NEXUS_TCODE_ProgramTraceSynchronization   9
-#define NEXUS_TCODE_DirectBranchwithSync          11
-#define NEXUS_TCODE_IndirectBranchwithSync        12
+#define NEXUS_TCODE_ProgTraceSync                 9
+#define NEXUS_TCODE_DirectBranchSync              11
+#define NEXUS_TCODE_IndirectBranchSync            12
 #define NEXUS_TCODE_ResourceFull                  27
-#define NEXUS_TCODE_IndirectBranchHistory         28
-#define NEXUS_TCODE_IndirectBranchHistorywithSync 29
+#define NEXUS_TCODE_IndirectBranchHist            28
+#define NEXUS_TCODE_IndirectBranchHistSync        29
 #define NEXUS_TCODE_RepeatBranch                  30
-#define NEXUS_TCODE_ProgramTraceCorrelation       33
+#define NEXUS_TCODE_ProgTraceCorrelation          33
 
 // Functions/macros which encode bits in 'info' (example...)
 #define INFO_LINEAR   0x1   // Linear (plain instruction or not taken BRANCH)
@@ -214,7 +214,7 @@ void NTraceEncoderInit()
     encoICNT = 0;   // Empty ICNT and HIST
     encoHIST = 1;
 
-    encoNextEmit = NEXUS_TCODE_ProgramTraceSynchronization;
+    encoNextEmit = NEXUS_TCODE_ProgTraceSync;
 }
 
 void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
@@ -225,20 +225,20 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
         EmitFix(6, encoNextEmit);   // Emit TCODE (as determined)
 
         // Emit message fields (accordingly ...)
-        if (encoNextEmit == NEXUS_TCODE_ProgramTraceSynchronization)
+        if (encoNextEmit == NEXUS_TCODE_ProgTraceSync)
         {
             EmitFix(4, 1);          // Emit SYNC=1  (4-bit)
             EmitVar(encoICNT);      // Emit ICNT    (variable)
             EmitVar(addr >> 1);     // Emit FADDR   (variable)
         }
-        else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory || 
+        else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist || 
                  encoNextEmit == NEXUS_TCODE_IndirectBranch)
         {
             EmitFix(2, 0);                      // Emit BTYPE=0 (2-bit)
             EmitVar(encoICNT);                  // Emit ICNT    (variable)
             EmitVar((encoADDR ^ addr) >> 1);    // Emit UADDR   (variable)
 
-            if (encoNextEmit == NEXUS_TCODE_IndirectBranchHistory)
+            if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist)
             {
                 EmitVar(encoHIST);              // Emit HIST    (variable)
             }
@@ -278,7 +278,7 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
         else
         {
             if (InfoIsBranchTaken(info))
-                encoNextEmit = NEXUS_TCODE_DirectBranch;        // Emit destination address (next retired)
+                encoNextEmit = NEXUS_TCODE_DirectBranch;    // Emit destination address (next retired)
             else
                 ;   // Not taken branch is considered as linear instruction
         }
@@ -287,9 +287,9 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
     if (InfoIsIndirect(info))
     {
         if (enco_opt_branch_history)
-            encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;   // Emit destination address (next retired)
+            encoNextEmit = NEXUS_TCODE_IndirectBranchHist;  // Emit destination address (next retired)
         else
-            encoNextEmit = NEXUS_TCODE_IndirectBranch;          // Emit destination address (next retired)
+            encoNextEmit = NEXUS_TCODE_IndirectBranch;      // Emit destination address (next retired)
     }
 
     // Optionally emit ICNT overflow
