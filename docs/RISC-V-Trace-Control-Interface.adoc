@@ -60,6 +60,7 @@ NOTE: After approval by the group and status change from Stable to Frozen this c
 
 2023/1/9: Version 0.9.12-Stable
 
+* Clarifying PIB Idle Cycles (moved NOTE to separated chapter).
 * Added 'trFunnelInputDis' register (allow tracing to more than one destination).
 * Notes from Iain (stall-related end typos) taken into account.
 
@@ -1377,7 +1378,7 @@ Traditionally, off-chip trace has used this protocol. There are a number of para
 
 This protocol is oriented to send full, variable length trace messages rather than fixed-width trace words. The idle state of TRC_DATA is all-ones for Nexus trace and (TBD) for Efficient Trace for RISC-V (E-Trace) Specification. When a message start is detected, this sample and possibly the next few (depending on the width of TRC_DATA) are collected until a complete byte has been received. Bytes are transmitted LSB first, with TRC_DATA[0] representing the LSB in each beat of data. The receiver continues collecting bytes until a complete message has been received. The criteria for this depends on the trace format. For Nexus, the last byte of a message is one that has mseo=1,1. For E-Trace, the header byte may include a byte count. After the last byte of a message, the data signals may then go to their idle state or a new message may begin in the next bit period.
 
-NOTE: Trace messages may start on any (positive or negative) edge of trace clock. Once a message is started all bits of that message must be transmitted on consecutive trace clock edges (both positive and negative). Said so, an idle sequence may be sent using any number of trace clock edges (positive or negative). But some implementations may always send idle sequences using even number of trace clocks - in such a case all packets will always start on a positive or negative trace clock.
+==== PIB Clock Center
 
 The trace clock, TRC_CLK, normally has edges coincident with the TRC_DATA edges. Typically, a trace probe will delay trace data or use a PLL to recover a sampling clock that is twice the frequency of TRC_CLK and shifted 90 degrees so that its rising edges occur near the center of each bit period. If the PIB implementation supports it, the debugger can set `trPibClkCenter` to change the timing of TRC_CLK so that there is a TRC_CLK edge at the center of each bit period on TRC_DATA. Note that this option cuts the data rate in half relative to normal parallel mode and still requires the probe to sample TRC_DATA on both edges of TRC_CLK.
 
@@ -1388,6 +1389,27 @@ image:./RISC-V-Trace-Control-Interface-images/pib-ref0.png[image]
 And an example showing 8-bit parallel mode transmitting a 4-byte packet with `trPibClkCenter` = 1  
 
 image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image]
+
+==== PIB Idle Cycles
+
+Trace messages may start on any (positive or negative) edge of trace clock. *Once a message is started all bits of that message must be transmitted on consecutive trace clock edges (both positive and negative)*. Said so, an idle sequence may be sent using any number of trace clock edges (positive or negative).
+
+To explain this let's assume the following serially transmitted (in 1-bit PIB mode) sequences of bits (MSEO[0] first on the left):
+
+* < `11` DDDDDD> - sequence of 8 bits in last byte of message ( `11` = MSEO, DDDDDD = six DATA bits)
+* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
+* < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
+
+The following 4 example sequences:
+
+* ... < `11` DDDDDD> < `00` TTTTTT> ...           => No idle bits/cycles between consecutive messages.
+* ... < `11` DDDDDD> < `1*2` > < `00` TTTTTT> ... => Two (even) idle bits.
+* ... < `11` DDDDDD> < `1*3` > < `00` TTTTTT> ... => Three (odd) idle bits (second message starts at another trace clock edge).
+* ... < `11` DDDDDD> < `1*8` > < `00` TTTTTT> ... => 8 idle bits (idle sequence can be considered as byte 0xFF).
+
+are all valid.
+
+NOTE: Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
 
 === Calibration Mode
 
