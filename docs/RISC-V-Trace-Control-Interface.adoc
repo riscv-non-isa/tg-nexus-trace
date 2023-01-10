@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  Dec 22, 2022
-:revnumber: 0.9.11
+:revdate:  Jan 09, 2023
+:revnumber: 0.9.12
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -41,7 +41,7 @@ toc::[]
 This work is licensed under a
 link:http://creativecommons.org/licenses/by/4.0/[Creative Commons Attribution 4.0 International License].
 
-This work is Copyright 2022 by RISC-V International.
+This work is Copyright 2023 by RISC-V International.
 ==== 
 
 [preface]
@@ -57,6 +57,11 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 == History and status
 
 NOTE: After approval by the group and status change from Stable to Frozen this chapter will be removed.
+
+2023/1/9: Version 0.9.12-Stable
+
+* Added 'trFunnelInputDis' register (allow tracing to more than one destination).
+* Notes from Iain (stall-related end typos) taken into account.
 
 2022/12/22: Version 0.9.11-Stable
 
@@ -257,12 +262,12 @@ Each hart being traced must have its own separate Trace Encoder control componen
 Different components must be connected via internal busses and/or FIFO buffers. This specification does not define this interconnect logic, but the following rules must be followed:
 
 * Each component sending a trace message/packet must assure the entire packet can be accepted by the destination component (or pushed into the FIFO buffer).
-** Sending a partial packet is NEVER allowed as it will not be possible to process such a trace.
+** Sending a partial packet is NEVER allowed as it will not be possible to process and decode such a trace.
 * If a component cannot send an entire message/packet it must wait until it will be possible to do so.
-** Trace Encoder may either stall the hart and finally resume execution after sending a packet which caused the stall.
-* In case a stall of the hart is not possible (or is not configured ...), Trace Encoder must drop the packet and wait for the receiver to be ready.
+* Tracing is typically required to be non-intrusive, and if the Trace Encoder cannot keep up with the hart it must drop the packet and wait for the receiver to be ready.
 ** Once trace is allowed to resume it must issue a synchronization packet so the decoder will be aware that some (unknown) amount of trace has been lost.
-** Best idea is to wait for complete drain of the trace pipeline before resuming - otherwise a lot of short chunks of trace may be produced.
+** It is advisable to drain the trace pipeline to some hysteresis level before resuming - otherwise a lot of short chunks of trace may be produced.
+* Optionally (and if acceptable to the user), the Trace Encoder may be configured to stall the hart in order to avoid packet loss.
 * Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
 
 .*Allowed Connections Between Components*
@@ -390,6 +395,8 @@ Other potential unicode characters might be found in the following links:
                       +----------------+ 
 ....
 
+NOTE: In above configuration top Trace Funnel should allow disabling an input from an extra Trace Encoder so trace from 3-hart cluster may go to Trace Sink only and trace from an extra hart may go to Trace RAM Sink only.
+
 === Accessing Trace Control Registers
 
 For the access method to the trace control registers, it makes a difference whether these registers shall be accessed by an external debug/trace tool, or by an internal debugger running on the chip.
@@ -500,6 +507,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trFunnelControl |Required |Trace Funnel control register
 |0x004 |trFunnelImpl |Required |Trace Funnel Implementation information
+|0x008 |trFunnelInDis |Optional |Disable individual funnel inputs
 4+|*_Timestamp control (trTs...)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |-- |Reserved |Reserved for extra timestamp control
@@ -577,8 +585,8 @@ Main instruction trace generation mode
 |10 |-- |Reserved |WARL |SD
 |11  |trTeInstTrigEnable |1: Allows `trTeInstTracing` to be set or cleared by Trace-on
 and Trace-off Debug module or External triggers respectively|WARL |0
-|12  |trTeInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1).|R |0
-|13 |trTeInstStallEn |
+|12  |trTeInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1 |0
+|13 |trTeInstStallEna |
 0: If TE cannot send a message, an overflow is generated when the trace is restarted. 
 
 1: If TE cannot send a message, the hart is stalled until it can.
@@ -634,7 +642,7 @@ ____
 |19-16 |trTeProtocolMajor |Trace Protocol Major Version. 
 Value of this field is defined by a document which defines a trace encoding protocol.
 |R | SD
-|23-20 |trTeProtocolMajor |Trace Protocol Minor Version. 
+|23-20 |trTeProtocolMinor |Trace Protocol Minor Version. 
 Value of this field is defined by a document which defines a trace encoding protocol.
 |R | SD
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
@@ -673,10 +681,14 @@ Determine which filters qualify an instruction trace. If bit *__n__* is a 1 then
 |0 |trTeDataImplemented|Read as 1 if data trace is implemented.|R|SD
 |1 |trTeDataTracing |1=Data trace is being generated. Written from trace tools or controlled by triggers. When trDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL |SD
 |2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL |0
-|3 |trTeDataStallDelta|Set to 1 if data trace caused stall since last read. It is clear on read.|R|0
-|4 |trTeDataStallEnable|Stall execution if data trace message cannot be generated.|WARL|0
-|5 |trTeDataDropDelta|Set to 1 if data trace was dropeed since last read. It is clear on read.|R|0
-|6 |trTeDataDropEnable|Allow dropping data trace to avoid instruction trace overflows. Seting this bit will not guarantee that instuction trace overflows will not happen.|WARL|0
+|3 |trTeDataStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1|0
+|4 |trTeDataStallEna |
+0: If TE cannot send data trace message, an overflow is generated when the trace is restarted. 
+
+1: If TE cannot send data trace  message, the hart is stalled until it can.
+|WARL|0
+|5 |trTeDataDrop|Written to 1 by hardware when data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RC1|0
+|6 |trTeDataDropEna|1: Allow dropping data trace to avoid instruction trace overflows. Seting this bit will not guarantee that instuction trace overflows will not happen.|WARL|0
 |15-7 |--|Reserved for additional data trace control/status bits.|--|0
 |16 |trTeDataNoValue|Omit data values from data trace packets when set.|WARL|SD
 |17 |trTeDataNoAddr|Omit data address from data trace packets when set.|WARL|SD
@@ -1267,6 +1279,15 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |23-12 |--|Reserved for future versions of this standard|--|0
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
+
+.*Register: trFunnelDisInput: Disable Individual Funnel Inputs (trBaseFunnel+0x008)*
+[cols="5%,30%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|15-0 |trFunnelDisInput |1: Funnel input #n is disabled (incoming messages are ignored).|RW | 0
+|===
+
+NOTE: `trFunnelDisInput` register is optional. When not implemented (or never set) it will read as 0, what means that all inputs are always enabled. When implemented it can be set to 0xFFFF to detect which inputs maybe disabled in particular trace funnel. Disabling inputs is only necessary when single trace encoder may provide output to more than one destination.
 
 === Timestamp Unit
 
