@@ -1,13 +1,6 @@
-SPEC1 := RISC-V-Trace-Control-Interface
-HEADER1_SOURCE := $(SPEC1).adoc
-PDF1_RESULT := $(SPEC1).pdf
+all: 	RISC-V-Trace-Control-Interface.pdf RISC-V-Trace-Connectors.pdf 
 
-SPEC2 := RISC-V-Trace-Connectors
-HEADER2_SOURCE := $(SPEC2).adoc
-PDF2_RESULT := $(SPEC2).pdf
-
-all: buildctrl buildcon 
-
+# This will build any PDF (we have 4 of them ...)
 %.pdf: %.adoc
 	@echo "Building $* PDF"
 	asciidoctor-pdf \
@@ -20,29 +13,5 @@ all: buildctrl buildcon
 		--out-file=$*.pdf \
 		$*.adoc
 
-buildctrl:
-	@echo "Building PDFs with control"
-	asciidoctor-pdf \
-		--attribute=mathematical-format=svg \
-		--attribute=pdf-fontsdir=docs-resources/fonts \
-		--attribute=pdf-style=docs-resources/themes/riscv-pdf.yml \
-		--failure-level=ERROR \
-		--require=asciidoctor-diagram \
-		--require=asciidoctor-mathematical \
-		--out-file=$(PDF1_RESULT) \
-		$(HEADER1_SOURCE)
-
-buildcon:
-	@echo "Building PDF with connectors"
-	asciidoctor-pdf \
-		--attribute=mathematical-format=svg \
-		--attribute=pdf-fontsdir=docs-resources/fonts \
-		--attribute=pdf-style=docs-resources/themes/riscv-pdf.yml \
-		--failure-level=ERROR \
-		--require=asciidoctor-diagram \
-		--require=asciidoctor-mathematical \
-		--out-file=$(PDF2_RESULT) \
-		$(HEADER2_SOURCE)
-
 clean:
-	rm $(PDF1_RESULT) rm $(PDF2_RESULT)
+	rm *.pdf

@@ -1,7 +1,7 @@
 # This workflow installs dependencies for PDF generation, generates the PDF,
 # and uploads the PDF as an artifact.
 
-name: Build ...-Connectors.pdf
+name: Build RISC-V-Trace-Connectors.pdf
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
     - name: Generate PDF
       run: |
         PATH=${PATH}:${BUNDLE_BIN}:$(npm bin):$(pwd) \
-        make -C docs/ buildcon
+        make -C docs/ RISC-V-Trace-Connectors.pdf
     - name: Archive PDF result
       uses: actions/upload-artifact@v3
       with:

@@ -52,10 +52,10 @@ jobs:
     - name: Generate PDF
       run: |
         PATH=${PATH}:${BUNDLE_BIN}:$(npm bin):$(pwd) \
-        make -C docs/ RISC-V-Trace-Control-Interface.pdf
+        make -C docs/ all
     - name: Archive PDF result
       uses: actions/upload-artifact@v3
       with:
-        name: RISC-V-Trace-Control-Interface.pdf
-        path: docs/RISC-V-Trace-Control-Interface.pdf
+        name: AllPDFs.zip
+        path: docs/*.pdf
         retention-days: 7
