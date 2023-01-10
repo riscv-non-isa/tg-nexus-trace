@@ -1,5 +1,5 @@
 NexRv.exe : NexRv.c NexRvDeco.c NexRvEnco.c NexRvDump.c NexRvInfo.c NexRvConv.c NexRv.h NexRvMsg.h NexRvInfo.h
-	gcc NexRv.c NexRvDeco.c NexRvEnco.c NexRvDump.c NexRvInfo.c NexRvConv.c -o NexRv.exe
+	gcc -O3 NexRv.c NexRvDeco.c NexRvEnco.c NexRvDump.c NexRvInfo.c NexRvConv.c -o NexRv.exe
 
 # Below are two test-cases
 #  TODO: This below is just example (t1-*.* files are not in GIT yet)

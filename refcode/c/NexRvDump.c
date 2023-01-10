@@ -118,7 +118,7 @@ int NexusDump(FILE *f, int disp)
       msgCnt++;
       msgBytes++;
 
-      if (mdo == NEXUS_TCODE_ResourceFull || mdo == NEXUS_TCODE_Error) msgErrors++;
+      if (mdo == NEXUS_TCODE_Error) msgErrors++;
 
       fldDef++;
       fldBits = 0;

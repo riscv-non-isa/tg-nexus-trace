@@ -15,7 +15,7 @@
 */
 
 //****************************************************************************
-// File nextr.c  - Nexus Trace dump/encode/decode reference implementation
+// File nexrv.c  - Nexus Trace dump/encode/decode reference implementation
 
 // Code below is written in plain C-code.
 // It was compiled using VisualC, GNU and IAR C/C++ compiler.
@@ -35,12 +35,12 @@ extern int NexusDump(FILE *f, int disp);
 extern int NexusDeco(FILE *f, int disp);
 extern int NexusEnco(FILE *f, int level, int disp);
 extern int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo);
-extern int ConvAddInfo(FILE *fIn, FILE *fOut);
+extern int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp);
 
 static int error(const char *err)
 {
   printf("\n");
-  printf("NEXTR ERROR: %s\n", err);
+  printf("NexRv ERROR: %s\n", err);
   return 9;
 }
 
@@ -52,14 +52,15 @@ static int usage(const char *err)
   }
   printf("\n");
   printf("Usage:\n");
-  printf("  NexRv -dump <nex> [-msg|-none] - dump Nexus file\n");
-  printf("  NexRv -deco <nex> -pcinfo <info> [-stat|-all|-msg|-none] - decode trace\n");
-  printf("  NexRv -enco <pcseq> -nex <nex> [-nobhm|-norbm] [-stat|-all|-msg|-none] - encode trace \n");
+  printf("  NexRv -dump <nex> [<dump>] [-msg|-none] - dump Nexus file\n");
+  printf("  NexRv -deco <nex> -pcinfo <info> -pcout <pco> [-stat|-full|-all|-msg|-none] - decode trace\n");
+  printf("  NexRv -enco <pcseq> -nex <nex> [-nobhm|-norbm] [-stat|-full|-all|-msg|-none] - encode trace \n");
   printf("  NexRv -conv -objd <objd> -pcinfo <pci> - create <pci> from objdump -d output <objd>\n");
   printf("  NexRv -conv -pcinfo <pci> -pconly <pco> -pcseq <pcs> - convert <pco> to <pcs> using <pci>\n");
+  printf("  NexRv -diff -pcseq <pcs> -pconly <pco> - compare <pcs> with <pco>\n");
   printf("where:\n");
-  printf("  -nobhm|-norbm         - do not generate Branch History/Repeat Branch Messages\n");
-  printf("  -stat|-all|-msg|-none - verbose level\n");
+  printf("  -nobhm|-norbm               - do not generate Branch History/Repeat Branch Messages\n");
+  printf("  -stat|-full|-all|-msg|-none - verbose level\n");
   return 1;
 }
 
@@ -69,17 +70,17 @@ int main(int argc, char *argv[])
 
   if (strcmp(argv[1], "-dump") == 0) // Dump?
   {
-    if (argc < 3) return usage("Nexus bin-file is expected");
+    if (argc < 3) return usage("Nexus bin file is expected");
 
     fNex = fopen(argv[2], "rb");
-    if (fNex == NULL) return error("Cannot open NEX-file");
+    if (fNex == NULL) return error("Cannot open NEX file");
 
     int opt = 3;
     FILE *fDump = stdout;
     if (argc > 3 && argv[3][0] != '-')
     {
       fDump = fopen(argv[3], "wt");
-      if (fDump == NULL) return error("Cannot create DUMP-file");
+      if (fDump == NULL) return error("Cannot create DUMP file");
       opt = 4;
     }
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
         if (psFile == NULL) return error("Cannot create PCSEQ file");
 
         // Run conversion
-        ret = ConvAddInfo(pcFile, psFile);
+        ret = ConvAddInfo(pcFile, psFile, NULL);
         fclose(pcFile);
         fclose(psFile);
         InfoTerm();
@@ -163,6 +164,49 @@ int main(int argc, char *argv[])
     return ret;
   }
 
+  if (strcmp(argv[1], "-diff") == 0) // Diff?
+  {
+    // -comp -pcseq <pcs> -pcout <pco>
+    const char *err = "Incorrect -diff calling";
+
+    int ret = 0;
+    if (argc == 6 && strcmp(argv[2], "-pcseq") == 0)
+    {
+      // -conv -objd <objd> -pcinfo <pci>
+      if (strcmp(argv[4], "-pcout") == 0)
+      {
+        // Syntax correct - open all files
+        err = NULL;
+
+        FILE *fPcseq = fopen(argv[3], "rt");
+        if (fPcseq == NULL)  return error("Cannot open PCSEQ file");
+
+        FILE *fPcout = fopen(argv[5], "rt");
+        if (fPcout == NULL) return error("Cannot open PCOUT file");
+
+        // Run comparison
+        ret = ConvAddInfo(fPcseq, NULL, fPcout);
+
+        fclose(fPcseq);
+        fclose(fPcout);
+      }
+    }
+    if (err != NULL) return usage(err);
+
+    if (ret > 0)
+    {
+      printf("Compared OK (%d instructions)\n\n", ret);
+      ret = 0;
+    }
+    else
+    {
+      printf("ERROR: Conversion failed with error code #%d\n\n", -ret);
+      ret = 9;
+    }
+
+    return ret;
+  }
+
   if (strcmp(argv[1], "-enco") == 0) // Encode?
   {
     if (argc < 5) return error("Incorrect number of parameters");
@@ -170,10 +214,10 @@ int main(int argc, char *argv[])
     if (strcmp(argv[3], "-nex") != 0) return error("-nex must be provided");
 
     FILE *fPcseq = fopen(argv[2], "rt");
-    if (fPcseq == NULL)  return error("Cannot open pcseq-file");
+    if (fPcseq == NULL)  return error("Cannot open PCSEQ file");
 
     fNex = fopen(argv[4], "wb");
-    if (fNex == NULL) return error("Cannot create nex-file");
+    if (fNex == NULL) return error("Cannot create NEX file");
 
     int level = -1; // Default level
     if (argc > 5 && strcmp(argv[5], "-nobhm") == 0) level = 10;  // Level 1.0
@@ -187,6 +231,7 @@ int main(int argc, char *argv[])
     if (argc > dispPos && strcmp(argv[dispPos], "-msg") == 0)   disp = 4 | 2;     // TCODE and stat.
     if (argc > dispPos && strcmp(argv[dispPos], "-stat") == 0)  disp = 4;         // Only statistics
     if (argc > dispPos && strcmp(argv[dispPos], "-none") == 0)  disp = 0;         // Nothing
+    if (argc > dispPos && strcmp(argv[dispPos], "-full") == 0)  disp = 0xFF;      // Everything
 
     if (level < 0) level = 21;  // Level 2.1 is default
     int ret = NexusEnco(fPcseq, level, disp);
@@ -214,16 +259,17 @@ int main(int argc, char *argv[])
     if (strcmp(argv[5], "-pcout") != 0) return error("-pcout must be provided");
 
     fNex = fopen(argv[2], "rb");
-    if (fNex == NULL) return error("Cannot open NEX-file");
-    if (InfoInit(argv[4]) < 0) return error("Cannot open PCINFO-file");
+    if (fNex == NULL) return error("Cannot open NEX file");
+    if (InfoInit(argv[4]) < 0) return error("Cannot open PCINFO file");
     FILE *fOut = fopen(argv[6], "wt");
-    if (fOut == NULL) return error("Cannot create PCOUT-file");
+    if (fOut == NULL) return error("Cannot create PCOUT file");
 
     int disp = 4; // Default (-stat)
     if (argc > 7 && strcmp(argv[7], "-all") == 0)   disp = 4 | 2 | 1; // All
     if (argc > 7 && strcmp(argv[7], "-msg") == 0)   disp = 4 | 2;     // TCODE and stat.
     if (argc > 7 && strcmp(argv[7], "-stat") == 0)  disp = 4;         // Only statistics
     if (argc > 7 && strcmp(argv[7], "-none") == 0)  disp = 0;         // Nothing
+    if (argc > 7 && strcmp(argv[7], "-full") == 0)  disp = 0xFF;      // Everything
 
     int ret = NexusDeco(fOut, disp);
     fclose(fOut);
@@ -248,4 +294,4 @@ int main(int argc, char *argv[])
 }
 
 //****************************************************************************
-// End of nextr.c file
+// End of nexrv.c file

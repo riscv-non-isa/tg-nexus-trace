@@ -84,8 +84,11 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
 
   if (info == 0 && encoICNT > 0)  // Flush requested
   {
-    encoNextEmit = NEXUS_TCODE_IndirectBranchHist;
-    prevHIST = 0; // Make sure repeat will be generated
+    if (encoNextEmit == 0) encoNextEmit = NEXUS_TCODE_ProgTraceCorrelation;
+    if (encoBCNT > 0)
+    {
+      prevHIST = 0; // Make sure repeat will be generated
+    }
   }
 
   if (encoNextEmit != 0)
@@ -95,7 +98,7 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
 
     if (level >= 21)  // This piece of code detects and generates Repeat Branch message
     {
-      if ((encoADDR == addr) && (encoNextEmit == NEXUS_TCODE_IndirectBranchHist) && (prevHIST == encoHIST) && (prevICNT == encoICNT))
+      if ((prevHIST == encoHIST) && (encoADDR == addr) && (prevICNT == encoICNT))
       {
         // IndirectBranchHistory message back to same address
         encoBCNT++;
@@ -118,13 +121,25 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
       }
     }
 
+#if 1 // A bit of improvement (saves 1 byte)
+    if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist && encoHIST == 0x1)
+    {
+      encoNextEmit = NEXUS_TCODE_IndirectBranch; // Empty history ...
+    }
+#endif
+
+    if (encoBCNT == 0)
+    {
+      prevHIST = 0; // Only messages which should be repeated will set it
+    }
+
     msg[pos++] = encoNextEmit << 2;
     if (encoNextEmit == NEXUS_TCODE_ProgTraceSync)
     {
       msg[pos++] = 0x1 << 2;  // SYNC:4=1 (always)
       pos = AddVar(encoICNT, 6 - 4, msg, pos);
       pos = AddVar(addr >> NEXUS_PARAM_AddrSkip, 0, msg, pos);
-      prevHIST = 0; // Will never match
+      encoADDR = addr;  // This is new address
     }
     else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist || encoNextEmit == NEXUS_TCODE_IndirectBranch)
     {
@@ -134,6 +149,7 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
       msg[pos++] = 0x0 << 2;  // BTYPE:2=0 (always)
       pos = AddVar(encoICNT, 6 - 2, msg, pos);
       pos = AddVar((encoADDR ^ addr) >> NEXUS_PARAM_AddrSkip, -1, msg, pos);
+      encoADDR = addr;  // This is new address
 
       if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist)
       {
@@ -143,6 +159,26 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
     else if (encoNextEmit == NEXUS_TCODE_DirectBranch)
     {
       pos = AddVar(encoICNT, -1, msg, pos);
+    } else if (encoNextEmit == NEXUS_TCODE_ResourceFull)
+    {
+      prevHIST = encoHIST;  // Save to check for repeat next time ...
+      prevICNT = encoICNT;
+
+      // TODO See if this is ICNT or HIST. For now only HIST is handled
+      msg[pos++] = 0x0; // RCODE:4=0 (HIST full)
+      pos = AddVar(encoHIST, 6 - 4, msg, pos);
+    } else if (encoNextEmit == NEXUS_TCODE_ProgTraceCorrelation)
+    {
+      msg[pos++] = (0x0 << 2);         // EVCODE:4=0 (debug)
+      if (encoHIST > 1)
+      {
+        msg[pos - 1] |= 1 << (4 + 2); // CDF=1
+      }
+      pos = AddVar(encoICNT, -1, msg, pos);
+      if (encoHIST > 1)
+      {
+        pos = AddVar(encoHIST, 0, msg, pos);
+      }
     }
 
     msg[pos - 1] |= 3; // Set MSEO='11' at last byte
@@ -154,10 +190,6 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
       encoStat_MsgCnt++;
     }
 
-    if (encoNextEmit != NEXUS_TCODE_DirectBranch)
-    {
-      encoADDR = addr;  // This is new address
-    }
     encoNextEmit = 0;   // Only one time
     encoHIST = 1;
     encoICNT = 0;
@@ -179,9 +211,10 @@ static int HandleRetired(unsigned int addr, unsigned int info, int level, int di
       encoNextEmit = NEXUS_TCODE_IndirectBranchHist; // Emit on next address time ...
     }
 
-    // Make sure we do not make fields too big (this was never checked ...)
-    // if (encoICNT >= (0x3FF - 2))  encoNextEmit = NEXUS_TCODE_IndirectBranchHistory;
-    if (encoHIST & (0x1 << 31))   encoNextEmit = NEXUS_TCODE_IndirectBranchHist;
+    if (encoHIST & (0x1 << 31))
+    {
+      encoNextEmit = NEXUS_TCODE_ResourceFull;
+    }
   }
   else
   {
@@ -236,7 +269,7 @@ int NexusEnco(FILE *f, int level, int disp)
   if (disp & 4)
   {
     printf("Stat: %d instr, level=%d.%d => %d bytes, %d messages", encoStat_InstrCnt, level / 10, level % 10, encoStat_MsgBytes, encoStat_MsgCnt);
-    if (encoStat_InstrCnt > 0) printf(", %.2lf bits/instr", ((double)encoStat_MsgBytes * 8) / encoStat_InstrCnt);
+    if (encoStat_InstrCnt > 0) printf(", %.3lf bits/instr", ((double)encoStat_MsgBytes * 8) / encoStat_InstrCnt);
     printf("\n");
   }
 

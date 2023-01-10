@@ -135,6 +135,7 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
       {
         iType = "R";  // This 'ret' or 'mret'
       }
+      if (instr[0] == 'e' && instr[1] == 'c') iType = "CI"; // ECALL=Call indirect
     }
 
     // Produce output record
@@ -156,7 +157,7 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
   return nInstr;
 }
 
-int ConvAddInfo(FILE *fIn, FILE *fOut)
+int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
 {
   // Scan PC-sequence file and add INFO for each PC
   char line[1000];
@@ -170,12 +171,14 @@ int ConvAddInfo(FILE *fIn, FILE *fOut)
     const char *l = line;
     while (isspace(*l)) l++;
 
+#if 0
     // It must be PC in format '0xHHH'
     if (l[0] != '0' || !(l[1] == 'x' || l[1] == 'X'))
     {
       fprintf(fOut, "ERROR: Line %s does not have PC with 0x prefix\n", line);
       return -1;
     }
+#endif
 
     unsigned int a;
     if (sscanf(l, "%x", &a) != 1)
@@ -184,10 +187,42 @@ int ConvAddInfo(FILE *fIn, FILE *fOut)
       return -2;
     }
 
+    if (fOut == NULL)
+    {
+      nInstr++;
+      if (fComp != NULL)
+      {
+        if (fgets(line, sizeof(line), fComp) == NULL)
+        {
+          printf("ERROR: Instruction #%d at address 0x%X - no PC at PCOUT file.\n", nInstr, a);
+          return -5;
+        }
+        const char *l = line;
+
+        unsigned int aa;
+        if (sscanf(l, "%x", &aa) != 1)
+        {
+          printf("ERROR: Line %s does not have PC with 0x prefix\n", line);
+          return -6;
+        }
+
+        if (a != aa)
+        {
+          printf("ERROR: Instruction #%d mismatch. Expected 0x%X, actual 0x%X\n", nInstr, a, aa);
+          return -4;
+        }
+      }
+
+      continue; // Done (no need for INFO processing)
+    }
+
     unsigned int aa;
     unsigned int info = InfoGet(a, &aa);
     if (info == 0)
     {
+#if 1
+      if (nInstr == 0) continue;  // Skip initial wrong addresses ...
+#endif      
       fprintf(fOut, "ERROR: Instruction at address 0x%X not found in <info-file>\n", a);
       return -3;
     }

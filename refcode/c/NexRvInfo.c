@@ -24,20 +24,74 @@
 //  3. Only non K&R C is 'for (int x' and 'int x;' between instructions.
 
 #include <stdio.h>  //  For NULL, 'printf', 'fopen, ...'
-//#include <stdlib.h> //  For 'exit'
+#include <stdlib.h> //  For 'malloc', 'free'
 #include <string.h> //  For 'strcmp', 'strchr' 
 //#include <ctype.h>  //  For 'isspace/isxdigit' etc.
 
 #include "NexRvInfo.h"  //  Definition of Nexus messages
 
+int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned int *pDest);
+
 static FILE *fInfo = NULL;     // Instruction info (text-based records)
 static unsigned int prevAddr = 0xFFFFFFFF;
+
+typedef struct INFO_REC
+{
+  unsigned int addr;      // Address of instruction
+  unsigned int info;      // INFO for this instruction
+  unsigned int dest;      // Destination address
+  unsigned int _padding;  // Make it 64-bit aligned
+} INFO_REC;
+
+static int nInfoRec = 0;
+static int infoLast = 0;
+static INFO_REC *pInfoRec;
 
 int InfoInit(const char *filename)
 {
   prevAddr = 0xFFFFFFFF;
   fInfo = fopen(filename, "rt");
   if (fInfo == NULL) return -1; // Failed
+
+  nInfoRec = 0;
+  while (pInfoRec == NULL)      // Will run twice
+  {
+    if (nInfoRec > 0) // Allocate (second time ...)
+    {
+      pInfoRec = malloc(sizeof(INFO_REC) * nInfoRec);
+    }
+
+    nInfoRec = 0;
+    fseek(fInfo, 0, SEEK_SET); // Rewind file
+    char line[1000];
+    while (fgets(line, sizeof(line), fInfo) != NULL)
+    {
+      if (line[0] == '.' && line[1] == 'e') break; // End
+      if (line[0] == '.') continue; // Comment (ignore this line)
+      if (line[0] == '\0' || line[0] == '\n') continue; // Ignore empty as well ...
+
+      unsigned int a, info, dest;
+      if (!InfoParse(line, &a, &info, &dest)) break;
+      if (info == 0) break;
+
+      if (pInfoRec != NULL)
+      {
+        pInfoRec[nInfoRec].addr = a;
+        pInfoRec[nInfoRec].info = info;
+        pInfoRec[nInfoRec].dest = dest;
+        pInfoRec[nInfoRec]._padding = 0;
+      }
+
+      nInfoRec++;
+    }
+
+    if (nInfoRec == 0)
+    {
+      break;  // No records
+    }
+  }
+
+  infoLast = 0;
   return 0; // OK
 }
 
@@ -45,6 +99,10 @@ void InfoTerm(void)
 {
   if (fInfo != NULL) fclose(fInfo);
   fInfo = NULL;
+  if (pInfoRec) free(pInfoRec);
+  pInfoRec = NULL;
+  nInfoRec = 0;
+  infoLast = 0;
 }
 
 int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned int *pDest)
@@ -82,6 +140,38 @@ int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned 
 
 unsigned int InfoGet(unsigned int addr, unsigned int *pDest)
 {
+  if (pInfoRec != NULL)
+  {
+    if (addr < pInfoRec[infoLast].addr)
+    {
+      // Look before ...
+      for (int i = infoLast - 1; i >= 0; --i)
+      {
+        if (pInfoRec[i].addr == addr)
+        {
+          infoLast = i;
+          if (pDest) *pDest = pInfoRec[i].dest;
+          return pInfoRec[i].info;
+        }
+      }
+    }
+    else
+    {
+      // Look after ...
+      for (int i = infoLast; i < nInfoRec; ++i)
+      {
+        if (pInfoRec[i].addr == addr)
+        {
+          infoLast = i;
+          if (pDest) *pDest = pInfoRec[i].dest;
+          return pInfoRec[i].info;
+        }
+      }
+    }
+
+    return 0; // Not found ...
+  }
+
   if (fInfo != NULL)
   {
     if (addr <= prevAddr) fseek(fInfo, 0, SEEK_SET); // Rewind file (if not forward)

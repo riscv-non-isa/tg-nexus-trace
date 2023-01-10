@@ -119,6 +119,7 @@ static struct NEXM_MSGDEF_STRU {
     NEXM_FLD(EVCODE, 4),
     NEXM_FLD(CDF, 2),
     NEXM_VAR(ICNT),
+    NEXM_VAR(HIST),   // Only if CDF=1!
     NEXM_VAR(TSTAMP),
   NEXM_END(),
 

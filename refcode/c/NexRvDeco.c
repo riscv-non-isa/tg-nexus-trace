@@ -33,7 +33,8 @@
 #include "NexRvInfo.h" //  Definition of Nexus messages
 
 // Decoder works on two files and dumper on first file
-extern FILE *fNex;  // Nexus messages (binary bytes)
+extern FILE *fNex;      // Nexus messages (binary bytes)
+extern FILE *fCompare;  
 
 static unsigned int nexdeco_pc        = 0;
 static unsigned int nexdeco_lastAddr  = 0;
@@ -76,7 +77,7 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
     unsigned int info = InfoGet(nexdeco_pc, &a);
     if (info == 0) return EmitErrorMsg("info is unknown");
 
-    if (0) // Append type of instruction to plain PC value
+    if (disp & 0x10) // Append type of instruction to plain PC value
     {
       int nt = 0;
       char t[8];
@@ -144,6 +145,10 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
           info |= INFO_JUMP;  // Force PC change below
         }
         histMask >>= 1;
+        if (histMask == 0 && n < 0)
+        {
+          n = 0;  // This will stop the loop (when we were called with HIST only)
+        }
       }
     }
 
@@ -264,9 +269,42 @@ static int MsgHandle(FILE *f, int disp)
       }
       break;
 
-    case NEXUS_TCODE_Error:
     case NEXUS_TCODE_ResourceFull:
+      {
+        NEX_FLDGET(RCODE);
+        if (RCODE == 0)
+        {
+          NEX_FLDGET(RDATA);
+          if (RDATA > 1)
+          {
+            // Special calling to emit HIST only ...
+            if (EmitICNT(f, -1, RDATA, disp) != 1) return (-2);
+          }
+        }
+      }
+      break;
+
     case NEXUS_TCODE_ProgTraceCorrelation:
+      {
+        NEX_FLDGET(EVCODE);
+        NEX_FLDGET(CDF);
+        NEX_FLDGET(ICNT);
+        if (CDF == 1)
+        {
+          NEX_FLDGET(HIST);
+          if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
+        }
+        else
+        {
+          // No history ...
+          if (EmitICNT(f, ICNT, 0, disp) != 1) return (-2);
+        }
+        nexdeco_pc = nexdeco_lastAddr;
+      }
+      break;
+
+
+    case NEXUS_TCODE_Error:
       // We ignore these now - these are either at very end
       // or are followed by full-sync
       break;
@@ -383,7 +421,7 @@ int NexusDeco(FILE *f, int disp)
       msgCnt++;
       msgBytes++;
 
-      if (mdo == NEXUS_TCODE_ResourceFull || mdo == NEXUS_TCODE_Error) msgErrors++;
+      if (mdo == NEXUS_TCODE_Error) msgErrors++;
 
       fldDef++;
       fldBits = 0;
@@ -466,7 +504,7 @@ int NexusDeco(FILE *f, int disp)
   {
     printf("Stat: %d bytes, %d messages, %d error messages", msgBytes, msgCnt, msgErrors);
     if (msgCnt > 0) printf(", %.2lf bytes/message", ((double)msgBytes) / msgCnt);
-    if (nInstr > 0) printf(", %d instr, %.2lf bits/instr", nInstr, ((double)msgBytes * 8) / nInstr);
+    if (nInstr > 0) printf(", %d instr, %.3lf bits/instr", nInstr, ((double)msgBytes * 8) / nInstr);
     printf("\n");
   }
 
