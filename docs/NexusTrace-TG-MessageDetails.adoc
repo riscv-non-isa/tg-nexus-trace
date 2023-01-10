@@ -145,15 +145,21 @@ NOTE: Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob
 
 == Rules of generating messages
 
-. In case generated message includes ICNT/HIST fields, corresponding value is reset.
-. If tracing was disabled and is restarted 'Program Trace Sync' message is generated.
+. If tracing was disabled and is restarted 'ProgTraceSync' message is generated.
+.. This message includes reason of start (SYNC field) and full address (FADDR field).
 . Any retired instuction increments ICNT (+1 or +2).
-.. In case ICNT overflows, Resource Full message (with ICNT before overflow) is generated and ICNT is reset to 1 or 2.
-. If this is linear instruction, nothing else is done.
-.. In case this is direct/inferable jump (into fixed address), nothing else is done.
-.. Not taken branch in BTM mode is also considered as an linear instruction.
-. Branch (conditional) either generates DirectBranch (if taken) or adds single bit to branch history buffer. 
-.. In case HIST overflows, Resource Full message (with HIST before overflow) is generated and HIST is trimmed to last bit.
+. The following types of instructions allow to know next PC (nothing else is done for them).
+.. Plain linear instruction => PC is at next instruction (+2 or +4).
+.. Direct (inferable...) jump => PC is jump destination (known from PC and opcode as jumps are PC relative).
+.. Not taken branch (in BTM mode) => PC is next instruction (+2 or +4).
+. Branch (conditional) instruction is handled as:
+.. In BTM mode it generates DirectBranch (if taken)
+.. In HTM mode it appends single bit (1=taken or 0=not-taken) into branch history buffer. 
+. In case trace is stopped or disabled, 'ProgTraceCorrelation' message is generated.
+.. It included reason (EVCODE) and ICNT and HIST(optional), so last PC can be calculated. 
+. In case generated message includes ICNT/HIST fields, corresponding value is reset.
+.. In case ICNT overflows, ResourceFull message (with ICNT before overflow) and ICNT is reset.
+.. In case HIST overflows, ResourceFull message (with HIST before overflow) is generated and HIST is reset.
 
 === Pseudo Code of Simple Encoder
 
