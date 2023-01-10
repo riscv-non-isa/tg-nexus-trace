@@ -60,6 +60,7 @@ NOTE: After approval by the group and status change from Stable to Frozen this c
 
 2023/1/9: Version 0.9.12-Stable
 
+* Added 'Accessing and Detecting RAM Sink Registers' chapter (in response to email from Markus).
 * Clarifying PIB Idle Cycles (moved NOTE to separated chapter).
 * Added 'trFunnelInputDis' register (allow tracing to more than one destination).
 * Notes from Iain (stall-related end typos) taken into account.
@@ -1141,12 +1142,13 @@ Be aware that in case trace memory wraps around some protocols may require addit
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trRamActive |Primary enable for Trace RAM Sink. When 0, the Trace RAM Sink may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
-|1 |trRamEnable |1=Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to output.|RW |0
+|1 |trRamEnable |1=Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to output.
+Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP...` registers. Disabling trace may update `trRamWP...` as result of flushing.|RW |0
 |2 |--|Reserved |--|0
-|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty |R |1
+|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, what means that all trace data is flushed.|R |1
 |4 |trRamModeSMEM | 0: This RAM Sink will operate in SRAM mode, 1: This RAM Sink will operate in SMEM mode|WARL |SD
 |7-5 |--|Reserved |--|0
-|8 |trRamStopOnWrap |1: Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full. |WARL |0
+|8 |trRamStopOnWrap |1: Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full.|WARL |0
 |===
 
 .*Register: trRamImpl: Trace RAM Sink Implementation Register (trBaseRamSink+0x004)*
@@ -1169,7 +1171,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on a 32-bit/4-byte boundary. This register may not be implemented if the sink type doesn't require an address. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
+|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. This register may not be implemented if the sink type doesn't require an address. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
 |===
 
 For bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
@@ -1219,7 +1221,7 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamRPLow |Absolute 32-bit part of address in trace circular memory buffer visible through `trRamData`. `trRamRP` auto-increments following an access to `trRamData`. After a trace word read occurs while `trRamRP` = `trRamLimit`, `trRamRP` is set to `trRamStart`. Required for SRAM mode and optional for SMEM mode. |WARL |0
+|31-2 |trRamRPLow |Absolute 32-bit part of address in trace circular memory buffer visible through `trRamData`. `trRamRP` auto-increments following an access to `trRamData`. After a trace word read occurs while `trRamRP` = `trRamLimit`, `trRamRP` is set to `trRamStart`. Required for SRAM mode and optional for SMEM mode. |WARL |Undef
 |===
 
 .*Register: trRamRPHigh: Trace RAM Sink Read Pointer High Bits Register (trBaseRamSink+0x02C)*
@@ -1236,11 +1238,9 @@ NOTE: FUTURE: Another extension should deal with signalling (and clearing ...) R
 |31-0 |trRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM mode and optional for SMEM mode. |R or RW |Undef
 |===
 
-NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.   
+NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
 
-Implementations when a trace buffer in system memory will be bigger than 4GB is desired will be unlikely. 
-
-NOTE: FUTURE: Add 64-bit extensions as 32 MSB bits of size (reading 3 times is needed to be certain about 64-bit value). In order to relieve trace software to always read 3 times, there should be a field/bit saying if RAM size over 32-bit is implemented. It may also be a WARL field, which must be set to `1` in order to allow 64-bit size. In most cases, it will never be settable (as 4GB of RAM for trace is rare requirement)
+Implementations when a trace buffer in system memory will be bigger than 4GB is desired will be unlikely, so in most cases trace tool will not need to use `trRamWPHigh` and `trRamRPHigh` registers.
 
 Table below shows typical Trace RAM Sink configurations. Implementing other configurations if not suggested as trace tools may not support it without adjustments.
 
@@ -1249,11 +1249,40 @@ Table below shows typical Trace RAM Sink configurations. Implementing other conf
 |===
 |*Mode*      |*trRamStart* |*trRamLimit* |*trRamWP* |*trRamRP* |*trRamData*
 |SRAM        |0 |Hard coded to max size (2^M) at reset, but can be possibly trimmed|Required  |Required |Required
-|SMEM Generic |Any (2^N aligned) |Any (`trRamStart` + 2^M - A) - must be set by trace tool |Required  |--|--
-|SMEM Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (`trRamStart` + 2^N - A), but can be possibly trimmed |Required  |--|--
+|SMEM Generic |Any (2^N aligned) |Any (`trRamStart` + 2^M - A) - must be set by trace tool |Required  |Not implemented|Not implemented
+|SMEM Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (`trRamStart` + 2^N - A), but can be possibly trimmed |Required  |Not implemented|Not implemented
 |===
 
-NOTE: Value `A` means alignment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of `trRamLimit` register should be 0x...FC. Some implementations may impose bigger alignment of trace data (to allow more efficient transfer rates). 
+NOTE: Value `A` means alignment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of `trRamLimit` register should be 0x...FC. Some implementations may impose bigger alignment of trace data (to allow more efficient transfer rates) for SMEM mode. For SRAM mode `A`` must be 4 as access to trace via `trRamData` is always 32-bits wide.
+
+=== Accessing and Detecting RAM Sink Registers 
+
+Trace tool should start interacting with Trace RAM Sink by releasing RAM Sink from reset by setting `trRamActive` = 1 and waiting for this bit to be set. After that it should verify `teRamEmpty` = 1, read `trRamImpl` and verify `trRamCompType` and `trRamVer...` fields. Values of `trRamHasSRAM/SMEM` fields will provide main types of RAM Sink being implemented.
+
+Later `trRamModeSMEM` should be set (depending on desired RAM Sink mode). It is important to set this field first as other registers may behave differently for SRAM and SMEM modes.
+
+Detection of valid ranges of each `trRamStart...` and `trRamLimit...` registers should be performed by writing 0 and 0xFFFFFFFF.
+After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value is 0, it means the register is NOT implemented.
+Some implementations may provide different limits for different start addresses, so the trace tool should always set `trRamStart...` registers first.
+
+Not every value may be settable in `trRamStart/Limit` registers. Value written may be trimmed (for example aligned on a particular 2^N boundary) and a trace tool should verify values being written. In case accepted values are different from what was provided by the user, a message should be printed which may allow the user to adjust (possbly suboptimal) settings.
+
+Registers `trRamStart...` and `trRamLimit...` are usually set at beginning of debug/trace session and never changed. 
+
+IMPORTANT: In SMEM mode (`trRamModeSMEM` = 1) trace tool should never set `trRamStart...` and `trRamLimit...` registers outside of range provided by the user as otherwise raw trace being written to memory may corrupt running code and/or data or stack. This type of errors may be very difficult to diagnose as in complex system code (or data ...) being overwritten by trace may be used way, way later after actual corruption was made.
+
+Having both `trRamStart/Limit...` registers set the tool should try to set `trRamRP...` to the same value as `trRamLimit...`. If it is settable it means that the `trRamData` register should be used to read the trace. Otherwise collected trace must be read using normal, physical memory accesses (in range defined by `trRamStart/Limit...` registers).
+
+Before enabling RAM Trace Sink (by setting `trRamEnable` = 1) the trace tool should set `trRamWP...` registers (usually to the same values as in `trRamStart...` register). Enabling trace must NOT change any of `trRamStart/Size/WP/RP...` registers. Just after trace is enabled `trRamWP...` may change as result of trace being added to trace memory.
+
+After trace is enabled and active (`trRamEnable` = 1 or `trRamEmpty` = 0), trace tool should NOT write any of `trRamStart/Limit/WP...` registers.
+
+Setting `trRamRP` and reading `trRamData` may be attempted while trace is active, but support for reading SRAM trace while trace is active may not always be implemented. In such a case write to `trRamRP` must be ignored and `trRamData` read must not advance `trRamRP`. Reading SMEM trace via normal memory reads is always allowed.
+
+NOTE: Even if reading trace (while trace is active) is implemented, circular trace buffer may be overwritten even several times, so values being read by `trRamData` will be of no use. However when trace is started/stopped by infrequent triggers, reading SRAM trace may be useful. However very last packet in memory may be incomplete as the last trace word may be buffered inside (and `trRamEmpty` = 0 will be observed).
+
+NOTE: Trace RAM Sink may implement writing trace by writing to `trRamData`, but this mode is usable only for testing, so will most likely not be implemented. Trace tool is not required to support writing to `trRamData` register.
+
 
 == Trace Funnel
 
