@@ -9,7 +9,7 @@ PDF2_RESULT := $(SPEC2).pdf
 all: buildctrl buildcon 
 
 %.pdf: %.adoc
-	@echo "Building @* PDF"
+	@echo "Building $* PDF"
 	asciidoctor-pdf \
 		--attribute=mathematical-format=svg \
 		--attribute=pdf-fontsdir=docs-resources/fonts \
@@ -17,8 +17,8 @@ all: buildctrl buildcon
 		--failure-level=ERROR \
 		--require=asciidoctor-diagram \
 		--require=asciidoctor-mathematical \
-		--out-file=@*.pdf \
-		@*.adoc
+		--out-file=$*.pdf \
+		$*.adoc
 
 buildctrl:
 	@echo "Building PDFs with control"
