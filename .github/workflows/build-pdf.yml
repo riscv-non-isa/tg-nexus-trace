@@ -58,4 +58,4 @@ jobs:
       with:
         name: AllPDFs.zip
         path: docs/*.pdf
-        retention-days: 7
+        retention-days: 21
