@@ -1,4 +1,4 @@
-all: 	RISC-V-Trace-Control-Interface.pdf RISC-V-Trace-Connectors.pdf 
+all: 	RISC-V-Trace-Control-Interface.pdf RISC-V-Trace-Connectors.pdf RISC-V-Trace-Nexus-Messages.pdf RISC-V-N-Trace-Specification.pdf
 
 # This will build any PDF (we have 4 of them ...)
 %.pdf: %.adoc
