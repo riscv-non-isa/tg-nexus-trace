@@ -53,6 +53,6 @@ PDF generated on: {localdatetime}
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
-= Introduction
+== Introduction to Nexus Messages
 
 IMPORTANT: Include other ADOC here (now this is just a stub).

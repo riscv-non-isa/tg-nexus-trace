@@ -53,7 +53,7 @@ PDF generated on: {localdatetime}
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
-= Introduction to N-Trace and Nexus
+== Introduction to N-Trace and Nexus
 
 N-Trace specification provides specification of complete, end-to-end, trace system for RISC-V cores and harts.
 
@@ -71,7 +71,7 @@ N-Trace is based on well established Nexus trace standard, but during developmen
 
 NOTE: This specification does NOT require developers (both IP developers and trace tool developers) to become familiar with any other documentation besides PDF files provided below. These PDF files are providing links to original PDF files (Nexus Specification, SiFive Control Layer Donation, MIPI Connectors White Paper) as references.
 
-= Specification PDFs
+== Specification PDFs
 
 This document provides reference to separated documents developed together as part of RISC-V N-Trace Specification:
 
@@ -85,7 +85,7 @@ NOTE: Currently above links reference working versions of PDFs. Once ratified, t
 
 NOTE: Currently each PDF has a different 'working version' (`v0.9.x`). Ratified set of documents (including this document) will all have identical version numbers (`v1.0.0`).
 
-= Useful Links
+== Useful Links
 
 Specification was developed here:
 
