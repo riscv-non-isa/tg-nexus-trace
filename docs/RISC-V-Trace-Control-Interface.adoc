@@ -54,16 +54,17 @@ PDF generated on: {localdatetime}
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
 [preface]
-== History and status
+== History and Status
 
 NOTE: After approval by the group and status change from Stable to Frozen this chapter will be removed.
 
 2023/01/19: Version 0.9.13-Stable
 
+* Removed all history before 2023 (from History and Status chapter)
 * Notes from Jay taken into account.
 * Notes from Markus taken into account.
 * Elaborated more on idle state for E-Trace protocol.
-* TODO: Notes from Michael (related to filtering) taken into account.
+* Notes from Michael (related to filtering) taken into account.
 
 2023/01/09: Version 0.9.12-Stable
 
@@ -827,9 +828,13 @@ It is implementation-dependent what happens when debug triggers or external trig
 
 === Trace Encoder Filter Registers
 
-All registers with offsets 0x400 .. 0x7FC are reserved for additional trace encoder filtering options (context, addresses, modes etc.).
+All registers with offsets 0x400 ... 0x7FC are reserved for additional trace encoder filter options (context, addresses, modes, etc.).
 
-Specifications for different trace encoders should define registers in this range.
+Trace encoder filters are an optional feature that can be used to control the generated trace in various ways.
+
+The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enablinging a filter option), the corresponding register from the bit's description must have a valid value. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
+
+NOTE: Filter and comparator registers refer to values of some signals (as *priv*, *itype*, *ecause*, *dtype*, '*dsize*, ...) available on Trace Ingress Port. See E-Trace specification for details of encoding of these values.
 
 .*Register: trTeFilter???: Trace Encoder Filter Registers (trBaseEncoder+0x400..0x5FF)*
 [cols="10%,35%,14%,~",options="header",]
@@ -870,24 +875,24 @@ When set, match privilege levels specified by `trTeFilter__i__MatchInstControl.t
 When set, start matching from exception cause codes specified by `trTeFilter__i__MatchChoiceEcause.teMatchChoiceEcause`, and
 stop matching upon return from the 1st matching exception.
 | WARL | 0
-|3     |trTeFilterMatchInt | 
+|3     |trTeFilterMatchInterrupt | 
 When set, start matching from a trap with the interrupt level codes specified by 
-trTeFilter__i__MatchInstControl.teMatchValueInterrupt, and stop matching upon return from the 1st matching trap.
+`trTeFilter__i__MatchInstControl.teMatchValueInterrupt`, and stop matching upon return from the 1st matching trap.
 | WARL | 0
 |4     |trTeFilterMatchComp1 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp1` must be high in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterMatchComp1` must be true in order for the filter to match.
 | WARL | 0
 |7-5   |trTeFilterComp1 |
 Specifies the comparator unit to use for the 1st comparison.
 | WARL | SD
 |8     |trTeFilterMatchComp2 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp2` must be high in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterMatchComp2` must be true in order for the filter to match.
 | WARL | 0
 |11-9  |trTeFilterComp2 |
 Specifies the comparator unit to use for the 2nd comparison.
 | WARL | SD
 |12    |trTeFilterMatchComp3 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp3` must be high in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterMatchComp3` must be true in order for the filter to match.
 | WARL | 0
 |15-13 |trTeFilterComp3 |
 Specifies the comparator unit to use for the 3rd comparison.
@@ -909,11 +914,11 @@ When set, match *dsize* values as specified by `trTeFilter__i__MatchDataControl.
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|7-0   |trTeFilterMatchChoice Privilege | 
+|7-0   |trTeFilterMatchChoicePrivilege | 
 When `trTeFilter__i__Control.trTeFilterMatchPrivilege` is set, match all privilege
 levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value is N
 | WARL | SD 
-|8     |trTeFilterMatchValue Interrupt |
+|8     |trTeFilterMatchValueInterrupt |
 When `trTeFilter__i__Control.trTeFilterMatchInterrupt` is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
 respectively.
 | WARL | SD 
@@ -923,7 +928,7 @@ respectively.
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0   |trTeFilterMatchChoice Ecause | 
+|31-0   |trTeFilterMatchChoiceEcause | 
 When `trTeFilter__i__Control.trTeFilterMatchEcause` is set, match all excepion causes for which the corresponding bit is set. For
 example, if bit N is 1, then match if the *ecause* is N.
 | WARL | SD 
@@ -933,7 +938,7 @@ example, if bit N is 1, then match if the *ecause* is N.
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0   |trTeFilterMatchValue Impdef | 
+|31-0   |trTeFilterMatchValueImpdef | 
 When `trTeFilter__i__Control.trTeFilterMatchimpdef` is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
 (`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
@@ -1004,6 +1009,7 @@ Selects the primary comparator function.  Primary result is true if input select
 |7 |--|Reserved|--|0
 |10-8   |trTeCompSFunction |
 Selects the secondary comparator function.  Secondary result is true if input selected via `trTeCompSInput` is:
+
 0: equal to `trTeCompSMatch`
 
 1: not equal to `trTeCompSMatch`
@@ -1138,7 +1144,7 @@ For bus with an address larger than 32-bit, corresponding `High` registers defin
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0 |trRamStartHigh |High order bits (63:32) of `trRamStart` registeer. |WARL |Undef
+|31-0 |trRamStartHigh |High order bits (63:32) of `trRamStart` register. |WARL |Undef
 |===
 
 .*Register: trRamLimitLow: Trace RAM Sink Limit Register (trBaseRamSink+0x018)*
@@ -1508,7 +1514,7 @@ SRAM mode only:
 * Bit `trRamWrap` must be implemented.
 * Register `trRamLimitLow` must be implemented, but can be hard coded to value '2^M-4' (address 0x..FC).
 * Register `trRamWPLow` must at least accept a write of 0.
-* Register `trRamRPLow` must accept any 32-bit aligned value in range <0 .. `trRamLimitLow`> inclusive.
+* Register `trRamRPLow` must accept any 32-bit aligned value in inclusive range < 0 .. `trRamLimitLow` >.
 ** If width of access to SRAM is wider than 32-bits any 32-bit aligned value of `trRamRP` must be allowed and reads must be buffered.
 * Register `trRamData` must be implemented for reading only.
 * All other registers/fields/bits may be tied to 0.
@@ -1519,7 +1525,7 @@ SMEM mode only:
 * Bit `trRamWrap` must be implemented.
 * Register `trRamStart` must be implemented, but can be hard coded to value '2^N' (address 0x..00).
 * Register `trRamLimit` must be implemented, but can be hard coded to value '2^N + 2^M-4' (address 0x..FC).
-* Registers `trRamWP` must accept any 32-bit aligned value in inclusive range <`trRamStart` .. `trRamLimit`>.
+* Registers `trRamWP` must accept any 32-bit aligned value in inclusive range < `trRamStart` .. `trRamLimit` >.
 * All other registers/fields/bits may be tied to 0.
 
 *Minimal Trace PIB Sink Register/Fields*
@@ -1568,7 +1574,7 @@ Reset and Discovery should be performed as follows:
 * Save `tr??Control` register as it holds all reset values (it may prevent tool to do read-modify operation later).
 * Release from reset by setting `tr??Active` = 1 and wait for `tr??Active` = 1 to be read (to confirm component is not in reset). 
 
-IMPORTANT: When performina write setting `tr??Active` = 1, no other bits should be changed. 
+IMPORTANT: When performin a write which is setting `tr??Active` = 1, no other bits should be changed. 
 
 * Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
 ** If `tr??VerMajor` is 0 (for Trace Encoder component ...) either handle it as legacy version 0 or abort with an error.
