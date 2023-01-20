@@ -1649,7 +1649,7 @@ Enabling should work as follows:
 * Set main enable for RAM Sink/PIB Sink/ATB Bridge component by setting `tr??Enable` = 1.
 ** Read back and wait for confirmation (`tr??Enable` = 1).
 * Enable Trace Funnel[s] in the same way.
-* Configure and Enable Trace Encoder[s] in the same way.
+* Configure and Enable Trace Encoder[s] in the same way (last should be write of `trTeEnable` = 1 followed by read to verify that it is set).
 * Either  manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or setup triggers to start the trace.
 * Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTe????Tracing` bit was set).
 * Periodically read `trTeControl` for status of trace (as it may stop by itself due to triggers).
