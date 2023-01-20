@@ -55,4 +55,10 @@ NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanati
 
 == Introduction to Nexus Messages
 
-IMPORTANT: Include other ADOC here (now this is just a stub).
+IMPORTANT: TODO: Include other ADOC here, so single PDF will be generated (now links to ADOC files are placed below).
+
+https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-Messages.adoc
+
+https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-MessageDetails.adoc
+
+
