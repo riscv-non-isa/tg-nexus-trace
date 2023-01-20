@@ -226,11 +226,11 @@ The Trace Encoder sends trace messages to the PIB Sink. Each message is transmit
 
 The ATB Bridge transmits bytes of RISC-V trace messages as an ATB bus master.
 
-ATB has width (either 8 or 32-bit) which will well match packet=sequence-of-bytes definition.
+ATB width is byte aligned (8, 16, 32, 64, 128) which is well matching packet=sequence-of-bytes definition.
 
 === Trace Funnel
 
-The Trace Encoder sends trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs (either RISC-V Trace Encoder or another Trace Funnel) and sends the combined trace stream to its designated Trace Sink or ATB Bridge, which is one or more of the sink types above.
+The Trace Encoder may send trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs (either RISC-V Trace Encoder or another Trace Funnel) and sends the combined trace stream to its designated Trace Sink or ATB Bridge, which is one or more of the sink types above.
 
 NOTE: It is assumed that each input to the funnel (Trace Encoder or another Trace Funnel) has a unique message source ID defined (`trTeSrcID` field in the `trTeControl` register).
 
@@ -271,6 +271,8 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 ** It is advisable to drain the trace pipeline to some hysteresis level before resuming - otherwise a lot of short chunks of trace may be produced.
 * Optionally (and if acceptable to the user), the Trace Encoder may be configured to stall the hart in order to avoid packet loss.
 * Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
+** Bandwidth at input to the the sink must be in general larger than the data being produced.
+** Amount of data being generated can be limited by creating tracing windows with the help of triggers.
 
 .*Allowed Connections Between Components*
 [cols="20%,20%,~",options="header",]
@@ -441,6 +443,8 @@ Most of trace control registers are optional. Some WARL fields may be hard-coded
 
 Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same registers. As almost every register/field/bit is optional this provides good flexibility in implementation.
 
+==== Summary of Trace Encoder Registers
+
 .*Trace Encoder Registers (trTe..., trTs...)*
 [cols="10%,25%,15%,~",options="header",]
 |===
@@ -476,6 +480,8 @@ Examples of possible additional sub-components in Trace Encoder are:
 * PC Sampling
 * Instrumentation Trace
 
+==== Summary of Trace RAM Sink Registers
+
 .*Trace RAM Sink Registers (trRam...)*
 [cols="10%,25%,15%,~",options="header",]
 |===
@@ -495,6 +501,8 @@ Examples of possible additional sub-components in Trace Encoder are:
 |0x044 - 0x07F |-- |Optional |Reserved for bigger read buffer
 |===
 
+==== Summary of Trace PIB Sink Registers
+
 .*Trace PIB Sink Registers (trPib...)*
 [cols="10%,25%,15%,~",options="header",]
 |===
@@ -502,6 +510,8 @@ Examples of possible additional sub-components in Trace Encoder are:
 |0x000 |trPibControl |Required |Trace PIB Sink control register
 |0x004 |trPibImpl |Required |Trace PIB Sink Implementation information
 |===
+
+==== Summary of Trace Funnel Registers
 
 .*Trace Funnel Registers (trFunnel..., trTs...)*
 [cols="10%,25%,15%,~",options="header",]
@@ -516,6 +526,10 @@ Examples of possible additional sub-components in Trace Encoder are:
 |0x048 |trTsCounterLow |Optional |Lower 32 bits of timestamp counter
 |0x04C |trTsCounterHigh |Optional |Upper bits of timestamp counter
 |===
+
+NOTE: Funnels may optionally be a source of timestamp and/or forward timestamp to Trace Encoders in the system. This way several Trace Encoders may share timestamp and trace from several harts may be time-correlated.
+
+==== Summary of Trace ATB Bridge Registers
 
 .*Trace ATB Bridge Registers (trAtbBridge...)*
 [cols="10%,25%,15%,~",options="header",]
@@ -558,12 +572,12 @@ Many features of the Trace Encoder (TE for short) are optional. In most cases, o
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTeActive |Primary enable for the TE. When 0, the TE may have clocks gated off or be powered
+|0 |trTeActive |Primary enable/reset for the TE. When 0, the TE may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 
-|1 |trTeEnable |1: Trace Encode is enabled. Allows `trTeInstTracing` and `trTeDataTracing` to turn tracing on and off. Setting `trTeEnable` to 0 flushes any queued trace data to the sink or funnel attached to this encoder. This bit can be set to 1 only by direct writing to it.|RW |0
+|1 |trTeEnable |1: Trace Encode is enabled. Allows `trTeInstTracing` and `trTeDataTracing` to turn tracing on and off. Setting `trTeEnable` to 0 flushes any queued trace data to the sink or funnel attached to this encoder. This bit can be set to 1 only by direct writing to it. This write of 1 should be done after all other settings are done.|RW |0
 
-|2 |trTeInstTracing |1: Instruction trace is being generated. Written from tool or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
+|2 |trTeInstTracing |1: Instruction trace is being generated. Written from tool (after write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
 
 |3 |trTeEmpty |Reads as 1 when all generated trace have been emitted. |R |1
 |6-4 |trTeInstMode |
@@ -577,7 +591,7 @@ Main instruction trace generation mode
 
 4-5: Reserved for subset of Branch History Trace
 
-6: Generate non-optimized instruction Branch History Trace (each branch adds single history bit)
+6: Generate non-optimized instruction Branch History Trace (each taken or not taken branch adds single history bit)
 
 7: Generate optimized Instruction Trace (`trTeInstFeatures` register if present define instruction trace features and optimizations).
 
@@ -589,9 +603,9 @@ Main instruction trace generation mode
 and Trace-off Debug module or External triggers respectively|WARL |0
 |12  |trTeInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1 |0
 |13 |trTeInstStallEna |
-0: If TE cannot send a message, an overflow is generated when the trace is restarted. 
+0: If TE cannot send a message, the message is dropped. An overflow synchronization message is generated when the trace is restarted. 
 
-1: If TE cannot send a message, the hart is stalled until it can.
+1: If TE cannot send a message, the hart is stalled until it can. With this option execution of instructions by the hart may be intrusively affected, but in many cases it is acceptable.
 
 |WARL |SD
 |14 |--|Reserved |--|0
@@ -600,7 +614,7 @@ and Trace-off Debug module or External triggers respectively|WARL |0
 
 |WARL |SD
 
-|17-16 |trTeSyncMode |Select periodic synchronization mechanism. At least one non-zero mechanism must be implemented.
+|17-16 |trTeSyncMode |Select periodic synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented.
 
 0: Off
 
@@ -608,11 +622,13 @@ and Trace-off Debug module or External triggers respectively|WARL |0
 
 2: Count hart clock cycles
 
-3: Count instruction half-words (16-bit)|WARL |SD
+3: Count instruction half-words (16-bit)
+
+Once the periodic counter is reached, a synchronization message/packet should be generated at the nearest opportunity.|WARL |SD
 
 |19-18 |--|Reserved |--|0
 
-|23-20 |trTeSyncMax |The maximum interval (in units determined by `trTeSyncMode`) between synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeSyncMax`+4). If a synchronization packet is generated for another reason, the internal counter should be reset.|WARL |SD
+|23-20 |trTeSyncMax |The maximum interval (in units determined by `trTeSyncMode`) between synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
 
 |26-24 |trTeFormat |
 Trace recording format
@@ -650,7 +666,7 @@ Value of this field is defined by a document which defines a trace encoding prot
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
-NOTE: `trTeProtocol...` fields are separated from `trTeVer...` as we may have the same control interface, but protocol itself may be expanded with new packets/messages fields.
+NOTE: `trTeProtocol...` fields are separated from `trTeVer...` as we may have the same control interface, but protocol itself may be extended with new packets/ messages/ fields.
 
 .*Register: trTeInstFeatures: Trace Instruction Features Register (trBaseEncoder+0x008)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -666,6 +682,8 @@ NOTE: `trTeProtocol...` fields are separated from `trTeVer...` as we may have th
 |27-16 |trTeSrcID |This TE source ID. If `trTeSrcBits`>0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field. May be fixed or variable.|WARL |SD
 |31-28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. May be fixed or variable. |WARL |SD
 |===
+
+NOTE: Applicability of different `trTeInst...` fields for different trace encoding protocols is described in a document which defines them (and not all fields are applicable to all protocols).
 
 .*Register: trTeInstFilters: Trace Instruction Filters Register (trBaseEncoder+0x00C)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -706,6 +724,8 @@ Determine which filters qualify an instruction trace. If bit *__n__* is a 1 then
 |WARL|SD
 |===
 
+NOTE: Applicability of different `trTeData...` fields for different trace encoding protocols is described in a document which defines them (and not all fields are applicable to all protocols).
+
 .*Register: trTeDataFilters: Trace Data Filters Register (trBaseEncoder+0x01C)*
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
@@ -728,7 +748,7 @@ Implementations may have no timestamp, one timestamp type, or more than one type
 
 The width of the timestamp is implementation-dependent, typically 40 or 48 bits (40 bit timestamp will overflow every 4.7 minutes assuming 1GHz timestamp clock).
 
-In a system with Funnels, typically all the Funnels are built with a Timestamp Unit. The top-level Funnel is the source of the timestamp (Internal System or External) and all the Encoders and other Funnels have a Shared timestamp. To perform the forwarding function, the mid-level Funnels must be programmed with `trFunnelActive` = 1 (which is natural as all trace messages must pass through that funnel).
+In a system with Funnels, typically all the Funnels are built with a Timestamp Unit. The top-level Funnel is the source of the timestamp (Internal System or External) and all the Encoders and other Funnels have a Shared timestamp. This assures that all timestamps in the system are the ame and trace from different harts may be time-correlated. To perform the forwarding function, the mid-level Funnels must be programmed with `trFunnelActive` = 1 (which is natural as all trace messages must pass through that funnel).
 
 An Internal Timestamp Unit may include a prescaler divider, which can extend the range of a narrower timestamp and uses less power but has less resolution.
 
@@ -845,7 +865,7 @@ Select action to perform when external trigger input 0 fires. If external trigge
 5-15: Reserved
 
 |WARL |0
-|31-4 |trTeTrigExtInAction *__n__* |Select actions for external trigger input *__n__* (1..7). If an external trigger input does not exist, then its action is fixed at 0. |WARL |0
+|31-4 |trTeTrigExtInAction *__n__* |Select actions (as defined for bits 3-0) for external trigger input *__n__* (1..7). If an external trigger input does not exist, then its action is fixed at 0. |WARL |0
 |===
 
 .*Register: trTeTrigExtOutControl: External Trigger Output Control Register (trBaseEncoder+0x058)*
@@ -1140,7 +1160,7 @@ Be aware that in case trace memory wraps around some protocols may require addit
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trRamActive |Primary enable for Trace RAM Sink. When 0, the Trace RAM Sink may have clocks gated off or be powered
+|0 |trRamActive |Primary enable/reset for Trace RAM Sink. When 0, the Trace RAM Sink may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 |1 |trRamEnable |1=Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to output.
 Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP...` registers. Disabling trace may update `trRamWP...` as result of flushing.|RW |0
@@ -1286,13 +1306,13 @@ NOTE: Trace RAM Sink may implement writing trace by writing to `trRamData`, but 
 
 == Trace Funnel
 
-The Trace Funnel combines messages from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages are accepted per cycle and in what order.
+The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages/packets are accepted before it is switching to another input cycle and in what order. But continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Most fair implementation would be to process just a single message/packet from each input in round-robin fashion.
 
 .*Register: trFunnelControl: Trace Funnel Control Register (trBaseFunnel+0x000)*
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trFunnelActive |Primary enable for trace funnel. When 0, the Trace Funnel may have clocks gated off or be powered
+|0 |trFunnelActive |Primary enable/reset for trace funnel. When 0, the Trace Funnel may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 |1 |trFunnelEnable |1=Trace Funnel enabled. Setting `trFunnelEnable` to 0 flushes any queued trace data to output.|RW |0
 |2 |--|Reserved |--|0
@@ -1335,7 +1355,8 @@ The modes and behavior described here are intended to be compatible with trace p
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trPibActive |Primary enable/reset for PIB Sink component |RW |0
+|0 |trPibActive |Primary enable/reset for PIB Sink component. When 0, the PIB Funnel may have clocks gated off or be powered
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 |1 |trPibEnable |
 0=PIB does not accept input but holds output(s) at idle state defined by pibMode.
 
@@ -1344,7 +1365,7 @@ The modes and behavior described here are intended to be compatible with trace p
 |RW |0
 |2 |--|Reserved|--|0
 |3 |trPibEmpty |Reads 1 when PIB internal buffers are empty |R |1
-|7-4 |trPibMode |Select mode for output pins. |WARL |0
+|7-4 |trPibMode |Select mode for output pins. Allowed values are described in `Allowed PIB Configurations` table below.|WARL |0
 |8 |trPibClkCenter |In parallel modes, adjust TRC_CLK timing to the center of the bit period. This can be set only if `trPibMode` selects one of the parallel protocols. Optional. |WARL |SD
 |9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. The calibration pattern is described below. Optional. |WARL |0
 |15-10 |--|Reserved|--|0
@@ -1520,15 +1541,13 @@ These requirements are applicable to the entire trace sub-system.
 * Each trace component in a system is required to implement `tr??Control` and `tr??Impl` registers.
 ** `tr??Active` bit must be settable to 0 or 1, although reset itself is NOT required.
 ** `tr??Enable` bit must be settable to 0 or 1 and must support flushing (if applicable) when changed from 1 to 0.
-** `tr??Empty` bit must read as 0 when the trace component has some trace data internally buffered.
+** `tr??Empty` bit must read as 0 when the trace component has some trace data internally buffered (may be hard-coded to 1).
 ** `tr??VerMajor`, `tr??VerMinor` and `tr??CompType` must be implemented.
 
 *Minimal Trace Encoder Requirements*
 
-Data-only trace is not considered as a minimal requirement.
-
-* Bit `trTeInstTracing` must be implemented (to start/stop output from Trace Encoder).
-* At least `trTeInstMode` = 3 (basic Brach Trace) or 6 (basic History Trace) must be implemented (as hard code-value).
+* Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
+* At least `trTeInstMode` = 3 (basic Brach Trace) or 6 (basic History Trace) must be implemented (can be hard-coded value).
 * At least one of the non-0 values of `trTeSyncMode` must be settable (or hard-coded).
 * Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
 * All other registers/fields/bits may be tied to 0.
