@@ -64,7 +64,7 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
     }
     else
     {
-      histMask = 0x1; while (histMask < hist) histMask <<= 1; histMask >>= 2;
+      histMask = 0x1; while (histMask <= hist) histMask <<= 1; histMask >>= 2;
     }
   }
 
