@@ -25,7 +25,7 @@ Same file in ADOC format is here: [TG-RISC-V-Nexus-Trace.adoc](./docs/initial/RI
 
 ### Additional Resources
 
-- The [Nexus IEEE-ISTO-5001 Standard (2012-v3.0.1)](http://nexus5001.org/wp-content/uploads/2018/05/IEEE-ISTO-5001-2012-v3.0.1-Nexus-Standard.pdf) PDF file.
+- The [Nexus IEEE-ISTO-5001 Standard (2012-v3.0.1)](./docs/nexus-standard/IEEE-ISTO-5001-2012-v3.0.1-Nexus-Standard.pdf) PDF file.
 
 ### Documentation generator
 
