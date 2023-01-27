@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V
-:revdate:  Jan 19, 2023
-:revnumber: 0.9.13
+:revdate:  Jan 26, 2023
+:revnumber: 0.9.14
 :revremark: This document is in Stable state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
@@ -49,7 +49,7 @@ This work is Copyright 2023 by RISC-V International.
 
 PDF generated on: {localdatetime}
 
-2023/01/13: Version 0.9.13-Stable
+2023/01/26: Version 0.9.14-Stable
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
@@ -60,11 +60,12 @@ NOTE: After approval by the group and status change from Stable to Frozen this c
 
 2023/01/26: Version 0.9.14-Stable
 
-* Renamed trTeInstEnCallStack to trTeInstEnImplicitReturn (as disussed during meeting).
-* Added trTeInstEnCountOptimize (to allow controlling ICNT optimization for N-Trace).
+* Renamed 'trTeInstEnCallStack' to 'trTeInstEnImplicitReturn' (as disussed during meeting).
+* Added 'trTeInstEnCountOptimize' (to allow controlling ICNT optimization for N-Trace).
 * Updated (after comments form Markus and Iain) 'Mimimal Implementation' (non-normative) chapter.
-* Added trTeInstMode = 4 to allow optimized options to be (potentially) used for simple 'Branch Trace'.
-* Small notes from Jay.
+* Added 'trTeInstMode' = 4 to allow optimized options to be (potentially ...) used for simpler 'Branch Trace' mode.
+* Small notes from Jay (direct email to me).
+* Updated wrong names in Filter section (email from Michael) and also changed 'register.field' to 'field' as fields are unique. It makes formatting in narrow columns much nicer.
 
 2023/01/19: Version 0.9.13-Stable
 
@@ -556,7 +557,7 @@ and Trace-off Debug module or External triggers respectively|WARL |0
 |14 |--|Reserved |--|0
 
 |15 |trTeInhibitSrc |
-0: Trace source field (of `trTeInstFeatures.trTeSrcBits` width) is added to every trace message to indicate which TE generated each message. If `trTeInstFeatures.trTeSrcBits` is 0, this bit is not active.
+0: Trace source field (of `trTeSrcBits` width) is added to every trace message to indicate which TE generated each message. If `trTeSrcBits` is 0, this bit is not active.
 
 1: Disable source field in trace messages. 
 |WARL |SD
@@ -878,46 +879,46 @@ NOTE: Filter and comparator registers refer to values of some signals (as *priv*
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0     |trTeFilterEnable | Overall filter enable | WARL | 0 
+|0     |trTeFilterEnable | Overall filter enable for filter #__i__| WARL | 0 
 |1     |trTeFilterMatchPrivilege | 
-When set, match privilege levels specified by `trTeFilter__i__MatchInstControl.teMatchChoicePrivilege`.
+When set, match privilege levels specified by `trTeFilterMatchChoicePrivilege` field for filter #__i__.
 | WARL | 0
 |2     |trTeFilterMatchEcause | 
-When set, start matching from exception cause codes specified by `trTeFilter__i__MatchChoiceEcause.teMatchChoiceEcause`, and
+When set, start matching from exception cause codes specified by `trTeFilterMatchChoiceEcause` field for filter #__i__, and
 stop matching upon return from the 1st matching exception.
 | WARL | 0
 |3     |trTeFilterMatchInterrupt | 
 When set, start matching from a trap with the interrupt level codes specified by 
-`trTeFilter__i__MatchInstControl.teMatchValueInterrupt`, and stop matching upon return from the 1st matching trap.
+`trTeFilterMatchValueInterrupt` field for filter #__i__, and stop matching upon return from the 1st matching trap.
 | WARL | 0
 |4     |trTeFilterMatchComp1 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp1` must be true in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterComp1` must be true in order for the filter to match.
 | WARL | 0
 |7-5   |trTeFilterComp1 |
 Specifies the comparator unit to use for the 1st comparison.
 | WARL | SD
 |8     |trTeFilterMatchComp2 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp2` must be true in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterComp2` must be true in order for the filter to match.
 | WARL | 0
 |11-9  |trTeFilterComp2 |
 Specifies the comparator unit to use for the 2nd comparison.
 | WARL | SD
 |12    |trTeFilterMatchComp3 | 
-When set, the output of the comparator selected by `trTeFilterMatchComp3` must be true in order for the filter to match.
+When set, the output of the comparator selected by `trTeFilterComp3` must be true in order for the filter to match.
 | WARL | 0
 |15-13 |trTeFilterComp3 |
 Specifies the comparator unit to use for the 3rd comparison.
 | WARL | SD
 |16    |trTeFilterMatchImpdef | 
-When set, match *impdef* values as specified by `trTeFilter__i__MatchValueImpdef.teMatchValueImpdef` and 
-`trTeFilter__i__MatchValueImpdef.teMatchMaskImpdef`.
+When set, match *impdef* values as specified by `trTeFilterMatchValueImpdef` and 
+`trTeFilterMatchMaskImpdef` fields for filter #__i__.
 | WARL | 0
 |23-17 |--|Reserved|--|0
 |24    |trTeFilterMatchDtype | 
-When set, match *dtype* values as specified by `trTeFilter__i__MatchDataControl.teMatchChoiceDtype`.
+When set, match *dtype* values as specified by `trTeFilterMatchChoiceDtype` field for filter #__i__.
 | WARL | 0
 |25    |trTeFilterMatchDsize | 
-When set, match *dsize* values as specified by `trTeFilter__i__MatchDataControl.teMatchChoiceDsize`.
+When set, match *dsize* values as specified by `trTeFilterMatchChoiceDsize` field for filter #__i__.
 | WARL | 0
 |===
 
@@ -926,11 +927,11 @@ When set, match *dsize* values as specified by `trTeFilter__i__MatchDataControl.
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |7-0   |trTeFilterMatchChoicePrivilege | 
-When `trTeFilter__i__Control.trTeFilterMatchPrivilege` is set, match all privilege
+When `trTeFilterMatchPrivilege` field for filter #__i__ is set, match all privilege
 levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value is N
 | WARL | SD 
 |8     |trTeFilterMatchValueInterrupt |
-When `trTeFilter__i__Control.trTeFilterMatchInterrupt` is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
+When `trTeFilterMatchInterrupt` field for filter #__i__ is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
 respectively.
 | WARL | SD 
 |===
@@ -940,7 +941,7 @@ respectively.
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0   |trTeFilterMatchChoiceEcause | 
-When `trTeFilter__i__Control.trTeFilterMatchEcause` is set, match all excepion causes for which the corresponding bit is set. For
+When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion causes for which the corresponding bit is set. For
 example, if bit N is 1, then match if the *ecause* is N.
 | WARL | SD 
 |===
@@ -950,7 +951,7 @@ example, if bit N is 1, then match if the *ecause* is N.
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0   |trTeFilterMatchValueImpdef | 
-When `trTeFilter__i__Control.trTeFilterMatchimpdef` is set, match if
+When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
 (`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
 | WARL | SD 
@@ -961,7 +962,7 @@ When `trTeFilter__i__Control.trTeFilterMatchimpdef` is set, match if
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0   |trTeFilterMatchMaskImpdef | 
-When `trTeFilter__i__Control.trTeFilterMatchimpdef` is set, match if
+When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
 (`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
 | WARL | SD 
@@ -972,11 +973,11 @@ When `trTeFilter__i__Control.trTeFilterMatchimpdef` is set, match if
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |15-0   |trTeFilterMatchChoiceDtype | 
-When `trTeFilter__i__Control.trTeFilterMatchDtype` is set, match all data access types
+When `trTeFilterMatchDtype` field for filter #__i__ is set, match all data access types
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dtype* value is N.
 | WARL | SD 
 |23-16  |trTeFilterMatchChoiceDsize |
-When `trTeFilter__i__Control.trTeFilterMatchDsize` is set, match all data access sizes
+When `trTeFilterMatchDsize` field for filter #__i__ is set, match all data access sizes
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dsize* value is N.
 | WARL | SD 
 |===
