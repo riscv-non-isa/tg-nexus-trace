@@ -9,7 +9,7 @@ Table below shows all types of messages. Single row shows all fields in particul
 
 [#Fields in Messages]
 .Fields in Messages
-[cols="10%,6%,6%,6%,6%,26%,8%,8%,8%,8%,8%",options="header",]
+[cols="26%,10%,6%,8%,10%,16%,6%,8%,8%,10%,2%",options="header",]
 |===========================================================================================
 | Message/Field:         |<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [`Var`]|<<field_SYNC,SYNC>> [4]|<<field_BTYPE,BTYPE>> [2]|Other (in specific messages)|<<field_ICNT,ICNT>> [`Var`]|xADDR [`Var`]|<<field_HIST,HIST>> [`Var`]|<<field_TSTAMP,TSTAMP>> [`Var`]|Level
 |`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
