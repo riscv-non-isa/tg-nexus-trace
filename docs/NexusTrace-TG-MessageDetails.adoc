@@ -9,7 +9,7 @@ Table below shows all types of messages. Single row shows all fields in particul
 
 [#Fields in Messages]
 .Fields in Messages
-[cols="21%,9%,6%,7%,9%,12%,7%,9%,7%,10%,2%",options="header",]
+[cols="20%,9%,6%,7%,9%,13%,7%,9%,7%,10%,3%",options="header",]
 |===========================================================================================
 | Field:
 
