@@ -53,12 +53,4 @@ PDF generated on: {localdatetime}
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
-== Introduction to Nexus Messages
-
-IMPORTANT: TODO: Include other ADOC here, so single PDF will be generated (now links to ADOC files are placed below).
-
-https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-Messages.adoc
-
-https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-MessageDetails.adoc
-
-
+include::NexusTrace-TG-MessageDetails.adoc
