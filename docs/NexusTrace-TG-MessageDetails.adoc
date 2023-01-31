@@ -1,15 +1,3 @@
-= Nexus Messages (Details)
-Version 0.9.1
-:doctype: book
-:encoding: utf-8
-:lang: en
-:toc: left
-:toclevels: 4
-:numbered:
-:xrefstyle: short
-:le: &#8804;
-:rarr: &#8658;
-
 This specification is using plain C-style identifiers for messages and message fields. Nexus is using *B-TYPE*, while here we have *BTYPE*. It will make references to code (both C and VHDL) easier. Message fields are shown in 'sending order' (left to right => first to last).
 
 NOTE: Original Nexus specification is showing tables with *TCODE* (which is sent first) in the last row.
