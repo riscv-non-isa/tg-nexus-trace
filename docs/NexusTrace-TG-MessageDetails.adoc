@@ -6,13 +6,12 @@ NOTE: Original Nexus specification is showing tables with *TCODE* (which is sent
 
 Table below shows all types of messages. Single row shows all fields in particular message. Many messages share fields and these fields are always present in same order. 
 
+
 [#Fields in Messages]
 .Fields in Messages
 [cols="10%,6%,6%,6%,6%,26%,8%,8%,8%,8%,8%",options="header",]
-
 |===========================================================================================
-| Message/Field:         |TCODE|SRC|SYNC|BTYPE|Other(rare)       |ICNT|xADDR|HIST|TSTAMP|Level
-|*Field Size [bits]:*    |[6]  |[M]|[4] |[2]  |   [mixture]      |[v] |[v]  |[v] |[v]   |
+| Message/Field:         |<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [`Var`]|<<field_SYNC,SYNC>> [4]|<<field_BTYPE,BTYPE>> [2]|Other (in specific messages)|<<field_ICNT,ICNT>> [`Var`]|xADDR [`Var`]|<<field_HIST,HIST>> [`Var`]|<<field_TSTAMP,TSTAMP>> [`Var`]|Level
 |`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
 |`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
 |`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
