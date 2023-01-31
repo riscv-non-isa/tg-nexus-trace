@@ -53,4 +53,4 @@ PDF generated on: {localdatetime}
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
-[include::NexusTrace-TG-MessageDetails.adoc]
+include::NexusTrace-TG-MessageDetails.adoc[]
