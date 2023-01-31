@@ -9,21 +9,23 @@ Table below shows all types of messages. Single row shows all fields in particul
 
 [#Fields in Messages]
 .Fields in Messages
-[cols="18%,9%,6%,7%,9%,13%,7%,9%,7%,10%,4%",options="header",]
+[cols="21%,9%,6%,7%,9%,12%,7%,9%,7%,10%,2%",options="header",]
 |===========================================================================================
-| Field:        Message:|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [`Var`]|<<field_SYNC,SYNC>> [4]|<<field_BTYPE,BTYPE>> [2]|Other (in specific messages)|<<field_ICNT,ICNT>> [`Var`]|<<field_xADDR,xADDR>> [`Var`]|<<field_HIST,HIST>> [`Var`]|<<field_TSTAMP,TSTAMP>> [`Var`]|L
-|`Ownership`             |2    |Opt|    |     |PROCESS[v]        |    |     |    | Opt  |2
+| Field:
+
+Message:|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [`Var`]|<<field_SYNC,SYNC>> [4]|<<field_BTYPE,BTYPE>> [2]|Other (in specific messages)|<<field_ICNT,ICNT>> [`Var`]|<<field_xADDR,xADDR>> [`Var`]|<<field_HIST,HIST>> [`Var`]|<<field_TSTAMP,TSTAMP>> [`Var`]|L
+|`Ownership`             |2    |Opt|    |     |PROCESS [v]        |    |     |    | Opt  |2
 |`DirectBranch`          |3    |Opt|    |     |                  |Yes |     |    | Opt  |1
 |`IndirectBranch`        |4    |Opt|    |Yes  |                  |Yes |UADDR|    | Opt  |1
 |`Error`                 |8    |Opt|    |     |ETYPE[4]+ PAD[v]  |    |     |    | Opt  |1
 |`ProgTraceSync`         |9    |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`DirectBranchSync`      |11   |Opt|Yes |     |                  |Yes |FADDR|    | Opt  |1
 |`IndirectBranchSync`    |12   |Opt|Yes |Yes  |                  |Yes |FADDR|    | Opt  |1
-|`ResourceFull`          |27   |Opt|    |     |RCODE[4]+ RDATA[v]|    |     |    | Opt  |2,4
+|`ResourceFull`          |27   |Opt|    |     |RCODE[4]+ RDATA[v]|    |     |    | Opt  |2
 |`IndirectBranchHist`    |28   |Opt|    |Yes  |                  |Yes |UADDR|Yes | Opt  |3
 |`IndirectBranchHistSync`|29   |Opt|Yes |Yes  |                  |Yes |FADDR|Yes | Opt  |3
 |`RepeatBranch`          |30   |Opt|    |     |BCNT[v]           |    |     |    | Opt  |4
-|`ProgTraceCorrelation`  |33   |Opt|    |     |EVCODE[4]+ CDF[2] |Yes |     |Opt | Opt  |1,3
+|`ProgTraceCorrelation`  |33   |Opt|    |     |EVCODE [4]+CDF[2] |Yes |     |Opt | Opt  |1
 |===========================================================================================
 
 *Field Size:* [n] - fixed size field n-bit, [v] - variable size field, [M] - SRC is only for multi-hart/core tracing
