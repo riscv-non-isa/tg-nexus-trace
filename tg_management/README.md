@@ -1,4 +1,4 @@
-This directory includes links to files maintained as part of ratification process.
+Links to files maintained as part of TG ratification process:
 
 [Ratificatiction Plan Review Presentation (Chairs 2023/02/08)](./N-Trace-for-RISC-V-PlanReview)
 
