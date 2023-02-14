@@ -1,8 +1,8 @@
 [[header]]
 :company: RISC-V
-:revdate:  Jan 10, 2023
-:revnumber: 0.9.12
-:revremark: This document is in Stable state. Assume it may change.
+:revdate:  Feb 14, 2023
+:revnumber: 0.9.14
+:revremark: This document is in Development state. Assume it may change.
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -30,7 +30,7 @@ endif::[]
 :footnote:
 :xrefstyle: short 
 
-= RISC-V Nexus Trace Messages Specification
+= RISC-V N-Trace (Nexus-based Trace) Specification
 
 // table of contents
 toc::[]
@@ -49,16 +49,8 @@ This work is Copyright 2023 by RISC-V International.
 
 PDF generated on: {localdatetime}
 
-2023/01/10: Version 0.9.12-Stable
+2023/02/14: Version 0.9.14-Development
 
 NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
 
-== Introduction to Nexus Messages
-
-IMPORTANT: TODO: Include other ADOC here, so single PDF will be generated (now links to ADOC files are placed below).
-
-https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-Messages.adoc
-
-https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/docs/NexusTrace-TG-MessageDetails.adoc
-
-
+include::NexusTrace-TG-MessageDetails.adoc[]
