@@ -5,6 +5,7 @@
 [cols="15%,15%,70%",options="header",]
 |======================================================================================================
 |Date| Major.Minor Version | Version description
+|2023/2/14|0.9.15|Added a/the/an articles (in many places) and some minor spelling/grammar fixes.
 |2023/2/14|0.9.14 |Update (with PDF generated)
 |2023/1/31|0.9.13 |Improved (not published)
 |2023/1/10|0.9.12 |Initial version.
