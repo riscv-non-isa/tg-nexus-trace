@@ -214,7 +214,7 @@ NOTE: As almost every message is updating I-CNT it may overflow. In such a case 
 
 IMPORTANT: N-Trace encoder does does not require *cause* and *tvar* ingress port signals (valid for exceptions and interrupts only) as these are not reported in N-Trace messages. N-Trace is only providing the address of an exception/interrupt handler.
 
-[#N-Trace Transmission Protocol]
+[[N-Trace Transmission Protocol]]
 == N-Trace Transmission Protocol
 
 The Nexus standard defines a trace messaging protocol using a number of *MDO* (Message Data Out) signals and one or two flag signals known as *MSEO* (Message Start/End Out). A Nexus message is sent or stored in slices composed of *MDO* and *MSEO*. 
