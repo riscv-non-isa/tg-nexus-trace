@@ -28,10 +28,10 @@ This document is describing N-Trace Trace Encoder and Messaging Protocol version
 
 This PDF is referencing the following related documents:
 
-[#E-Trace Specification]
+[[E-Trace Specification]]
 * link:https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] specification version 2.0 - it described RISC-V Trace Ingress Port signals.
 
-[#RISC-V Trace Control Interface]
+[[RISC-V Trace Control Interface]]
 * link:https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/pdfs/RISC-V-Trace-Control-Interface.pdf[RISC-V Trace Control Interface] specification version 1.0.0 - it defines a common trace control interface.
 
 IMPORTANT: Above links are pointing into different github locations, as of today there is no consistent storage or naming conventions for different ratified RISC-V specifications.
