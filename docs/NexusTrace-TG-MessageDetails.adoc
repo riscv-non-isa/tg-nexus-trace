@@ -5,11 +5,15 @@
 [cols="15%,15%,70%",options="header",]
 |======================================================================================================
 |Date| Major.Minor Version | Version description
-|2023/2/15|0.9.16|*Pure formatting changes (pages/chapters all the same!)*
+|2023/2/16|0.9.16|*Pure formatting changes (pages/chapters all the same!)*
 
 Fixed links displayed as 'Section ...'. 
 
 Added missing '-' to some of B-TYPE/B-CNT/F-ADDR/U-ADDR/I-CNT field names.
+
+Removed versions from links to E-Trace and RISC-V Trace control.
+
+Some typos, missed fields, hex TCODE notes from email (by Nino) taken into account.
 |2023/2/14|0.9.15|Added a/the/an articles (in many places) and some minor spelling/grammar fixes.
 |2023/2/14|0.9.14 |Update (with PDF generated)
 |2023/1/31|0.9.13 |Improved (not published)
@@ -28,15 +32,18 @@ This document is describing N-Trace Trace Encoder and Messaging Protocol version
 
 This PDF is referencing the following related documents:
 
-[[E-Trace Specification]]
-* link:https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] specification version 2.0 - it described RISC-V Trace Ingress Port signals.
+[#E-Trace Specification]
+==== E-Trace Specification
+* link:https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] Specification - it describes RISC-V Trace Ingress Port signals.
+** At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
 
-[[RISC-V Trace Control Interface]]
-* link:https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/pdfs/RISC-V-Trace-Control-Interface.pdf[RISC-V Trace Control Interface] specification version 1.0.0 - it defines a common trace control interface.
+[#RISC-V Trace Control Interface]
+==== RISC-V Trace Control Interface
 
-IMPORTANT: Above links are pointing into different github locations, as of today there is no consistent storage or naming conventions for different ratified RISC-V specifications.
+* link:https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/pdfs/RISC-V-Trace-Control-Interface.pdf[RISC-V Trace Control Interface] Specification - it defines a common trace control interface.
+** At the moment of this writing this is version 1.0.0 (ratified together with this document).
 
-<<TODO>> - This MUST be clarified before official ratification of this specification.
+NOTE: Above links are pointing into github repositories, as there is no consistent storage or naming conventions for ratified RISC-V specifications.
 
 ////
 This comment is taken AS-IS from iommu_intro.adoc file
@@ -204,17 +211,16 @@ For HTM mode: Update I-CNT field. Add 1 as LSB to HIST field. If overflown emit 
 |12|Co-routine swap|Same as for *itype=13* below.|Pop,Push
 |13|Return|If Pop return same address as current PC, then same as for *itype=0* above.
 
-Otherwise same as for *itype=6* above.
+Otherwise the same as for *itype=6* above.
 |Pop
 |14|Other un-inferable jump|Same as for *itype=6* above.|-
 |15|Other inferable jump|Same as for *itype=0* above.|-
 |======================================================================================================
 
-NOTE: As almost every message is updating I-CNT it may overflow. In such a case emit <<msg_ResourceFull,ResourceFull>> with <<field_RCODE,RCODE>>=1 field.
+Almost every ingress port cycle is updating I-CNT it may overflow. In such a case emit <<msg_ResourceFull,ResourceFull>> with <<field_RCODE,RCODE>>=1 field.
 
 IMPORTANT: N-Trace encoder does does not require *cause* and *tvar* ingress port signals (valid for exceptions and interrupts only) as these are not reported in N-Trace messages. N-Trace is only providing the address of an exception/interrupt handler.
 
-[[N-Trace Transmission Protocol]]
 == N-Trace Transmission Protocol
 
 The Nexus standard defines a trace messaging protocol using a number of *MDO* (Message Data Out) signals and one or two flag signals known as *MSEO* (Message Start/End Out). A Nexus message is sent or stored in slices composed of *MDO* and *MSEO*. 
@@ -380,7 +386,7 @@ Table below shows all types of messages. Single row shows all fields in particul
 |[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Opt|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     |
 |[[msg_DirectBranch]]<<msg2_DirectBranch,DirectBranch>>          |3    |Opt|    |     |                  |Yes |     |
 |[[msg_IndirectBranch]]<<msg2_IndirectBranch,IndirectBranch>>        |4    |Opt|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|
-|[[msg_Error]]<<msg2_Error,Error>>                 |8    |Opt|    |     |<<field_ETYPE,ETYPE>> *[4]* + <<field_PAD,PAD>> *[Cfg]*  |    |     |
+|[[msg_Error]]<<msg2_Error,Error>>                 |8    |Opt|    |     |<<field_ETYPE,ETYPE>> *[4]* + <<field_PAD,PAD>> *[Cfg,Opt]*  |    |     |
 |[[msg_ProgTraceSync]]<<msg2_ProgTraceSync,ProgTraceSync>>         |9    |Opt|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>|
 |[[msg_DirectBranchSync]]<<msg2_DirectBranchSync,DirectBranchSync>>      |11   |Opt|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>|
 |[[msg_IndirectBranchSync]]<<msg2_IndirectBranchSync,IndirectBranchSync>>    |12   |Opt|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|
@@ -388,12 +394,12 @@ Table below shows all types of messages. Single row shows all fields in particul
 |[[msg_IndirectBranchHist]]<<msg2_IndirectBranchHist,IndirectBranchHist>>    |28   |Opt|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|Yes
 |[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Opt|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes
 |[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Opt|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     |
-|[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Opt|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |Opt
+|[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Opt|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Opt*
 |===========================================================================================
 
 [NOTE]
 ====
-. Size of fields: *[n]* means *n*-bit (fixed-size) field, *[Var]* means variable size, always present field, *[Cfg]* means size which depends on the encoder configuration option.
+. Size of fields: *[n]* means *n*-bit (fixed-size) field, *[Var]* means variable size field (it is required unless directly specified as *Opt*), *[Cfg]* means size which depends on the encoder configuration option.
 . Any message may include optional <<field_TSTAMP,TSTAMP>> *[Var]* field as the very last field of a message.
 ** Field <<field_PAD,PAD>> *[Cfg]* provides (optional) 0-bit padding to assure that <<field_TSTAMP,TSTAMP>> field is starting at byte-boundary (size is specified as *[Cfg]* as its size depends on the size of <<field_TSTAMP,SRC>> field).
 ====
@@ -543,7 +549,7 @@ This message provides necessary context (privileged mode and OS-assigned Context
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=2. Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=2(0x2). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 [[field_PROCESS]]
 |Var |PROCESS          |This is variable size field, which encodes *V* and *PRV* privilege mode bits as well as *scontext/hcontext* values. Details are provided below.
@@ -589,7 +595,7 @@ This message is generated when the taken branch has retired. It is applicable to
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=3. Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=3(0x3). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
@@ -611,7 +617,7 @@ This message is generated when an instruction causing indirect control flow chan
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=4. Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=4(0x4). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 |2   |B-TYPE           |Standard Instruction Count (<<field_B-TYPE,B-TYPE>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
@@ -633,7 +639,7 @@ NOTE: Non-taken branches or direct jumps are NOT generating any trace but increa
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=8. Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=8(0x8). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 [[field_ETYPE]]
 |4   |ETYPE            |Error type. Subset of standard Nexus encoding:
@@ -644,6 +650,7 @@ NOTE: Non-taken branches or direct jumps are NOT generating any trace but increa
 
 0x8..0xF: Reserved for Vendor Defined Error(s).
 
+[[field_PAD]]
 |2,Cfg |PAD            |Pad the ETYPE field with 0-s to end of byte, so TSTAMP field always begins on byte boundary.
 When the SRC field is not present PAD is a 2-bit field. Otherwise size is determined by (configurable) size of SRC field (and can be 0 if SRC is 2-bit field for example). This is the only place where padding like this is needed.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
@@ -671,7 +678,7 @@ This message is required as otherwise decoder (despite the fact that restart aft
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=9. Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=9(0x9). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 |4   |SYNC             |Standard Synchronization Reason (<<field_SYNC,SYNC>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
@@ -691,7 +698,7 @@ This message is generated at start/restart of trace. I-CNT field must be 0 in su
 [cols="10%,10%,80%",options="header",]
 |======================================================================================================
 |Bits|Name|Description
-|6   |TCODE            |Value=11(0xC). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
+|6   |TCODE            |Value=11(0xB). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 |4   |SYNC             |Standard Synchronization Reason (<<field_SYNC,SYNC>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
@@ -714,6 +721,7 @@ This message is generated in the same conditions as <<msg2_DirectBranch,DirectBr
 |6   |TCODE            |Value=12(0xC). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 |4   |SYNC             |Standard Synchronization Reason (<<field_SYNC,SYNC>>) field.
+|2   |B-TYPE           |Standard Instruction Count (<<field_B-TYPE,B-TYPE>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
 |Var |F-ADDR           |Standard Full Address (<<field_F-ADDR,F-ADDR>>) field.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
@@ -798,6 +806,7 @@ Next PC (after indirect jump or exception/interrupt handler) is determined by th
 |Bits|Name|Description
 |6   |TCODE            |Value=29(0x1D). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
+|4   |SYNC             |Standard Synchronization Reason (<<field_SYNC,SYNC>>) field.
 |2   |B-TYPE           |Standard Instruction Count (<<field_B-TYPE,B-TYPE>>) field.
 |Var |I-CNT            |Standard Instruction Count (<<field_I-CNT,I-CNT>>) field.
 |Var |F-ADDR           |Standard Full Address (<<field_F-ADDR,F-ADDR>>) field.
@@ -821,6 +830,7 @@ Next PC (after indirect jump or exception/interrupt handler) is provided as an F
 |Bits|Name|Description
 |6   |TCODE            |Value=30(0x1E). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
+[[field_B-CNT]]
 |Var |B-CNT            |Standard Branch Count field.
 Number of times the previous branch message is repeated. Generated if I-CNT, HIST and target address is the same as in the previous branch message.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
