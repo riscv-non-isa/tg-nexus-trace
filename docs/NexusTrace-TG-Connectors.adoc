@@ -25,10 +25,15 @@ This specification also adds the following option (described in dedicated chapte
 
 == MIPI20 Debug and Trace Connector
 
-This connector is an extension of a MIPI10 and MIPI20 connectors as defined by ratified RISC-V External Debug Support Specification (version  
-https://github.com/riscv/riscv-debug-spec/releases/download/task_group_vote/riscv-debug-draft.pdf[0.13.2] or newer). 
+This connector is an extension of a MIPI10 and MIPI20 connectors as defined by ratified 
+https://raw.githubusercontent.com/riscv/riscv-debug-spec/release/riscv-debug-release.pdf[RISC-V External Debug Support Specification]
+(version `*0.13.2*` or newer). 
+
 This connector adds 1-bit/2-bit/4-bit parallel trace and serial trace options on the same physical MIPI20 connector. 
-Trace related pins (added by this specification) are `*highlighted*`. All JTAG/cJTAG pins have the same meaning as defined in the Debug Specification. Notacion  "A / B" as signal name is used to separate two alternative functions of the same pin.
+
+* Trace related pins (added by this specification) are `*highlighted*`.
+* All JTAG/cJTAG pins have the same meaning as defined in the Debug Specification.
+* Notation  "A / B" as signal name is used to separate two alternative functions of the same pin.
 
 [#MIPI20 Connector Layout]
 .MIPI20 Connector Layout
@@ -77,7 +82,7 @@ Some debug probes may allow definition of pin functions and provide a virtual UA
 
 === Explanation of TgtPwr+Cap option for pins#11/#13
 
-NOTE: This chapter explains optional use of MIPI20 pins #11/#13 to power-up small evaluations boards. If you are not interested in such a functionality you may skip reading this chapter and simply connect these pins to GND on target PCB.
+NOTE: This chapter explains optional use of MIPI20 pins #11/#13 to power-up small evaluations boards. If you are not interested in such a functionality you may skip reading this chapter and simply connect these pins to GND on the target PCB.
 
 Meaning of optional TgtPwr+Cap function of pins #11/#13 is often misunderstood, so it deserves a more elaborated explanation.
 
@@ -91,7 +96,7 @@ Target boards should use jumper/switch to select board power-source (either from
 
 WARNING: It is specifically *FORBIDDEN* to short together 5V power from USB (VBUS) and MIPI20 (pins#11/13) on target PCB. It will allow handling a case when a trace/debug probe or adapter has both pin#11/#13 connected to GND.
 
-It is possible to use two diodes (instead of jumpers) for auto-select the 5V power source and prevent back-feeding voltage from one source to the other, but it is not recommended as diodes will provide additional voltage drop.
+It is possible to use two diodes (instead of jumpers) to auto-select the 5V power source and prevent back-feeding voltage from one source to the other, but it is not recommended as diodes will provide additional voltage drop.
 
 Term '+Cap' means that if these pins are used to provide power to the target, it must have a capacitor (as close to the pin as possible) to improve the quality of adjacent TRC_CLK and TRC_DATA pins. Another term for using a Cap on the supply pin is to make it an "AC ground" or "high frequency ground". We recommend 10pf capacitors placed extremely close to pins#11/#13. 
 
@@ -109,13 +114,13 @@ should work. Middle pin *B* should go to MIPI20 pins#11/#13, the left pin *A* sh
 
 * Jumper between *B-C* => MIPI20 pins #11/#13 will be able to supply 5V power to the target.
 
-* No jumper => MIPI20 pins #11/#13 are left NC (this is not recommended option).
+* No jumper => MIPI20 pins #11/#13 are left NC (this is not a recommended option).
 
 NOTE: It is not possible to have both GND and 5V connections enabled in the same time as two jumpers cannot physically fit into 3 pins.
 
 == Mictor 38-bit Debug and Trace Connector
 
-Mictor-38 connector as defined by MIPI Aliance has all signals from MIPI20 connector and adds up to 16 bits of parallel trace and defines more trigger pins. Mictor-38 connector is also designed for high-speed trace (it is rated for 400MHz double edge captures).
+Mictor-38 connector as defined by MIPI Alliance has all signals from MIPI20 connector and adds up to 16 bits of parallel trace and defines more trigger pins. Mictor-38 connector is also designed for high-speed trace (it is rated for 400MHz double edge captures).
 
 Mictor-38 connector provides also an option to have different reference voltages for debug and trace.
 
@@ -145,7 +150,7 @@ Mictor-38 connector provides also an option to have different reference voltages
 |`*TRC_DATA[8]*` |Trace|37 | 38|Trace| `*TRC_DATA[0]*`
 |======================================
 
-NOTE: Above table is using names compatible with MIPI specifications (however MIPI specifications is showing rows of pins starting from 38 down to 1).
+NOTE: Above table is using names compatible with MIPI specification (however MIPI specification shows rows of pins starting from 38 down to 1).
 
 === Explanation for additional pins (comparing to MIPI20)
 
@@ -229,7 +234,7 @@ NOTE: *#4* All JTAG pins should be NC from a reason mentioned in NOTE 2. But mai
 
 5. Not all trace probes which support the Mictor-38 connector are capable of handling dual voltage tracing.
 
-* In the moment of this writing at least I-jet-Trace-A/R/M (by IAR Systems) and Trace32 (by Lauterbach) probes support such a mode (in both single Mictor and two Mictor + JTAG connectors).
+* At the moment of this writing at least I-jet-Trace-A/R/M (by IAR Systems) and Trace32 (by Lauterbach) probes support such a mode (in both single Mictor and two Mictor + JTAG connectors).
 
 6. It is not recommended to add buffers on PCB to adjust JTAG (usually higher) voltage to trace voltage.
 
@@ -266,11 +271,11 @@ Nexus standard does NOT define any small connectors with focus on trace as Nexus
 
 * S26x 1-104068-2,	Low performance trace (1 MDO signal).
 
-* S40x 1-104549-6,	Low performance trace (6 MDO signals - labelled as “not recommended”).
+* S40x 1-104549-6,	Low performance trace (6 MDO signals - labeled as “not recommended”).
 
 * S50x	104549-7,	Low performance trace (8 MDO signals).
 
-As the smallest Nexus-defined connector with reasonable trace bandwidth has 50 pins these are not practical as trace connectors. 
+As the smallest Nexus-recommended connector with reasonable trace bandwidth has 50 pins these are not practical as trace connectors. 
 
 So, it was decided that connectors defined by MIPI and Arm will be used for RISC-V trace.
 

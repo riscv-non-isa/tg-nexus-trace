@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Dec 27, 2022
-:revnumber: 0.9.10
-:revremark: This document is in internally Frozen state (all notes take into account).
+:revdate: March 21, 2023
+:revnumber: 1.0.0_rc1
+:revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -35,35 +35,43 @@ endif::[]
 :footnote:
 :xrefstyle: short
 
-= Specification of RISC-V Trace Connectors
-RISC-V Nexus Trace Task Group
+= RISC-V Trace Connectors Specification
+RISC-V Task Group
 
 // Preamble
-This document is officially in the link:http://riscv.org/spec-state[Stable state]
+[WARNING]
+.This document is in the link:http://riscv.org/spec-state[Frozen state]
 ====
-Assume anything could still change, but limited change should be expected.
+Change is extremely unlikely.
 ====
 
 [preface]
-
-== Copyright and license information
-This specification is licensed under the Creative Commons
-Attribution 4.0 International License (CC-BY 4.0). The full
-license text is available at
-https://creativecommons.org/licenses/by/4.0/.
-
-[preface]
-== History and status
-
-This chapter will be removed before offical freeze (it is here to track changes)
+== Change Log
 
 PDF generated on: {localdatetime}
 
-*STATUS:* Frozen (from TG perspective)
+=== Version 1.0.0_rc1
+* 2023-03-21
+** The pre-public review version
 
-2022/12/27: v0.9.10: Different `highlight` of trace signals. Changed few 'should' into 'must' (following discussions by email).
+[Preface]
+== Contributors
+Key contributor to RISC-V Trace Connectors specification in alphabetical order: +
 
-2022/12/19: v0.9.9: Ambition to became officially Frozen (history removed)
+Bruce Ableidinger (SiFive) => Working with MIPI Alliance, reviews +
+Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
+Markus Goehrle (Lauterbach) => Dual voltage, reviews
+
+[Preface]
+== Copyright and license information
+
+This RISC-V Trace Connectors specification is © 2019-2023 RISC-V international
+
+This document is released under a Creative Commons Attribution 4.0
+International License. +
+https://creativecommons.org/licenses/by/4.0/.
+
+Please cite as: “RISC-V Trace Connectors Specification",  RISC-V International
 
 include::NexusTrace-TG-Connectors.adoc[]
 
