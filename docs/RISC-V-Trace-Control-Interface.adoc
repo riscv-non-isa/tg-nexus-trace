@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V.org
 :revdate:  March 21, 2023
-:revnumber: 1.0.0
+:revnumber: 1.0.0_rc1
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -58,19 +58,19 @@ Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
 Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
 Jay Gamoneda (NXP) => Reviews +
 Markus Goehrle (Lauterbach) => Reviews +
-Iain Robertson (UltraSoc, Siemens) => E-Trace compatibility, filtering chapter, reviews +
+Iain Robertson (UltraSoC, Siemens) => E-Trace compatibility, filtering chapter, reviews +
 Nino Vidovic (Segger) => Reviews
 
 [Preface]
 == Copyright and license information
 
-This RISC-V Trace Connectors specification is © 2019-2023 RISC-V international
+This RISC-V Trace Control Interface specification is © 2019-2023 RISC-V international
 
 This document is released under a Creative Commons Attribution 4.0
 International License. +
 https://creativecommons.org/licenses/by/4.0/.
 
-Please cite as: “RISC-V Trace Connectors Specification",  RISC-V International
+Please cite as: “RISC-V Trace Control Interface Specification",  RISC-V International
 
 == Introduction
 
