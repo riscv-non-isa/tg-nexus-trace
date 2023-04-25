@@ -2,7 +2,7 @@ This is a collection of official links to ratified N-Trace documents
 
 **IMPORTANT:** Do not change ratified sections and this file may be referenced from other specifications.
 
-# Version 1.0.0-ratified (date: 2023-mm-dd)
+# 1.0.0-ratified
 
 **NOTE:** These link are pointing to newest PDFs. After ratification these will be updated.
 
