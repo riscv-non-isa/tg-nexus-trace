@@ -1,6 +1,6 @@
 = Debug and Trace Connectors
 
-This specification provides small extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations - July 2021]. 
+This specification provides a small extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations - July 2021]. 
 
 These extensions are as follows:
 
@@ -14,7 +14,7 @@ MIPI Alliance positively reviewed proposals for above extensions and should adop
 
 Additionally the following MIPI20 signals are clarified as follows:
 
-* MIPI20 pin#12 RTCK signal is not applicable to RISC-V. If the target is not providing a parallel trace, the target connector must provide GND on this pin. If parallel trace is used, pin#12 must be used as `TRC_CLK` signal.
+* MIPI20 pin#12 RTCK signal is not applicable to RISC-V. If the target is not providing a parallel trace, the target connector must provide GND on this pin. If parallel trace is used, pin#12 must be used as a `TRC_CLK` signal.
 * MIPI20 pin#14 nTRST_PD signal is not applicable for RISC-V. If nTRST is really needed, pin#16 nTRST should be used.
 
 Above two signals were present in older RISC-V Debug Specification but were never implemented/used.
@@ -114,7 +114,7 @@ Middle pin *B* should go to MIPI20 pins#11/#13, the left pin *A* should be GND a
 
 * No jumper => MIPI20 pins #11/#13 are left NC (this is not a recommended option).
 
-NOTE: It is not possible to have both GND and 5V connections enabled in the same time as two jumpers cannot physically fit into 3 pins.
+NOTE: It is not possible to have both GND and 5V connections enabled at the same time as two jumpers cannot physically fit into 3 pins.
 
 == Mictor 38-bit Debug and Trace Connector
 
@@ -159,10 +159,10 @@ All debug signals share alternate functions as defined for the MIPI20 connector.
 [cols = "8%,20%,~", options = header]
 |=================================================================================
 |Pin# | Pin Name	|Explanation (comparing to MIPI20)
-| 7   | TRIGIN	    |Same as MIPI20 #18 alternative function but not shared with trace.
-| 8   | TRIGOUT	    |Same as MIPI20 #20 alternative function but not shared with trace.
+| 7   | TRIGIN	    |Same as MIPI20 #18 alternative pin function but not shared with trace.
+| 8   | TRIGOUT	    |Same as MIPI20 #20 alternative pin function but not shared with trace.
 | 10  | `*EXTTRIG*`	|External trace trigger from target (some trace probes may use it).
-| 21  | nTRST       |Same as MIPI20 #16 alternative function but not shared with trace.
+| 21  | nTRST       |Same as MIPI20 #16 alternative pin function but not shared with trace.
 | 36  | `*EXT*` / `*TRC_CTL*` |Not applicable (should be 0). May be also used to denote valid/idle state, but it may not be supported by all trace probes.
 |=================================================================================
 
@@ -275,7 +275,7 @@ Nexus standard does NOT define any small connectors with focus on trace as Nexus
 
 As the smallest Nexus-recommended connector with reasonable trace bandwidth has 50 pins these are not practical as trace connectors. 
 
-So, it was decided that connectors defined by MIPI and Arm will be used for RISC-V trace.
+So, it was decided that connectors defined by MIPI and Arm will be used for the RISC-V trace.
 
 * There are a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores. Arm defines two standard connectors for trace:
 
