@@ -1,7 +1,7 @@
 [[header]]
 :company: RISC-V.org
-:revdate:  April 24, 2023
-:revnumber: 1.0.0_rc2
+:revdate:  May 01, 2023
+:revnumber: 1.0.0_rc3
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -45,6 +45,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
+=== Version 1.0.0_rc3
+* Updates after notes from Greg and Nino
+* Clarified some RAM-detection notes (by Nino)
+
 === Version 1.0.0_rc2
 * 2023-04-24 (The pre-public review version)
 ** Fixed links to E-Trace and N-Trace PDFs
@@ -53,7 +57,7 @@ PDF generated on: {localdatetime}
 ** Added control bit `trTeInstEnAllJumps` to generate message/history for all (unconditional direct) jump.
 ** Added control bit `trTeInstExtendAddrMSB` to allow skipping of (identical) MSB bits in virtual addresses.
 ** Added control field `trPibAsyncFreq/trRamAsyncFreq/trAtbBridgeAsyncFreq` to set alignment synchronization frequency (not needed for N-trace, needed at each sink for E-Trace).
-** Reserved a register region trTeDiscovery0.. trTeDiscovery7 in the encoder memory space dedicated for protocol-dependent settings to be discoverable by the tools (for E-Trace).
+** Reserved a register region `trTeDiscovery0` .. `trTeDiscovery7` in the encoder memory space dedicated for protocol-dependent settings to be discoverable by the tools (for E-Trace).
 ** Added `trRamMemFormat` field (to allow in-memory format specification in the future).
 * 2023-03-21 (1.0.0_rc1)
 ** The pre-public review version
@@ -85,7 +89,7 @@ Please cite as: “RISC-V Trace Control Interface Specification",  RISC-V Intern
 
 This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
-Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates trace data from multiple sources and sends the data to a single destination.
+Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates the trace data from multiple sources and sends the data to a single destination.
 
 This specification does not define the hardware interconnection between the hart and Trace Encoder, as this is defined in the _Efficient Trace for RISC-V Specification Version 2.0_. This document also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink.
 
@@ -95,7 +99,7 @@ This specification allows a wide range of implementations including low-gate-cou
 
 This specification defines many registers, but not all trace protocols/encoders must support all bits/fields/options. However it is important to define some small subset which is REQUIRED.
 
-This document includes chapter 'Minimal Implementation' which include smallest possible set of registers/fields, but each message protocol supported by this standard must clarify exact meaning of supported registers/fields and bits as some of them define.
+This document includes chapter 'Minimal Implementation' which describes the smallest possible set of registers/fields, but each message protocol supported by this standard must clarify the exact meaning of supported registers/fields and bits as some of them define.
 
 There are two standard trace protocols which will utilize this RISC-V Trace Control Interface:
 
@@ -176,7 +180,7 @@ ATB width is byte aligned (8, 16, 32, 64, 128) which is well matching packet=seq
 
 === Trace Funnel
 
-The Trace Encoder may send trace messages to a Trace Funnel. The Funnel aggregates trace from each of its inputs (either RISC-V Trace Encoder or another Trace Funnel) and sends the combined trace stream to its designated Trace Sink or ATB Bridge, which is one or more of the sink types above.
+The Trace Encoder may send trace messages to a Trace Funnel. The Funnel aggregates the trace from each of its inputs (either RISC-V Trace Encoder or another Trace Funnel) and sends the combined trace stream to its designated Trace Sink or ATB Bridge, which is one or more of the sink types above.
 
 NOTE: It is assumed that each input to the funnel (Trace Encoder or another Trace Funnel) has a unique message source ID defined (`trTeSrcID` field in the `trTeControl` register).
 
@@ -193,15 +197,15 @@ This specification defines the following trace components:
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)* |*Description*
 |Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder|Accepts execution information from a hart (via Trace Ingress Port) and generates a stream of RISC-V trace messages/packets.
-|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel|Acccepts several RISC-V trace message/packet streams (from  multiple Trace Encoder[s] or Trace Funnel[s]) and merges them into a single stream of trace messages/packets.
+|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel|Accepts several RISC-V trace message/packet streams (from  multiple Trace Encoder[s] or Trace Funnel[s]) and merges them into a single stream of trace messages/packets.
 |Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and stores them into RAM buffer (either dedicated SRAM or System Bus).
 |Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and sends them via a set of pins (parallel or serial).
 |Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge|Accepts RISC-V trace messages/packets (from Trace Encoder or Trace Funnel) and forwards them to ATB bus in a system.
 |===
 
-NOTE: This specification is NOT addressing discovery of base addresses of trace components. These base addresses (trBase... symbols in above table) must be specified as part of trace tool configuration. Connections between different trace components must be also defined. Future versions of this specification may allow a single base address to be sufficient to access all components in the system.
+NOTE: This specification is NOT addressing discovery of base addresses of trace components. These base addresses (symbols in above table) must be specified as part of trace tool configuration. Connections between different trace components must be also defined. Future versions of this specification may allow a single base address to be sufficient to access all components in the system.
 
-Each Trace Component is controlled by set of 32-bit registers occupying up to a 4KB space. Base address of each trace component must be aligned on the 4KB boundary.
+Each Trace Component is controlled by a set of 32-bit registers occupying up to a 4KB space. Base address of each trace component must be aligned on the 4KB boundary.
 
 Each hart being traced must have its own separate Trace Encoder control component. This also applies to multiple harts that belong to the same core. A system with multiple harts must allow generating messages with a field indicating which hart is responsible for that message.
 
@@ -217,7 +221,7 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 ** It is advisable to drain the trace pipeline to some hysteresis level before resuming - otherwise a lot of short chunks of trace may be produced.
 * Optionally (and if acceptable to the user), the Trace Encoder may be configured to stall the hart in order to avoid packet loss.
 * Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
-** Bandwidth at input to the the sink must be in general larger than the data being produced.
+** Bandwidth at input to the sink must be in general larger than the data being produced.
 ** Amount of data being generated can be limited by creating tracing windows with the help of triggers.
 
 .*Allowed Connections Between Components*
@@ -239,7 +243,7 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 |Trace ATB Bridge |Arm ATB bus|Sending trace to ATB (to combine RISC-V trace with other Arm components on the system)
 |===
 
-NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible ...) Arm components in the system using RISC-V Trace sub-system.
+NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible) Arm components in the system using RISC-V Trace sub-system.
 One of possible ways of doing so would be to create a custom trace component, configure it to encapsulate it as custom Nexus trace messages and connect it as input to one of trace funnels.
 
 ==== Example Componemt Connection Diagrams 
@@ -377,21 +381,21 @@ Each  block of 32-bit registers (for each component) has the following layout:
 |0xE00 - 0xFFF |-- |Optional |Registers reserved for implementation/vendor specific details. May allow identification of components on a system bus.
 |===
 
-WARNING: Each component has `tr??Active` bit in `tr??Control` register. Accesses to other registers are unpredictable when `tr??Active` bit is 0. 
+WARNING: Each component has a `tr??Active` bit in the `tr??Control` register. Accesses to other registers are unpredictable when the `tr??Active` bit is 0. 
 
-Each trace component has `tr??Impl` register (at address offset 0x4) where trace component version and trace component type can be identified. This register allows debug tools to verify provided base addresses of components and potentially adjust tool behaviour by looking at component versions.
+Each trace component has a `tr??Impl` register (at address offset 0x4) where trace component version and trace component type can be identified. This register allows debug tools to verify provided base addresses of components and potentially adjust tool behavior by looking at component versions.
 
-NOTE: Each component may have different version. Initial version of this specification defines all components to specify component version as 1.0 (major=1, minor=0).
+NOTE: Each component may have a different version. Initial version of this specification defines all components to specify component version as 1.0 (major=1, minor=0).
 
 Registers in the 4KB range that are not implemented are reserved and read as 0 and ignore writes.
 
-Most of trace control registers are optional. Some WARL fields may be hard-coded to any value (including 0). It allows different implementations to provide different functionality.
+Most trace control registers are optional. Some WARL fields may be hard-coded to any value (including 0). It allows different implementations to provide different functionality.
 
 Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same registers. As almost every register/field/bit is optional this provides good flexibility in implementation.
 
 ==== Summary of Trace Encoder Registers
 
-.*Trace Encoder Registers (trTe..., trTs...)*
+.*Trace Encoder Registers (trTe??, trTs??)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
@@ -399,18 +403,18 @@ Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields 
 |0x004 |trTeImpl |Required |Trace Encoder implementation information
 |0x008 |trTeInstFeatures |Optional |Extra instruction trace encoder features and trace source IDs
 |0x00C |trTeInstFilters|Optional |Determine which filters qualify an instruction trace
-4+|*_Data trace control (trTeData...)_*
+4+|*_Data trace control (trTeData??)_*
 |0x010 |trTeDataControl |Optional |Data trace control and features
 |0x014 - 0x018 |-- |Reserved |Reserved for more data trace related registers
 |0x01C |trTeDataFilters|Optional |Determine which filters qualify data trace
 4+|*_Reserved_*
 |0x020 - 0x03F |-- |Reserved |Reserved for more registers/sub-components
-4+|*_Timestamp control (trTs...)_*
+4+|*_Timestamp control (trTs??)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |-- |Optional |Reserved
 |0x048 |trTsCounterLow |Optional |Lower 32 bits of timestamp counter
 |0x04C |trTsCounterHigh |Optional |Upper bits of timestamp counter
-4+|*_Trigger control (trTeTrig...)_*
+4+|*_Trigger control (trTeTrig??)_*
 |0x050 |trTeTrigDbgControl |Optional |Debug Triggers control register
 |0x054 |trTeTrigExtInControl |Optional |External Triggers Input control register
 |0x058 |trTeTrigExtOutControl |Optional |External Triggers Output control register
@@ -420,9 +424,9 @@ Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields 
 |0x0E0 - 0x0FF |trTeDiscovery0.. trTeDiscovery7 |Optional |Protocol dependent configuration/discovery-related registers
 4+|*_Reserved_*
 |0x100 - 0x3FF |-- |Reserved |Reserved for more registers/sub-components
-4+|*_Filters & comparators (trTeFilter..., trTeComp...)_*
-|0x400 - 0x5FF |trTeFilter... |Optional |Trace Encoder Filter Registers
-|0x600 - 0x7FF |trTeComp... |Optional |Trace Encoder Comparator Registers
+4+|*_Filters & comparators (trTeFilter??, trTeComp??)_*
+|0x400 - 0x5FF |trTeFilter?? |Optional |Trace Encoder Filter Registers
+|0x600 - 0x7FF |trTeComp?? |Optional |Trace Encoder Comparator Registers
 |===
 
 Examples of possible additional sub-components in Trace Encoder are:
@@ -432,7 +436,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 
 ==== Summary of Trace RAM Sink Registers
 
-.*Trace RAM Sink Registers (trRam...)*
+.*Trace RAM Sink Registers (trRam??)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
@@ -453,7 +457,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 
 ==== Summary of Trace PIB Sink Registers
 
-.*Trace PIB Sink Registers (trPib...)*
+.*Trace PIB Sink Registers (trPib??)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
@@ -463,14 +467,14 @@ Examples of possible additional sub-components in Trace Encoder are:
 
 ==== Summary of Trace Funnel Registers
 
-.*Trace Funnel Registers (trFunnel..., trTs...)*
+.*Trace Funnel Registers (trFunnel??, trTs??)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trFunnelControl |Required |Trace Funnel control register
 |0x004 |trFunnelImpl |Required |Trace Funnel Implementation information
 |0x008 |trFunnelInDis |Optional |Disable individual funnel inputs
-4+|*_Timestamp control (trTs...)_*
+4+|*_Timestamp control (trTs??)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |-- |Reserved |Reserved for extra timestamp control
 |0x048 |trTsCounterLow |Optional |Lower 32 bits of timestamp counter
@@ -481,7 +485,7 @@ NOTE: Funnels may optionally be a source of timestamp and/or forward timestamp t
 
 ==== Summary of Trace ATB Bridge Registers
 
-.*Trace ATB Bridge Registers (trAtbBridge...)*
+.*Trace ATB Bridge Registers (trAtbBridge??)*
 [cols="10%,25%,15%,~",options="header",]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
@@ -495,8 +499,8 @@ Each component has a `tr??Impl` register, which includes two 4-bit `tr??VerMinor
 
 * Value 0 as `tr??VerMajor` is NOT allowed (due to compatibility reasons).
 * Different components may report different versions (as some components may be updated more often than others).
-* The major version `tr??VerMajor` field should change, when some incompatible (which will break older trace software ...) change is introduced.
-* The minor version `tr??VerMinor` field should change, when change is considered a compatible extension (for example adding a new field) - from that reason software should always write 0 to undefined bits in registers. 
+* The major version `tr??VerMajor` field should change, when some incompatible (which will break older trace software) change is introduced.
+* The minor version `tr??VerMinor` field should change, when change is considered a compatible extension (for example adding a new field) - for that reason software should always write 0 to undefined bits in registers. 
 * Version 15.x is reserved for non-compatible version encoding.
 * Version n.15 should be used as experimental (in development) implementation.
 
@@ -527,16 +531,16 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 
 |1 |trTeEnable |*1:* Trace Encode is enabled. Allows `trTeInstTracing` and `trTeDataTracing` to turn tracing on and off. Setting `trTeEnable` to 0 flushes any queued trace data to the sink or funnel attached to this encoder. This bit can be set to 1 only by direct writing to it. This write of 1 should be done after all other settings are done.|RW |0
 
-|2 |trTeInstTracing |*1:* Instruction trace is being generated. Written from tool (after write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
+|2 |trTeInstTracing |*1:* Instruction trace is being generated. Written from a trace tool (after a write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
 
 |3 |trTeEmpty |Reads as 1 when all generated trace have been emitted. |R |1
 |6-4 |trTeInstMode |
 Main instruction trace generation mode +
 *0:* Full Instruction trace is disabled, but trace may still emit some records. +
 *1-2:* Reserved for subsets of Branch Trace (for example periodic PC sampling). +
-*3:* Generate instruction trace using Branch Trace (each taken branch generate trace message). +
+*3:* Generate instruction trace using Branch Trace (each taken branch generates a trace message). +
 *4-5:* Reserved for subset of Branch History Trace. +
-*6:* Generate instruction trace using Branch History Trace (each taken or not taken branch adds single history bit). +
+*6:* Generate instruction trace using Branch History Trace (each taken or not taken branch a adds single history bit). +
 *7:* Reserved for vendor-defined instruction trace mode.
 |WARL |SD^(1)^
 |8-7 |-- |Reserved for future modes |-- |0
@@ -546,13 +550,13 @@ Main instruction trace generation mode +
 and Trace-off Debug module or External triggers respectively|WARL |0
 |12  |trTeInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1 |0
 |13 |trTeInstStallEna |
-*0:* If TE cannot send a message, the message is dropped. An overflow synchronization message is generated when the trace is restarted. +
+*0:* If TE cannot send a message, the message is dropped. The protocol dependent overflow synchronization message is generated when the trace is restarted, so the decoder will know that trace is lost and must reset any internal decoder state. +
 *1:* If TE cannot send a message, the hart is stalled until it can. With this option execution of instructions by the hart may be intrusively affected, but in many cases it is acceptable.
 |WARL |SD
 |14 |--|Reserved |--|0
 
 |15 |trTeInhibitSrc |
-*0:* Trace source field (of `trTeSrcBits` width) is added to every trace message to indicate which TE generated each message. If `trTeSrcBits` is 0, this bit is not active. +
+*0:* Trace source field (of `trTeSrcBits` width) is added to every trace message to indicate which trace encoder generated each message. If `trTeSrcBits` is 0, this bit is not active. +
 *1:* Disable source field in trace messages. 
 |WARL |SD
 
@@ -598,7 +602,7 @@ Value of this field is defined by a document which defines a trace encoding prot
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
-NOTE: `trTeProtocol...` fields are separated from `trTeVer...` as we may have the same control interface, but protocol itself may be extended with new packets/ messages/ fields.
+NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the same control interface, but protocol itself may be extended with new packets/ messages/ fields.
 
 .*Register: trTeInstFeatures: Trace Instruction Features Register (trBaseEncoder+0x008)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -617,14 +621,14 @@ NOTE: `trTeProtocol...` fields are separated from `trTeVer...` as we may have th
 *3:* Full address compare (always assures skipped return addresses are the same as addresses deducted from call instruction). Implementation may take advantage of RAS (Return Address Stack) if implemented by the hart.
 |R|SD
 |8 |trTeInstEnRepeatedHistory|Enable repeated branch history detection when set.|WARL|0
-|9 |trTeInstEnAllJumps|Emit trace message or add history bit for direct conditional jumps. Trace will not be compressed well but timestamp accuracy will be better - maybe be used when profiling loops.|WARL|0
-|10 |trTeInstExtendAddrMSB|When set allow extension of virtual address MSB bit (RISC-V Sv39/48/57 virtual address modes assume MSB bits to be all identical). Encoding details are trace protocol dependent.|WARL|0
+|9 |trTeInstEnAllJumps|Emit trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder is able to determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|0
+|10 |trTeInstExtendAddrMSB|When set, allow extension of virtual address MSB bits (RISC-V Sv39/48/57 virtual address modes assume MSB bits to be all identical). Encoding details are trace protocol dependent.|WARL|0
 |15-11 |--|Reserved for additional instruction trace control/status bits|--|0
 |27-16 |trTeSrcID |This TE source ID. If `trTeSrcBits`>0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field. May be fixed or variable.|WARL |SD
 |31-28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. May be fixed or variable. Some trace protocols may require that this field is identical for all enabled trace encoders within the same trace stream. |WARL |SD
 |===
 
-NOTE: Applicability of different `trTeInst...` fields for different trace encoding protocols is described in a document which defines them (and not all fields are applicable to all protocols).
+NOTE: Applicability of different `trTeInst??` fields for each trace encoding protocol is described in a document which defines the protocol (and not all fields are applicable to all protocols).
 
 .*Register: trTeInstFilters: Trace Instruction Filters Register (trBaseEncoder+0x00C)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -640,14 +644,14 @@ Determine which filters qualify an instruction trace. If bit *__n__* is a 1 then
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeDataImplemented|Read as 1 if data trace is implemented.|R|SD
-|1 |trTeDataTracing |*1:* Data trace is being generated. Written from trace tools or controlled by triggers. When trDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL |SD
+|1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tools or controlled by triggers. When trDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL |SD
 |2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL |0
 |3 |trTeDataStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1|0
 |4 |trTeDataStallEna |
-*0:* If TE cannot send data trace message, an overflow is generated when the trace is restarted. +
-*1:* If TE cannot send data trace  message, the hart is stalled until it can.
+*0:* If TE cannot send data trace messages, an overflow message is generated when the trace is restarted. +
+*1:* If TE cannot send data trace messages, the hart is stalled until it can.
 |WARL|0
-|5 |trTeDataDrop|Written to 1 by hardware when data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RC1|0
+|5 |trTeDataDrop|Written to 1 by hardware when the data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RC1|0
 |6 |trTeDataDropEna|*1:* Allow dropping data trace to avoid instruction trace overflows. Setting this bit will not guarantee that instruction trace overflows will not happen.|WARL|0
 |15-7 |--|Reserved for additional data trace control/status bits.|--|0
 |16 |trTeDataNoValue|Omit data values from data trace packets when set.|WARL|SD
@@ -660,7 +664,7 @@ Determine which filters qualify an instruction trace. If bit *__n__* is a 1 then
 |WARL|SD
 |===
 
-NOTE: Applicability of different `trTeData...` fields for different trace encoding protocols is described in a document which defines them (and not all fields are applicable to all protocols).
+NOTE: Applicability of different `trTeData??` fields for each trace encoding protocol is described in a document which defines the protocol (and not all fields are applicable to all protocols).
 
 .*Register: trTeDataFilters: Trace Data Filters Register (trBaseEncoder+0x01C)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -684,7 +688,7 @@ Implementations may have no timestamp, one timestamp type, or more than one type
 
 The width of the timestamp is implementation-dependent, typically 40 or 48 bits (40 bit timestamp will overflow every 4.7 minutes assuming 1GHz timestamp clock).
 
-In a system with Funnels, typically all the Funnels are built with a Timestamp Unit. The top-level Funnel is the source of the timestamp (Internal System or External) and all the Encoders and other Funnels have a Shared timestamp. This assures that all timestamps in the system are the ame and trace from different harts may be time-correlated. To perform the forwarding function, the mid-level Funnels must be programmed with `trFunnelActive` = 1 (which is natural as all trace messages must pass through that funnel).
+In a system with Funnels, typically all the Funnels are built with a Timestamp Unit. The top-level Funnel is the source of the timestamp (Internal System or External) and all the Encoders and other Funnels have a Shared timestamp. This assures that all timestamps in the system are the same and trace from different harts may be time-correlated. To perform the forwarding function, the mid-level Funnels must be programmed with `trFunnelActive` = 1 (which is natural as all trace messages must pass through that funnel).
 
 An Internal Timestamp Unit may include a prescaler divider, which can extend the range of a narrower timestamp and uses less power but has less resolution.
 
@@ -809,15 +813,15 @@ It is implementation-dependent what happens when debug triggers or external trig
 
 === Trace Encoder Filter Registers
 
-All registers with offsets 0x400 ... 0x7FC are reserved for additional trace encoder filter options (context, addresses, modes, etc.).
+All registers with offsets 0x400 .. 0x7FC are reserved for additional trace encoder filter options (context, addresses, modes, etc.).
 
 Trace encoder filters are an optional feature that can be used to control the generated trace in various ways.
 
-The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enablinging a filter option), the corresponding register from the bit's description must have a valid value. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
+The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enabling a filter option), the corresponding register from the bit's description must have a valid value. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
 
 NOTE: Filter and comparator registers refer to values of some signals (as *priv*, *itype*, *ecause*, *dtype*, '*dsize*, ...) available on Trace Ingress Port. See E-Trace specification for details of encoding of these values.
 
-.*Register: trTeFilter???: Trace Encoder Filter Registers (trBaseEncoder+0x400..0x5FF)*
+.*Register: trTeFilter??: Trace Encoder Filter Registers (trBaseEncoder+0x400..0x5FF)*
 [cols="10%,35%,14%,~",options="header",]
 |===
 |*Address Offset*   |*Register Name*  |*Compliance* |*Description*
@@ -831,7 +835,7 @@ NOTE: Filter and comparator registers refer to values of some signals (as *priv*
 |0x41C + 0x20*__i__ |-- |Optional |Reserved
 |===
 
-.*Register: trTeComp???: Trace Encoder Comparator Registers (trBaseEncoder+0x600..0x6FF)*
+.*Register: trTeComp??: Trace Encoder Comparator Registers (trBaseEncoder+0x600..0x6FF)*
 [cols="10%,35%,14%,~",options="header",]
 |===
 |0x600 + 0x20*__j__ |trTeComp__j__Control |Optional |Comparator _j_ control
@@ -988,7 +992,7 @@ Selects the secondary comparator function.  Secondary result is true if input se
 | WARL | SD
 |11 |--|Reserved|--|0
 |13-12   |trTeCompMatchMode |
-Selects the match condition used to assert the overal comparator output +
+Selects the match condition used to assert the overall comparator output +
 *0:* primary result true +
 *1:* primary and secondary result both true: (P && S) +
 *2:* Either primary or secondary result does not match: !(P && S) +
@@ -1059,9 +1063,9 @@ Be aware that in case trace memory wraps around some protocols may require addit
 |0 |trRamActive |Primary enable/reset for Trace RAM Sink. When 0, the Trace RAM Sink may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 |1 |trRamEnable |*1:* Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to memory (idle bytes/packet may be appended after the last message/packet to assure memory access alignment).
-Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP...` registers. Disabling trace may update `trRamWP...` as result of flushing.|RW |0
+Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP??` registers. Disabling trace may update `trRamWP??` as a result of flushing.|RW |0
 |2 |--|Reserved |--|0
-|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, what means that all trace data is flushed.|R |1
+|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, which means that all trace data is flushed.|R |1
 |4 |trRamMode |
 *0:* This RAM Sink will operate in SRAM mode +
 *1:* This RAM Sink will operate in SMEM mode
@@ -1070,7 +1074,8 @@ Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP...` registers. Disab
 |8 |trRamStopOnWrap |*1:* Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full.|WARL |0
 |10-9 |trRamMemFormat |
 *0:* Memory is formatted as plain bytes +
-*1-3:* Reserved for future formats
+*1-2:* Reserved for future formats +
+*3:* Reserved for custom memory format
 |WARL |SD
 |11 |--|Reserved |--|0
 |14-12 |trRamSinkAsyncFreq |
@@ -1102,7 +1107,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 |31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. This register may not be implemented if the sink type doesn't require an address. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
 |===
 
-For bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
+For a bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
 
 .*Register: trRamStartHigh: Trace RAM Sink Start High Bits Register (trBaseRamSink+0x014)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -1132,7 +1137,7 @@ For bus with an address larger than 32-bit, corresponding `High` registers defin
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trRamWrap |Set to 1 by hardware when `trRamWP` wraps. It is only set to 0 if `trRamWPLow` is written|WARL |0
 |1 |--|Always 0 (bit B1 of 32-bit address)|R|0
-|32-2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to natural boundary. After a trace word write occurs while `trRamWP` = `trRamLimit`, `trRamWP` is set to `trRamStart`.|WARL |Undef
+|32-2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to a natural boundary. After a trace word write occurs while `trRamWP` = `trRamLimit`, `trRamWP` is set to `trRamStart`.|WARL |Undef
 |===
 
 .*Register: trRamWPHigh: Trace RAM Sink Write Pointer High Bits Register (trBaseRamSink+0x024)*
@@ -1164,9 +1169,9 @@ For bus with an address larger than 32-bit, corresponding `High` registers defin
 |31-0 |trRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM mode and optional for SMEM mode. |R or RW |Undef
 |===
 
-NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
+NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in the trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
 
-Implementations when a trace buffer in system memory will be bigger than 4GB is desired will be unlikely, so in most cases trace tool will not need to use `trRamWPHigh` and `trRamRPHigh` registers.
+Implementations when a trace buffer in system memory will be bigger than 4GB is desired will be unlikely, so in most cases trace tools would not need to use `trRamWPHigh` and `trRamRPHigh` registers.
 
 Table below shows typical Trace RAM Sink configurations. Implementing other configurations is not suggested as trace tools may not support it without adjustments.
 
@@ -1179,40 +1184,43 @@ Table below shows typical Trace RAM Sink configurations. Implementing other conf
 |SMEM Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (`trRamStart` + 2^N - A), but can be possibly trimmed |Required  |Not implemented|Not implemented
 |===
 
-NOTE: Value `A` means alignment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of `trRamLimit` register should be 0x...FC. Some implementations may impose bigger alignment of trace data (to allow more efficient transfer rates) for SMEM mode. For SRAM mode `A`` must be 4 as access to trace via `trRamData` is always 32-bits wide.
+NOTE: Value `A` means alignment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of `trRamLimit` register should be 0x...FC. Some implementations may impose bigger alignment of trace data (to allow more efficient transfer rates) for SMEM mode. For SRAM mode `A` must be 4 as access to trace via `trRamData` is always 32-bits wide.
 
 === Accessing and Detecting RAM Sink Registers 
 
-Trace tool should start interacting with Trace RAM Sink by releasing RAM Sink from reset by setting `trRamActive` = 1 and waiting for this bit to be set. After that it should verify `trRamEmpty` = 1, read `trRamImpl` and verify `trRamCompType` and `trRamVer...` fields. Values of `trRamHasSRAM/SMEM` fields will provide main types of RAM Sink being implemented.
+Trace tool should start interacting with Trace RAM Sink by releasing RAM Sink from reset by setting `trRamActive` = 1 and waiting for this bit to be set. After that it should verify `trRamEmpty` = 1, read `trRamImpl` and verify `trRamCompType` and `trRamVer??` fields. Values of `trRamHasSRAM/SMEM` fields will provide main types of RAM Sink being implemented.
 
 Later `trRamMode` should be set (depending on desired RAM Sink mode). It is important to set this field first as other registers may behave differently for SRAM and SMEM modes.
 
-Detection of valid ranges of each `trRamStart...` and `trRamLimit...` registers should be performed by writing 0 and 0xFFFFFFFF.
+In SRAM mode, the trace memory is dedicated for trace storage and `trRamStart??` registers should be settable (usually both not implemented and return 0). `trRamLimitLow` registers may be either hardcoded (to reflect physical SRAM size) or writable (allowing trimming RAM size allowing faster wrap-around or sharing same memory with some other components in the system).
+
+Detection of valid ranges of each `trRamStart??` and `trRamLimit??` registers should be performed by writing 0 and 0xFFFFFFFF.
 After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value is 0, it means the register is NOT implemented.
-Some implementations may provide different limits for different start addresses, so the trace tool should always set `trRamStart...` registers first.
+
+Some implementations may provide different limits for different start addresses, so the trace tool should always set `trRamStart??` registers first - this option can be used when a particular implementation has two different RAM regions (each with different physical memory size).
 
 Not every value may be settable in `trRamStart/Limit` registers. Value written may be trimmed (for example aligned on a particular 2^N boundary) and a trace tool should verify values being written. In case accepted values are different from what was provided by the user, a message should be printed which may allow the user to adjust (possbly suboptimal) settings.
 
-Registers `trRamStart...` and `trRamLimit...` are usually set at beginning of debug/trace session and never changed. 
+Registers `trRamStart??` and `trRamLimit??` are usually set at the beginning of a debug/trace session and never changed. 
 
-IMPORTANT: In SMEM mode (`trRamMode` = 1) trace tool should never set `trRamStart...` and `trRamLimit...` registers outside of range provided by the user as otherwise raw trace being written to memory may corrupt running code and/or data or stack. This type of errors may be very difficult to diagnose as in complex system code (or data ...) being overwritten by trace may be used way, way later after actual corruption was made.
+IMPORTANT: In SMEM mode (`trRamMode` = 1) trace tool should never set `trRamStart??` and `trRamLimit??` registers outside of range provided by the user as otherwise raw trace being written to memory may corrupt running code and/or data or stack. This type of errors may be very difficult to diagnose as in complex system code (or data) being overwritten by trace may be used way, way later after actual corruption was made.
 
-Having both `trRamStart/Limit...` registers set the tool should try to set `trRamRP...` to the same value as `trRamLimit...`. If it is settable it means that the `trRamData` register should be used to read the trace. Otherwise collected trace must be read using normal, physical memory accesses (in range defined by `trRamStart/Limit...` registers).
+Having both `trRamStart/Limit??` registers set, the tool should try to set `trRamRP??` to the same value as `trRamLimit??`. If it is settable it means that the `trRamData` register should be used to read the trace. Otherwise collected trace must be read using normal, physical memory accesses (in range defined by `trRamStart/Limit??` registers).
 
-Before enabling RAM Trace Sink (by setting `trRamEnable` = 1) the trace tool should set `trRamWP...` registers (usually to the same values as in `trRamStart...` register). Enabling trace must NOT change any of `trRamStart/Size/WP/RP...` registers. Just after trace is enabled `trRamWP...` may change as result of trace being added to trace memory.
+Before enabling RAM Trace Sink (by setting `trRamEnable` = 1) the trace tool should set `trRamWP??` registers (usually to the same values as in `trRamStart??` register). Enabling trace must NOT change any of `trRamStart/Size/WP/RP??` registers. Just after the trace is enabled `trRamWP??` may change as a result of trace being added to trace memory.
 
-After trace is enabled and active (`trRamEnable` = 1 or `trRamEmpty` = 0), trace tool should NOT write any of `trRamStart/Limit/WP...` registers.
+After trace is enabled and active (`trRamEnable` = 1 or `trRamEmpty` = 0), the trace tool should NOT write any of `trRamStart/Limit/WP??` registers.
 
-Setting `trRamRP` and reading `trRamData` may be attempted while trace is active, but support for reading SRAM trace while trace is active may not always be implemented. In such a case write to `trRamRP` must be ignored and `trRamData` read must not advance `trRamRP`. Reading SMEM trace via normal memory reads is always allowed.
+Setting `trRamRP` and reading `trRamData` may be attempted while trace is active, but support for reading SRAM trace while trace is active may not always be implemented. In such a case write to `trRamRP` must be ignored and `trRamData` read must not advance `trRamRP`. Reading the trace in the SMEM mode via normal memory reads is always allowed.
 
-NOTE: Even if reading trace (while trace is active) is implemented, circular trace buffer may be overwritten even several times, so values being read by `trRamData` will be of no use. However when trace is started/stopped by infrequent triggers, reading SRAM trace may be useful. However very last packet in memory may be incomplete as the last trace word may be buffered inside (and `trRamEmpty` = 0 will be observed).
+NOTE: Even if reading trace (while trace is active) is implemented, circular trace buffer may be overwritten even several times, so values being read by `trRamData` will be of no use. However when trace is started/stopped by infrequent triggers, reading SRAM trace may be useful. However the very last packet in memory may be incomplete as the last trace word may be buffered inside (and `trRamEmpty` = 0 will be observed).
 
-NOTE: Trace RAM Sink may implement writing trace by writing to `trRamData`, but this mode is usable only for testing, so will most likely not be implemented. Trace tool is not required to support writing to `trRamData` register.
+NOTE: Trace RAM Sink may implement writing trace by writing to `trRamData`, but this mode is usable only for testing, so will most likely not be implemented. Trace tool is not required to support writing to the `trRamData` register.
 
 
 == Trace Funnel
 
-The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages/packets are accepted before it is switching to another input cycle and in what order. But continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Most fair implementation would be to process just a single message/packet from each input in round-robin fashion.
+The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages/packets are accepted before it is switching to another input cycle and in what order. But a continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Most fair implementation would be to process just a single message/packet from each input in round-robin fashion.
 
 .*Register: trFunnelControl: Trace Funnel Control Register (trBaseFunnel+0x000)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -1243,7 +1251,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |15-0 |trFunnelDisInput |*1:* Funnel input #n is disabled (incoming messages are ignored).|WARL | 0
 |===
 
-NOTE: `trFunnelDisInput` register is optional. When not implemented (or never set) it will read as 0, what means that all inputs are always enabled. When implemented it can be set to 0xFFFF to detect which inputs maybe disabled in particular trace funnel. Disabling inputs is needed when single trace encoder may provide output to more than one possible active destination/sink.
+NOTE: `trFunnelDisInput` register is optional. When not implemented (or never set) it will read as 0, which means that all inputs are always enabled. When implemented, it can be set to 0xFFFF to detect which inputs maybe disabled in that trace funnel. Disabling inputs is needed when a single trace encoder may provide output to more than one possible active destination/sink.
 
 === Timestamp Unit
 
@@ -1269,13 +1277,14 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |RW |0
 |2 |--|Reserved|--|0
 |3 |trPibEmpty |Reads 1 when PIB internal buffers are empty |R |1
-|7-4 |trPibMode |Select mode for output pins. Allowed values are described in `Allowed PIB Configurations` table below.|WARL |0
+|7-4 |trPibMode |Select mode for output pins. Allowed values are described in the `Allowed PIB Configurations` table below.|WARL |0
 |8 |trPibClkCenter |In parallel modes, adjust TRC_CLK timing to the center of the bit period. This can be set only if `trPibMode` selects one of the parallel protocols. Optional. |WARL |SD
 |9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. The calibration pattern is described below. Optional. |WARL |0
 |11-10 |--|Reserved|--|0
 |14-12 |trPibAsyncFreq |
 *0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
-*1-7:* Different levels of alignment synchronization (bigger number, bigger distance).
+*1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
+Details should be defined in definition of each trace protocol.
 |WARL |SD
 |15 |--|Reserved|--|0
 |31-16 |trPibDivider |Timebase selection for the PIB module. The input clock is divided by `trPibDivider` + 1. PIB data is sent at either this divided rate or 1/2 of this rate, depending on `trPibMode`. Width is implementation-dependent. 
@@ -1326,9 +1335,9 @@ Since the PIB supports many different modes, it is necessary to follow a particu
 
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
 * In 16-bit mode the first byte of message/packet is transmitted on LSB bits #0-#7 and second/odd byte will be transmitted on MSB bits#10-#15.
-* Idle sequence (no message/packet to sent) are transmitted between messages.
-** Idle sequence depends on trace protocol and must be defined in a way allowing detection of start of first byte of message/packet following idle sequence. 
-** Idle sequences are defined in document where trace protocol is defined.
+* Idle sequences (no message/packet to be sent) are transmitted between messages.
+** Idle sequence depends on trace protocol and must be defined in a way allowing detection of the start of first byte of message/packet following the idle sequence. 
+** Idle sequences are defined in documents where trace protocols are defined.
 
 === PIB Parallel Protocol
 
@@ -1426,7 +1435,7 @@ An implementation determines the data widths of the connection from the Trace En
 
 == Minimal Implementation
 
-This (non-normative) chapter gives an overview what needs to be done to put together complete RISC-V trace implementation without getting familiar with every detail of every register.
+This (non-normative) chapter gives an of what needs to be done to put together complete RISC-V trace implementation without getting familiar with every detail of every register.
 
 *Minimal General Registers/Fields*
 
@@ -1444,10 +1453,10 @@ These requirements are applicable to the entire trace sub-system.
 *Minimal Trace Encoder Register/Fields*
 
 * Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
-* At least `trTeInstMode` = 3 (basic Brach Trace) or 6 (basic History Trace) must be implemented (can be hard-coded value).
+* One of `trTeInstMode` = 3 (Branch Trace) or 6 (History Trace) must be implemented (can be a hard-coded value).
 * At least one of the non-0 values of `trTeSyncMode` must be settable (or hard-coded).
 * Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
-* Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return version of implemented protocol.
+* Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return versions of implemented protocol.
 * All other registers/fields/bits may be tied to 0.
 
 *Minimal Trace RAM Sink Register/Fields*
@@ -1476,10 +1485,10 @@ SMEM mode only:
 
 It is hard to define required mode as it depends on SoC bandwidth requirements and capabilities, but some general guidance may be provided.
 
-* 4-bit mode is supported by most (if not all ...) trace probes and less expensive MIPI20 connectors can be used.
+* 4-bit mode is supported by most (if not all) trace probes and less expensive MIPI20 connectors can be used.
 ** 1-bit and 2-bit modes should be only used when there are critical constraints on the number of MCU pins. Not all trace probes may support these modes. 
 * Serial mode should be only considered when either limited trace is required or cores run slowly. Not all trace probes may support this mode and max allowed speeds may vary.
-** Manchester encoding is self-synchronizing and may provide a more reliable trace. However UART nide may provide better bandwidth. It is suggested to support both.
+** Manchester encoding is self-synchronizing and may provide a more reliable trace. However UART mode may provide better bandwidth. It is suggested to support both.
 * 8-bit and 16-bit modes will provide better bandwidth, but require a more expensive Mictor connector and only more advanced trace probe models may support it.
 * It is suggested to provide as fast as possible trace logic clock, and allow a trace tool to set the divider in the `trPibDivider` field.
 * For TRC_CLK frequencies higher than 50MHz, it is suggested to provide a calibration mode.
@@ -1513,22 +1522,22 @@ NOTE: Some bigger registers (holding RAM addresseses) may not reset - debugger i
 
 Reset and Discovery should be performed as follows:
 
-* Reset particular component by setting `tr??Active` = 0.
+* Reset the component by setting `tr??Active` = 0.
 * Read-back and wait until `tr??Active` = 0 is read.
-* Save `tr??Control` register as it holds all reset values (it may prevent tool to do read-modify operation later).
+* Save `tr??Control` register as it holds all reset values (it may prevent a trace tool to do read-modify operation later).
 * Release from reset by setting `tr??Active` = 1 and wait for `tr??Active` = 1 to be read (to confirm component is not in reset). 
 
-IMPORTANT: When performin a write which is setting `tr??Active` = 1, no other bits should be changed. 
+IMPORTANT: When performing a write which is setting `tr??Active` = 1, no other bits should be changed. 
 
 * Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
-** If `tr??VerMajor` is 0 (for Trace Encoder component ...) either handle it as legacy version 0 or abort with an error.
+** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as legacy version 0 or abort with an error.
 * Read `tr??Impl` and compare `tr??ComType` field with expected value.
 * Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` = 1) by mistake.
 * Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
 
 As we are dealing with several independent components, it is important to assure that the component which is in reset (or powered down) is keeping its outputs on safe values, so garbage trace data is not emitted.
 
-In general it is safer to power-up and enable components starting from sinks/bridge, followed by Funnel and Encoder as last. Each implementation should test this sequence.
+In general it is safer to power-up and enable components starting from sinks/bridges, followed by Funnel and Encoder as last. Each implementation should test this sequence.
 
 == Enabling and Disabling
 
@@ -1540,31 +1549,31 @@ Enabling should work as follows:
 ** Setup needed addresses (if possible and desired) as these may not reset.
 * For PIB Sink:
 ** Calibrate PIB (if possible and desired).
-** Start physical trace capture (probe dependent).
+** Start physical trace capture (trace probe dependent).
 * Configure RAM Sink/PIB Sink/ATB Bridge in appropriate mode.
 ** Verify if a particular mode is set.
 * Set main enable for RAM Sink/PIB Sink/ATB Bridge component by setting `tr??Enable` = 1.
 ** Read back and wait for confirmation (`tr??Enable` = 1).
 * Enable Trace Funnel[s] in the same way.
 * Configure and Enable Trace Encoder[s] in the same way (last should be write of `trTeEnable` = 1 followed by read to verify that it is set).
-* Either  manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or setup triggers to start the trace.
-* Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTe????Tracing` bit was set).
+* Either  manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or set triggers to start the trace.
+* Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTeInstTracing` or `trTeDataTracing` bit is set).
 * Periodically read `trTeControl` for status of trace (as it may stop by itself due to triggers).
 ** If RAM Sink was configured with `trRamStopOnWrap` = 1, read `trRamEnable` to see if RAM capture was stopped. 
 
-NOTE: Discovery may not be necessary to enable and test trace during development of SoC. However discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
+NOTE: Discovery may not be necessary to enable and test the trace during development of SoC. However discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
 
-NOTE: Trace tool may verify particular setting once per session, so subsequent starts of trace may be faster.
+NOTE: Trace tools may verify a particular setting once per session, so subsequent starts of trace may be faster.
 
 NOTE: Trace tools should provide configuration settings allowing more verbose logging mode during discovery and initialization, so potential compatibility issues may be solved.
 
 Disabling the trace should work as follows:
 
-* It is essential to disable the trace from encoders associated with stopped harts as entering debug more is NOT flushing any trace pipelines.
+* It is essential to disable the trace from encoders associated with stopped harts as entering debug mode is NOT flushing any trace pipelines.
 * Disable and flush trace starting from Encoders, then Funnels and finally Sinks or Bridges.
 ** Set `tr??Enable` = 0 and wait for `tr??Enable` = 0 and `tr??Empty` = 1 for each trace component.
 ** It is important to do it in that order as otherwise data may be lost.
-* Stop physical capture if PIB sink was enabled (probe dependent).
+* Stop physical capture if PIB sink was enabled (trace probe dependent).
 * Read the trace.
 ** For RAM Trace Sink read `trRamWP` - depending on `trRamWrap` bit, you may read trace from two ranges.
 ** For RAM Trace Sink in SRAM mode, set `trRamRP` and read `trRamData` multiple times.
@@ -1575,9 +1584,9 @@ Disabling the trace should work as follows:
 Decoding trace
 
 * Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from a file containing the code (binary/hex/srec/ELF).
-* Trace collected by trace probes can be read and decoded while a trace is being captured (this is called trace streaming mode).
+* The trace collected by trace probes can be read and decoded while a trace is being captured (this is called trace streaming mode).
 ** There is no guarantee that the last trace packet is completed until the trace is properly flushed and disabled.
-* Decoding of trace should never affect code being traced.
+* Decoding of the trace should never affect code being traced.
 
 == Legacy Interface Version
 
