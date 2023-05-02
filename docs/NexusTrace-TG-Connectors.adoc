@@ -70,8 +70,8 @@ NOTE: Smaller MIPI10 version of this connector (pins #1 .. #10) may still provid
 | 11 | GND / TgtPwr+Cap	    |In standard, most common configuration, these must be connected to GND. See below for explanation of optional TgtPwr+Cap function.
 | 12 | `*TRC_CLK*`	        |Parallel trace clock (from target to probe).
 | 13 | GND / TgtPwr+Cap	        |Must be short with adjacent pin#11 and share its function (see above).
-| 14 | `*TRC_DATA[0]*` / `*SerialTrace*``	|Either parallel trace signal (from target to probe) or serial trace (from target to probe).
-| 16 | `*TRC_DATA[1]*` / nTRST	|Either parallel trace signal (from target to probe) or In case nTRST signal is needed this pin can be used as nTRST. NOTE: Still 1-bit parallel or serial trace is possible.
+| 14 | `*TRC_DATA[0]*` / `*SerialTrace*`	|Either parallel trace signal (from target to probe) or serial trace (from target to probe).
+| 16 | `*TRC_DATA[1]*` / nTRST	|Either parallel trace signal (from target to probe) or in case nTRST signal is needed this pin can be used as nTRST. NOTE: Still 1-bit parallel or serial trace is possible.
 | 18 | `*TRC_DATA[2]*` / TRIGIN	|Either parallel trace signal (from target to probe) or input debug trigger (from probe to target) or application UART (from probe to target).
 | 20 | `*TRC_DATA[3]*` / TRIGOUT	|Either parallel trace signal (from target to probe) or output debug trigger (from target to probe) or application UART (from target to probe).
 |=================================================================================
@@ -104,11 +104,9 @@ Leaving these pins not connected (NC) as can be seen on some schematics, is not 
 
 No matter what pins #11 and #13 must be *always* connected together - it is NOT possible that one of them will function as GND and second as TgtPwr.
 
-If you are in doubt, your board may have a jumper to either isolate these pins (NC) or connect them to GND or use them as target power. Jumper with 3 pins:
+If you are in doubt, your board may have a jumper to either isolate these pins (NC) or connect them to GND or use them as target power. Jumper with 3 pins *A-B-C* should work.
 
-*A-B-C*
-
-should work. Middle pin *B* should go to MIPI20 pins#11/#13, the left pin *A* should be GND and the right pin *C* should be the 5V rail on the target (via another 3-way jumper allowing to select 5V from MIPI20 or USB VBUS). This allows to select one of three configuration options:
+Middle pin *B* should go to MIPI20 pins#11/#13, the left pin *A* should be GND and the right pin *C* should be the 5V rail on the target (via another 3-way jumper allowing to select 5V from MIPI20 or USB VBUS). This allows to select one of three configuration options:
 
 * Jumper between *A-B* => MIPI20 pins #11/#13 are connected to GND.
 

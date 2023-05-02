@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: March 21, 2023
-:revnumber: 1.0.0_rc1
+:revdate: May 01, 2023
+:revnumber: 1.0.0_rc2
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
