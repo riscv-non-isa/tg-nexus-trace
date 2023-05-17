@@ -863,7 +863,7 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 |4   |RCODE            |Standard Resource Code field (defines a meaning of RDATA fields). +
 *0:* Standard: I-CNT counter has overflowed and is reported in the RDATA[0] field. +
 *1:* Standard: HIST field has overflowed and is reported in the RDATA[0] field. +
-*2*: *Extension:* HIST field has overflowed and is repeated. RDATA[0] field holds HIST value and RDATA[1] field holds HREPEAT (History Repeat) value. +
+*2*: *Extension:* HIST field has overflowed and is repeated. RDATA[0] field holds HIST value and RDATA[1] field holds HREPEAT (History Repeat) value. This optional extension can be enabled via the <<trTeInstEnRepeatedHistory,trTeInstEnRepeatedHistory>> control bit. +
 *3..7:* Standard: Reserved for future encodings. +
 *8..15:* Standard: Reserved for vendor specific encodings.
 [[field_RDATA]]
@@ -879,7 +879,7 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 ** See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for more details.
 * Not repeated HIST field overflow (RCODE=1) will usually include the longest supported by a particular encoder HIST field.
 ** However any number of HIST bits may be transmitted (from 2 to <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits).
-* See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details.
+* RCODE = 2: See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details about this optional extension.
 * Both  I-CNT and HIST may overflow at the same time as adding bit to HIST is (which may overflow HIST field) is resetting the I-CNT counter.
 
 [[msg2_IndirectBranchHist]]
