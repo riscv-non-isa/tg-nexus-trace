@@ -1373,7 +1373,7 @@ Jump targets that are supplied via
 * an *lui* or *c.lui* (a register which contains a constant), or
 * an *auipc* (a register which contains a constant offset from the PC).
 
-Such direct unconditional jump targets are classified as sequentially inferable if the pair of instructions are retired
+Such indirect unconditional jump targets are classified as sequentially inferable if the pair of instructions are retired
 consecutively (i.e. the *auipc*, *lui* or *c.lui* immediately precedes the indirect unconditional jump). 
 
 NOTE: The restriction
