@@ -180,7 +180,7 @@ The main *Trace Control Layer* controlling other (shared) components in the trac
 |Configurable Field|Configurable field (*Cfg* used as field size) means that existence and size of this field depends on some configuration setting. See <<N-Trace Specific Trace Controls,N-Trace Specific Trace Controls>> chapter for details.
 |N-Trace| Nexus Based Trace for RISC-V (as defined by this specification).
 |E-Trace| Efficient Trace for RISC-V (as defined by <<E-Trace Specification,E-Trace Specification>>).
-|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used to avoid any confusions with the term 'branch' used by the Nexus standard.
+|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used to avoid any confusions with the term 'branch' used by the Nexus standard. The two main sub-categories of unconditional jumps that are relevant for tracing are: direct unconditional jump and indirect unconditional jump.
 |Direct Conditional Branch|On RISC-V ISA all branch instructions are always direct and conditional (and also relative), but these three words are always used together to avoid confusions with the term 'branch' used by the Nexus standard.
 |======================================================================================================
 
