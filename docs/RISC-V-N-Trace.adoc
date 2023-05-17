@@ -1512,9 +1512,11 @@ This chapter directly mentions 16-bit and 32-bit instructions (from the currentl
 These rules are augmenting the above rules if the corresponding configuration setting is set.
 
 . Call and return instructions maintain call stack and if return is matching a call, no trace is generated.
-** This is described in detail in <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
-. As RISC-V architecture is only supporting PC relative direct unconditional jumps/calls with short distance from PC, indirect unconditional jumps/calls are used to make calls/jump to distant locations. 
+** This optional feature is described in detail in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
+. By default, the target of an indirect unconditional jump is always considered an uninferable PC discontinuity. However, if the register that specifies the jump target was loaded with a constant
+then it can be considered inferable under some circumstances. 
 ** Such instruction sequences may be detected and in such a case no trace is generated.
+** This optional feature is described in detail in the <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter.
 
 === Custom Instructions
 
