@@ -1534,7 +1534,7 @@ NOTE: Above rule allowed to not change trace decoders after V or Zb extensions w
 Custom instruction which may change PC should be traced in one of the following ways:
 
 * If the PC just advances to the next instruction, it should be traced as plain linear instruction. Decoder will just advance the PC.
-* If the PC changes as result of custom instruction, it should be traced as an indirect unconditional jump, so the destination address will be reported (as F-ADDR or U-ADDR fields). Decoder will change PC to an address specified in this message.
+* If the program flow changes as result of a custom instruction, the custom instruction should be traced as an indirect unconditional jump (even if it is actually not an indirect unconditional jump). That way, the destination address will be reported (as F-ADDR or U-ADDR fields). Decoder will change PC to an address specified in this message. In most cases, this approach should not require any adaptation of the trace decoder. 
 
 Such an approach will NOT require changes in trace decoders. To illustrate this let's consider the following piece of code with custom instruction *XYZ*:
 
