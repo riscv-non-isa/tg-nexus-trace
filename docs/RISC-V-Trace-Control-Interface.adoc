@@ -611,10 +611,10 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 |0 |trTeInstNoAddrDiff|Do not send differential addresses when set (always full address is sent)|WARL|0
 |1 |trTeInstNoTrapAddr|When set, do not sent trap handler address in trap packets|WARL|0
 |2 |trTeInstEnSequentialJump|Treat sequentially inferrable jumps as inferable PC discontinuities when set.|WARL|0
-|3 |trTeInstEnImplicitReturn|Treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitRetMode` below provides more details.|WARL|0
+|3 |trTeInstEnImplicitReturn|Treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitReturnMode` below provides more details.|WARL|0
 |4 |trTeInstEnBranchPrediction|Branch predictor enabled when set.|WARL|0
 |5 |trTeInstEnJumpTargetCache|Jump target cache enabled when set.|WARL|0
-|7-6|trTeInstImplicitRetMode|Defines how the decoder is handling stack of return addresses (if enabled by trTeInstEnImplicitReturn bit): +
+|7-6|trTeInstImplicitReturnMode|Defines how the decoder is handling stack of return addresses (if enabled by trTeInstEnImplicitReturn bit): +
 *0:* Implicit Return mode is not supported or implementation is not reporting how it is implemented. +
 *1:* Simple level counting without the return address compare (cheapest to implement, but not recommended as it may lead to incorrect trace in case RTOS or stack unwinding is used). +
 *2:* Partial (LSB portion of return address) compare (smaller logic cost than 3 below, but in most cases adequate as chances to have an incorrect return address with same LSB bits is very slim). +
