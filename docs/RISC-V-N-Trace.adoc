@@ -1432,19 +1432,19 @@ In the first case, the direct conditional branch is 'not-taken' most of the time
 
 Long loops in practical programs/functions (memcpy/strcpy/search …) tend to execute many times and many times flow inside the loop is identical. Instead of sending the same history bits many times, repeated patterns can be detected and counted. This is a big saving! As an example, a memcpy of 4MB buffer using 32-bit transfers will execute at least 1M of direct conditional branches and 1M of history bits must be included in trace (it is a lot of trace).
 
-Nexus standard defines <<msg_Repeat_Brach,Repeat Branch>> message. This message will provide a single <<field_B-CNT,B-CNT>> (Branch Count) field instead of generating many identical <<msg_DirectBranch,Direct Branch>> messages. But this message cannot be used in <<mode_HTM, HTM mode>> as repeated messages (Direct Branch) do not include the HIST field.
+The Nexus standard defines a <<msg_RepeatBranch,Repeat Branch>> message. This message will provide a single <<field_B-CNT,B-CNT>> (Branch Count) field instead of generating many identical <<msg_DirectBranch,Direct Branch>> messages. But this message cannot be used in <<mode_HTM, HTM mode>> as repeated messages (Direct Branch) do not include the HIST field.
 
-In order to allow generation of repeated history of direct conditional branches in HTM mode an extra encoding for <<field_RCODE,RCODE>>=2 in <<msg_Resource_Full,Resource Full>> message is added.
+In order to allow generation of repeated history of direct conditional branches in HTM mode an extra encoding for <<field_RCODE,RCODE>>=2 in <<msg_ResourceFull,Resource Full>> message is added.
 
-IMPORTANT: It is allowed to generate any sequence of <<msg_Resource_Full,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding MSB stop-bit[s]) is the same.
+IMPORTANT: It is allowed to generate any sequence of <<msg_ResourceFull,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding MSB stop-bit[s]) is the same.
 
-Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way similar to <<msg_Repeat_Brach,Repeat Branch>> message)
+Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way similar to <<msg_RepeatBranch,Repeat Branch>> message)
 
 But this approach will not work with more complex code with a conditional statement (or several of them) inside of a loop.
 
 In such a case, it is desired to detect repeated sequences of taken/not-taken direct conditional branches and instead generate many messages with HIST fields, generate a message consisting of a HIST pattern and repeat count.
 
-Let's assume that we have a loop, which generates a long sequence of repeated taken/not-taken, taken/not-taken direct conditional branches. Trace may generate <<msg_Resource_Full,Resource Full>> messages with the following HIST records:
+Let's assume that we have a loop, which generates a long sequence of repeated taken/not-taken, taken/not-taken direct conditional branches. Trace may generate <<msg_ResourceFull,Resource Full>> messages with the following HIST records:
 
     Msg#1:
         TCODE=27 (ResourceFull)
