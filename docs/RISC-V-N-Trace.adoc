@@ -453,7 +453,9 @@ This chapter describes how some fields and bits from Trace Encoder control regis
 *3:* BTM (Branch Trace Messaging) mode +
 *6:* HTM (History Branch Messaging) mode +
 See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for more explanations.
+[[trTeInhibitSrc]]
 |trTeInhibitSrc|1|If set to 1 SRC field will NOT be emitted (it is equivalent to set teTrSrcBits = 0).
+[[trTeSrcBits]]
 |trTeSrcBits|4|Number of bits of SRC field (in range 0..12). It must be identical for all enabled trace sources in the same trace stream.
 |trTeSrcID|12|Value of SRC field emitted by this trace encoder. It must be different for each enabled trace source in the same trace stream.
 [[trTeSyncMode]]
