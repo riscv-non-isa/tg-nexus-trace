@@ -1498,6 +1498,9 @@ This chapter directly mentions 16-bit and 32-bit instructions (from the currentl
 ** Plain linear instruction => PC is at the next instruction (+2 or +4).
 ** Direct (inferable...) unconditional jump => PC is unconditional jump destination (known from PC and opcode as all unconditional jumps are PC relative).
 ** Not taken direct conditional branch (in BTM mode) => PC is next instruction (+2 or +4).
+. Indirect, unconditional jump instruction is handled as:
+** In BTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message.
+** In HTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message (if the <<field_HIST,HIST>> field is empty) or an <<msg2_IndirectBranchHist,IndirectBranchHist>> message (if the <<field_HIST,HIST>> field is not empty).
 . Direct, conditional branch instruction is handled as:
 ** In BTM mode it generates a <<msg_DirectBranch,DirectBranch>> message (only if taken).
 ** In HTM mode it appends a single bit (1=taken or 0=not-taken) into the branch history buffer (<<field_HIST,HIST>> field).
