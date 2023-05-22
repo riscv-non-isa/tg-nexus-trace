@@ -1334,7 +1334,7 @@ Since the PIB supports many different modes, it is necessary to follow a particu
 === Order of bits and bytes
 
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
-* In 16-bit mode the first byte of message/packet is transmitted on LSB bits #0-#7 and second/odd byte will be transmitted on MSB bits#10-#15.
+* In 16-bit mode the first byte of message/packet is transmitted on LSB bits #0-#7 and second/odd byte will be transmitted on MSB bits#8-#15.
 * Idle sequences (no message/packet to be sent) are transmitted between messages.
 ** Idle sequence depends on trace protocol and must be defined in a way allowing detection of the start of first byte of message/packet following the idle sequence. 
 ** Idle sequences are defined in documents where trace protocols are defined.

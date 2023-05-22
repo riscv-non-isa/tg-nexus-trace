@@ -386,7 +386,7 @@ Order of bits and bytes:
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
 * Nexus MSEO bits are transmitted on the LSB part and bit#0 first.
 * Idle state must be transmitted as all MSEO and MDO bits = 1.
-* In 16-bit mode the first byte of message/packet is transmitted on the LSB part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
+* For transmission on a 16bit interface (e.g. PIB 16-bit mode), the first byte of message/packet is transmitted on the LSB part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
 
 NOTE: Above rules allow receiving trace probes to skip idle messages.
 
