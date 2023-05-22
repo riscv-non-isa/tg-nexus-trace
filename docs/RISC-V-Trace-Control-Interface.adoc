@@ -87,7 +87,7 @@ Please cite as: “RISC-V Trace Control Interface Specification",  RISC-V Intern
 
 == Introduction
 
-This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
+This document presents a standardized control interface for RISC-V trace infrastructure (such as trace encoders, trace funnels, trace sinks, ...) for the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification version 1.0. Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
 Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates the trace data from multiple sources and sends the data to a single destination.
 
