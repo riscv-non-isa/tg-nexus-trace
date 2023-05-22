@@ -392,6 +392,8 @@ NOTE: Above rules allow receiving trace probes to skip idle messages.
 
 === PIB Idle Cycles Explained
 
+This chapter describes N-Trace specific details about the transmission via a Pin Interface Block (PIB), as it is described in the RISC-V Trace Control Interface Specification.
+
 Trace messages may start on any (positive or negative) edge of trace clock. 
 
 IMPORTANT: Once a message is started all bits of that message must be transmitted on consecutive trace clock edges (both positive and negative).
@@ -401,8 +403,8 @@ Said so, an idle sequence may be sent using any number of trace clock edges (pos
 To explain this let's assume the following serially transmitted (in 1-bit PIB mode) sequences of bits (MSEO[0] bit being first on the left):
 
 * < `11` DDDDDD> - sequence of 8 bits in last byte of message ( `11` = MSEO, DDDDDD = six DATA bits)
-* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
 * < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
+* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
 
 The following 4 example sequences:
 
@@ -414,6 +416,8 @@ The following 4 example sequences:
 are all valid.
 
 NOTE: Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
+
+NOTE: The trace probe needs to be able to synchronize with the trace stream and to detect where the trace message boundaries are. This procedure is sometimes referred to as "message alignment synchronization" or "alignment-sync". Nexus or N-Trace does not need a dedicated alignment-sync sequence, but instead Nexus idle sequences can be used for alignment-sync with PIB. This means that some trace probes can only perform alignment-sync on a PIB trace stream, if the stream does contain Nexus idle sequences at some point (i.e. if not all trace messages arrive back-to-back).
 
 === N-Trace Message Example
 
