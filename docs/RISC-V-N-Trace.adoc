@@ -1309,7 +1309,7 @@ Synchronization messages provide SYNC code (described below) and full address (f
 |2| Periodic Synchronization | Yes | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when it was wrapped around). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
 |3| Exit from Debug Mode |  Yes | Yes | Very first synchronization message (unless trace starts disabled - see next chapter)
 |4| Sequential Instruction Counter | *No* | Yes/No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details. Required for HTM mode.
-|5| Trace Enable |  Yes | No | Generated after trace is re-enabled a gap caused by trace being disabled.
+|5| Trace Enable |  Yes | No | Generated when trace is re-enabled after a gap caused by trace being disabled.
 |6| Trace Event | *No* | No | Serves as a marker (encoder state is not reset) when debug watchpoint with action=4 triggered .
 |7| Restart from FIFO overrun |  Yes | Yes |First synchronization after a gap caused by lost trace
 |8| Reserved |Yes|-|
