@@ -462,10 +462,10 @@ See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for more expla
 [[trTeSrcBits]]
 |trTeSrcBits|4|Number of bits of SRC field (in range 0..12). It must be identical for all enabled trace sources in the same trace stream.
 |trTeSrcID|12|Value of SRC field emitted by this trace encoder. It must be different for each enabled trace source in the same trace stream.
-[[trTeSyncMode]]
-|trTeSyncMode|2|Select the criteria for the periodic generation of <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
-[[trTeSyncMax]]
-|trTeSyncMax|4|Configure the maximum interval (in units determined by <<trTeSyncMode,trTeSyncMode>>) between <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
+[[trTeInstSyncMode]]
+|trTeInstSyncMode|2|Select the criteria for the periodic generation of instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
+[[trTeInstSyncMax]]
+|trTeInstSyncMax|4|Configure the maximum interval (in units determined by <<trTeInstSyncMode,trTeInstSyncMode>>) between instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
 [[trTeInstEnRepeatedHistory]]
 |trTeInstEnRepeatedHistory|1|If this bit is set to 1 some sequences of conditional direct branches may be detected and more compressed trace will be generated.
 See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
@@ -1290,6 +1290,13 @@ This method should be rather easy to implement as each encoder must implement 'p
 
 === Synchronization Messages
 
+[IMPORTANT]
+====
+* Trace requires different types of "synchronization" on different abstraction levels. Two major categories of synchronization are:
+** *Instruction trace synchronization*: allows the trade decoder to synchronize onto an ongoing instruction trace stream. This is done via Nexus "synchronization messages", which are described in this chapter in more detail.
+** *Message alignment synchronization*: allows the trade decoder to detect the trace message boundaries (i.e. start and end of a trace message) within a trace stream. This kind of synchronization is not described in this chapter. It can be done via Nexus idle cycles, and is described in the <<PIB Idle Cycles Explained,PIB Idle Cycles Explained>> chapter in more detail.
+====
+
 Synchronization messages provide SYNC code (described below) and full address (field <<field_F-ADDR,F-ADDR>>) and are used to synchronize trace encoder as full PC is provided.
 
 [#SYNC Field Values]
@@ -1299,7 +1306,7 @@ Synchronization messages provide SYNC code (described below) and full address (f
 |Value|Name |Encoder Reset|Required|Description
 |0| External Trace Trigger | *No* | No | This message serves as a marker (encoder state is not reset) of external trigger input. If trace is enabled by a trigger SYNC=5 should be used.
 |1| Exit from Reset | Yes | No | Core was reset without stopping (by watchdog for example). Address should be a reset vector, but HIST and I-CNT should provide the PC of the last instruction before reset.
-|2| Periodic Synchronization | Yes | Yes | Just periodic synchronization (to allow decoding the trace from the middle or when it was wrapped around). The interval for periodic synchronization gets configured via <<trTeSyncMode,trTeSyncMode>> and <<trTeSyncMax,trTeSyncMax>>.
+|2| Periodic Synchronization | Yes | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when it was wrapped around). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
 |3| Exit from Debug Mode |  Yes | Yes | Very first synchronization message (unless trace starts disabled - see next chapter)
 |4| Sequential Instruction Counter | *No* | Yes/No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details. Required for HTM mode.
 |5| Trace Enable |  Yes | No | Generated after trace is re-enabled a gap caused by trace being disabled.

@@ -560,16 +560,16 @@ and Trace-off Debug module or External triggers respectively|WARL |0
 *1:* Disable source field in trace messages. 
 |WARL |SD
 
-|17-16 |trTeSyncMode |Select periodic synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented. +
+|17-16 |trTeInstSyncMode |Select periodic instruction trace synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented. +
 *0:* Off +
 *1:* Count trace messages/packets +
 *2:* Count hart clock cycles +
 *3:* Count instruction half-words (16-bit) +
-Once the periodic counter is reached, a synchronization message/packet should be generated at the nearest opportunity.|WARL |SD
+Once the periodic counter is reached, an instruction trace synchronization message/packet should be generated at the nearest opportunity.|WARL |SD
 
 |19-18 |--|Reserved |--|0
 
-|23-20 |trTeSyncMax |The maximum interval (in units determined by `trTeSyncMode`) between synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
+|23-20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
 
 |26-24 |trTeFormat |
 Trace recording format: +
@@ -1454,7 +1454,7 @@ These requirements are applicable to the entire trace sub-system.
 
 * Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
 * One of `trTeInstMode` = 3 (Branch Trace) or 6 (History Trace) must be implemented (can be a hard-coded value).
-* At least one of the non-0 values of `trTeSyncMode` must be settable (or hard-coded).
+* At least one of the non-0 values of `trTeInstSyncMode` must be settable (or hard-coded).
 * Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
 * Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return versions of implemented protocol.
 * All other registers/fields/bits may be tied to 0.
