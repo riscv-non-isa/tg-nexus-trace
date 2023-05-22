@@ -1104,7 +1104,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. This register may not be implemented if the sink type doesn't require an address. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
+|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
 |===
 
 For a bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
@@ -1121,7 +1121,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. This register may not be present if the sink type doesn't require a limit address. |WARL |Undef
+|31-2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. |WARL |Undef
 |===
 
 .*Register: trRamLimitHigh: Trace RAM Sink Limit High Bits Register (trBaseRamSink+0x01C)*
@@ -1195,7 +1195,7 @@ Later `trRamMode` should be set (depending on desired RAM Sink mode). It is impo
 In SRAM mode, the trace memory is dedicated for trace storage and `trRamStart??` registers should be settable (usually both not implemented and return 0). `trRamLimitLow` registers may be either hardcoded (to reflect physical SRAM size) or writable (allowing trimming RAM size allowing faster wrap-around or sharing same memory with some other components in the system).
 
 Detection of valid ranges of each `trRamStart??` and `trRamLimit??` registers should be performed by writing 0 and 0xFFFFFFFF.
-After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value is 0, it means the register is NOT implemented.
+After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value for `trRamStartHigh` or `trRamLimitHigh` is 0, it means the register is NOT implemented.
 
 Some implementations may provide different limits for different start addresses, so the trace tool should always set `trRamStart??` registers first - this option can be used when a particular implementation has two different RAM regions (each with different physical memory size).
 
