@@ -87,7 +87,7 @@ Please cite as: “RISC-V Trace Control Interface Specification",  RISC-V Intern
 
 == Introduction
 
-This document presents a control interface for the Trace Encoder described in the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification (in progress). Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
+This document presents a standardized control interface for RISC-V trace infrastructure (such as trace encoders, trace funnels, trace sinks, ...) for the _Efficient Trace for RISC-V Specification Version 2.0_ and for the RISC-V N-Trace specification version 1.0. Both Trace Working Groups agreed to standardize the control interface so that trace control software development tools can be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
 Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates the trace data from multiple sources and sends the data to a single destination.
 
@@ -560,16 +560,16 @@ and Trace-off Debug module or External triggers respectively|WARL |0
 *1:* Disable source field in trace messages. 
 |WARL |SD
 
-|17-16 |trTeSyncMode |Select periodic synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented. +
+|17-16 |trTeInstSyncMode |Select periodic instruction trace synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented. +
 *0:* Off +
 *1:* Count trace messages/packets +
 *2:* Count hart clock cycles +
 *3:* Count instruction half-words (16-bit) +
-Once the periodic counter is reached, a synchronization message/packet should be generated at the nearest opportunity.|WARL |SD
+Once the periodic counter is reached, an instruction trace synchronization message/packet should be generated at the nearest opportunity.|WARL |SD
 
 |19-18 |--|Reserved |--|0
 
-|23-20 |trTeSyncMax |The maximum interval (in units determined by `trTeSyncMode`) between synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
+|23-20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
 
 |26-24 |trTeFormat |
 Trace recording format: +
@@ -611,10 +611,10 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 |0 |trTeInstNoAddrDiff|Do not send differential addresses when set (always full address is sent)|WARL|0
 |1 |trTeInstNoTrapAddr|When set, do not sent trap handler address in trap packets|WARL|0
 |2 |trTeInstEnSequentialJump|Treat sequentially inferrable jumps as inferable PC discontinuities when set.|WARL|0
-|3 |trTeInstEnImplicitReturn|Treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitRetMode` below provides more details.|WARL|0
+|3 |trTeInstEnImplicitReturn|Treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitReturnMode` below provides more details.|WARL|0
 |4 |trTeInstEnBranchPrediction|Branch predictor enabled when set.|WARL|0
 |5 |trTeInstEnJumpTargetCache|Jump target cache enabled when set.|WARL|0
-|7-6|trTeInstImplicitRetMode|Defines how the decoder is handling stack of return addresses (if enabled by trTeInstEnImplicitReturn bit): +
+|7-6|trTeInstImplicitReturnMode|Defines how the decoder is handling stack of return addresses (if enabled by trTeInstEnImplicitReturn bit): +
 *0:* Implicit Return mode is not supported or implementation is not reporting how it is implemented. +
 *1:* Simple level counting without the return address compare (cheapest to implement, but not recommended as it may lead to incorrect trace in case RTOS or stack unwinding is used). +
 *2:* Partial (LSB portion of return address) compare (smaller logic cost than 3 below, but in most cases adequate as chances to have an incorrect return address with same LSB bits is very slim). +
@@ -1104,7 +1104,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. This register may not be implemented if the sink type doesn't require an address. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
+|31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL |Undef or fixed to 0
 |===
 
 For a bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
@@ -1121,7 +1121,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
-|31-2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. This register may not be present if the sink type doesn't require a limit address. |WARL |Undef
+|31-2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. |WARL |Undef
 |===
 
 .*Register: trRamLimitHigh: Trace RAM Sink Limit High Bits Register (trBaseRamSink+0x01C)*
@@ -1195,7 +1195,7 @@ Later `trRamMode` should be set (depending on desired RAM Sink mode). It is impo
 In SRAM mode, the trace memory is dedicated for trace storage and `trRamStart??` registers should be settable (usually both not implemented and return 0). `trRamLimitLow` registers may be either hardcoded (to reflect physical SRAM size) or writable (allowing trimming RAM size allowing faster wrap-around or sharing same memory with some other components in the system).
 
 Detection of valid ranges of each `trRamStart??` and `trRamLimit??` registers should be performed by writing 0 and 0xFFFFFFFF.
-After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value is 0, it means the register is NOT implemented.
+After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value for `trRamStartHigh` or `trRamLimitHigh` is 0, it means the register is NOT implemented.
 
 Some implementations may provide different limits for different start addresses, so the trace tool should always set `trRamStart??` registers first - this option can be used when a particular implementation has two different RAM regions (each with different physical memory size).
 
@@ -1334,7 +1334,7 @@ Since the PIB supports many different modes, it is necessary to follow a particu
 === Order of bits and bytes
 
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
-* In 16-bit mode the first byte of message/packet is transmitted on LSB bits #0-#7 and second/odd byte will be transmitted on MSB bits#10-#15.
+* In 16-bit mode the first byte of message/packet is transmitted on LSB bits #0-#7 and second/odd byte will be transmitted on MSB bits#8-#15.
 * Idle sequences (no message/packet to be sent) are transmitted between messages.
 ** Idle sequence depends on trace protocol and must be defined in a way allowing detection of the start of first byte of message/packet following the idle sequence. 
 ** Idle sequences are defined in documents where trace protocols are defined.
@@ -1454,7 +1454,7 @@ These requirements are applicable to the entire trace sub-system.
 
 * Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
 * One of `trTeInstMode` = 3 (Branch Trace) or 6 (History Trace) must be implemented (can be a hard-coded value).
-* At least one of the non-0 values of `trTeSyncMode` must be settable (or hard-coded).
+* At least one of the non-0 values of `trTeInstSyncMode` must be settable (or hard-coded).
 * Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
 * Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return versions of implemented protocol.
 * All other registers/fields/bits may be tied to 0.

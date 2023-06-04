@@ -180,7 +180,7 @@ The main *Trace Control Layer* controlling other (shared) components in the trac
 |Configurable Field|Configurable field (*Cfg* used as field size) means that existence and size of this field depends on some configuration setting. See <<N-Trace Specific Trace Controls,N-Trace Specific Trace Controls>> chapter for details.
 |N-Trace| Nexus Based Trace for RISC-V (as defined by this specification).
 |E-Trace| Efficient Trace for RISC-V (as defined by <<E-Trace Specification,E-Trace Specification>>).
-|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used to avoid any confusions with the term 'branch' used by the Nexus standard.
+|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used to avoid any confusions with the term 'branch' used by the Nexus standard. The two main sub-categories of unconditional jumps that are relevant for tracing are: direct unconditional jump and indirect unconditional jump.
 |Direct Conditional Branch|On RISC-V ISA all branch instructions are always direct and conditional (and also relative), but these three words are always used together to avoid confusions with the term 'branch' used by the Nexus standard.
 |======================================================================================================
 
@@ -386,11 +386,13 @@ Order of bits and bytes:
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
 * Nexus MSEO bits are transmitted on the LSB part and bit#0 first.
 * Idle state must be transmitted as all MSEO and MDO bits = 1.
-* In 16-bit mode the first byte of message/packet is transmitted on the LSB part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
+* For transmission on a 16bit interface (e.g. PIB 16-bit mode), the first byte of message/packet is transmitted on the LSB part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
 
 NOTE: Above rules allow receiving trace probes to skip idle messages.
 
 === PIB Idle Cycles Explained
+
+This chapter describes N-Trace specific details about the transmission via a Pin Interface Block (PIB), as it is described in the RISC-V Trace Control Interface Specification.
 
 Trace messages may start on any (positive or negative) edge of trace clock. 
 
@@ -401,8 +403,8 @@ Said so, an idle sequence may be sent using any number of trace clock edges (pos
 To explain this let's assume the following serially transmitted (in 1-bit PIB mode) sequences of bits (MSEO[0] bit being first on the left):
 
 * < `11` DDDDDD> - sequence of 8 bits in last byte of message ( `11` = MSEO, DDDDDD = six DATA bits)
-* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
 * < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
+* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
 
 The following 4 example sequences:
 
@@ -414,6 +416,8 @@ The following 4 example sequences:
 are all valid.
 
 NOTE: Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
+
+NOTE: The trace probe needs to be able to synchronize with the trace stream and to detect where the trace message boundaries are. This procedure is sometimes referred to as "message alignment synchronization" or "alignment-sync". Nexus or N-Trace does not need a dedicated alignment-sync sequence, but instead Nexus idle sequences can be used for alignment-sync with PIB. This means that some trace probes can only perform alignment-sync on a PIB trace stream, if the stream does contain Nexus idle sequences at some point (i.e. if not all trace messages arrive back-to-back).
 
 === N-Trace Message Example
 
@@ -453,9 +457,15 @@ This chapter describes how some fields and bits from Trace Encoder control regis
 *3:* BTM (Branch Trace Messaging) mode +
 *6:* HTM (History Branch Messaging) mode +
 See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for more explanations.
+[[trTeInhibitSrc]]
 |trTeInhibitSrc|1|If set to 1 SRC field will NOT be emitted (it is equivalent to set teTrSrcBits = 0).
+[[trTeSrcBits]]
 |trTeSrcBits|4|Number of bits of SRC field (in range 0..12). It must be identical for all enabled trace sources in the same trace stream.
-|trTeSrcID|12|Value of SRC field emitted by this trace encoder. It must be different for each enabled trace source in the same trace stream. 
+|trTeSrcID|12|Value of SRC field emitted by this trace encoder. It must be different for each enabled trace source in the same trace stream.
+[[trTeInstSyncMode]]
+|trTeInstSyncMode|2|Select the criteria for the periodic generation of instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
+[[trTeInstSyncMax]]
+|trTeInstSyncMax|4|Configure the maximum interval (in units determined by <<trTeInstSyncMode,trTeInstSyncMode>>) between instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
 [[trTeInstEnRepeatedHistory]]
 |trTeInstEnRepeatedHistory|1|If this bit is set to 1 some sequences of conditional direct branches may be detected and more compressed trace will be generated.
 See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
@@ -863,7 +873,7 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 |4   |RCODE            |Standard Resource Code field (defines a meaning of RDATA fields). +
 *0:* Standard: I-CNT counter has overflowed and is reported in the RDATA[0] field. +
 *1:* Standard: HIST field has overflowed and is reported in the RDATA[0] field. +
-*2*: *Extension:* HIST field has overflowed and is repeated. RDATA[0] field holds HIST value and RDATA[1] field holds HREPEAT (History Repeat) value. +
+*2*: *Extension:* HIST field has overflowed and is repeated. RDATA[0] field holds HIST value and RDATA[1] field holds HREPEAT (History Repeat) value. This optional extension can be enabled via the <<trTeInstEnRepeatedHistory,trTeInstEnRepeatedHistory>> control bit. +
 *3..7:* Standard: Reserved for future encodings. +
 *8..15:* Standard: Reserved for vendor specific encodings.
 [[field_RDATA]]
@@ -879,7 +889,7 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 ** See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for more details.
 * Not repeated HIST field overflow (RCODE=1) will usually include the longest supported by a particular encoder HIST field.
 ** However any number of HIST bits may be transmitted (from 2 to <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits).
-* See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details.
+* RCODE = 2: See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details about this optional extension.
 * Both  I-CNT and HIST may overflow at the same time as adding bit to HIST is (which may overflow HIST field) is resetting the I-CNT counter.
 
 [[msg2_IndirectBranchHist]]
@@ -1172,18 +1182,18 @@ As an illustration, let's consider the following piece of pseudo-code (... does 
     0x300:  add ...         ; Plain linear 32-bit instruction
     0x304:  c.ebreak        ; 16-bit breakpoint (to stop the code)
 
-NOTE: In the description below the range specified as <0x100..0x106) means that address 0x100 is included, but address 0x106 is NOT included.
+NOTE: Syntax of address ranges: In the description below a range specified as <0x100..0x105> means that addresses 0x100 and 0x105 are both included in the address range.
 
 Let's assume we start a trace from address 0x100 (<<msg_ProgTraceSync,ProgTraceSync>> with *I-CNT=0* and F-ADDR encoding address = 0x100 should be generated) and let's assume that we executed and collected a trace for above program (in <<mode_BTM,BTM>> mode) three times:
 
 * First time a direct conditional branch at address 0x102 is taken.
-** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x106) (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
-** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x202) till *c.ebreak* instruction
+** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x105> (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
+** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *c.ebreak* instruction
 * Second time a direct conditional branch at address 0x102 is not-taken and a direct conditional branch at address 0x10A is taken.
-** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10E) (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
-** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing range <0x300..0x304) till *c.ebreak* instruction.
+** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10D> (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
+** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing range <0x300..0x303> till *c.ebreak* instruction.
 * The third time both direct conditional branches are not-taken.
-** In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated.It is describing a range <0x100..0x114) till *c.ebreak* instructions.
+** In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated.It is describing a range <0x100..0x113> till *c.ebreak* instructions.
 
 NOTE: Decoder must look at each instruction in the code block to know its size. It cannot calculate *current PC+I-CNT*2* as it is UNKNOWN what is the size of the last instruction retired in that block - it may be (compressed) 16-bit or 32-bit (not-compressed) direct conditional branch. Without knowing an instruction size offset of that direct conditional branch cannot be determined.
 
@@ -1205,9 +1215,9 @@ When the encoder is operating in HTM mode, I-CNT should be incremented at every 
 
 Above code may generate messages with the following fields (exact types of messages depend on code not visible in that example):
 
-* I-CNT=1, HIST=0b1_1... (MSB=1 is stop bit, bit pattern '1...' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=1 describes a code in <0x200..0x202> range.
-* I-CNT=2, HIST=0b1_01... (MSB=1 is stop bit, bit pattern '01...' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x300..0x304> range.
-* I-CNT=3, HIST-0b1_00... (MSB=1 is stop bit, bit pattern '00...' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=3 describes a code in <0x10E..0x114) range.
+* I-CNT=1, HIST=0b1_1... (MSB=1 is stop bit, bit pattern '1...' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=1 describes a code in <0x200..0x201> range.
+* I-CNT=2, HIST=0b1_01... (MSB=1 is stop bit, bit pattern '01...' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x300..0x303> range.
+* I-CNT=3, HIST-0b1_00... (MSB=1 is stop bit, bit pattern '00...' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=3 describes a code in <0x10E..0x113> range.
 
 NOTE: It is obviously visible that HTM mode provides much better trace compression as trace messages are not generated at every taken direct conditional branch.
 
@@ -1280,6 +1290,13 @@ This method should be rather easy to implement as each encoder must implement 'p
 
 === Synchronization Messages
 
+[IMPORTANT]
+====
+* Trace requires different types of "synchronization" on different abstraction levels. Two major categories of synchronization are:
+** *Instruction trace synchronization*: allows the trade decoder to synchronize onto an ongoing instruction trace stream. This is done via Nexus "synchronization messages", which are described in this chapter in more detail.
+** *Message alignment synchronization*: allows the trade decoder to detect the trace message boundaries (i.e. start and end of a trace message) within a trace stream. This kind of synchronization is not described in this chapter. It can be done via Nexus idle cycles, and is described in the <<PIB Idle Cycles Explained,PIB Idle Cycles Explained>> chapter in more detail.
+====
+
 Synchronization messages provide SYNC code (described below) and full address (field <<field_F-ADDR,F-ADDR>>) and are used to synchronize trace encoder as full PC is provided.
 
 [#SYNC Field Values]
@@ -1289,10 +1306,10 @@ Synchronization messages provide SYNC code (described below) and full address (f
 |Value|Name |Encoder Reset|Required|Description
 |0| External Trace Trigger | *No* | No | This message serves as a marker (encoder state is not reset) of external trigger input. If trace is enabled by a trigger SYNC=5 should be used.
 |1| Exit from Reset | Yes | No | Core was reset without stopping (by watchdog for example). Address should be a reset vector, but HIST and I-CNT should provide the PC of the last instruction before reset.
-|2| Periodic Synchronization | Yes | Yes | Just periodic synchronization (to allow decoding the trace from the middle or when it was wrapped around).
-|3| Exit from Debug Mode |  Yes | Yes | Very first synchronization message (unless trace starts disabled - see next chapter)
+|2| Periodic Synchronization | Yes | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when it was wrapped around). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
+|3| Exit from Debug Mode |  Yes | Yes | Very first synchronization message after exit from debug mode (unless trace starts disabled - see next chapter).
 |4| Sequential Instruction Counter | *No* | Yes/No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details. Required for HTM mode.
-|5| Trace Enable |  Yes | No | Generated after trace is re-enabled a gap caused by trace being disabled.
+|5| Trace Enable |  Yes | No | Generated when trace is re-enabled after a gap caused by trace being disabled (e.g. due to trace filters). This must not be used for exit from debug mode (in which case SYNC=3 must be used).
 |6| Trace Event | *No* | No | Serves as a marker (encoder state is not reset) when debug watchpoint with action=4 triggered .
 |7| Restart from FIFO overrun |  Yes | Yes |First synchronization after a gap caused by lost trace
 |8| Reserved |Yes|-|
@@ -1373,7 +1390,7 @@ Jump targets that are supplied via
 * an *lui* or *c.lui* (a register which contains a constant), or
 * an *auipc* (a register which contains a constant offset from the PC).
 
-Such direct unconditional jump targets are classified as sequentially inferable if the pair of instructions are retired
+Such indirect unconditional jump targets are classified as sequentially inferable if the pair of instructions are retired
 consecutively (i.e. the *auipc*, *lui* or *c.lui* immediately precedes the indirect unconditional jump). 
 
 NOTE: The restriction
@@ -1426,19 +1443,19 @@ In the first case, the direct conditional branch is 'not-taken' most of the time
 
 Long loops in practical programs/functions (memcpy/strcpy/search …) tend to execute many times and many times flow inside the loop is identical. Instead of sending the same history bits many times, repeated patterns can be detected and counted. This is a big saving! As an example, a memcpy of 4MB buffer using 32-bit transfers will execute at least 1M of direct conditional branches and 1M of history bits must be included in trace (it is a lot of trace).
 
-Nexus standard defines <<msg_Repeat_Brach,Repeat Branch>> message. This message will provide a single <<field_B-CNT,B-CNT>> (Branch Count) field instead of generating many identical <<msg_DirectBranch,Direct Branch>> messages. But this message cannot be used in <<mode_HTM, HTM mode>> as repeated messages (Direct Branch) do not include the HIST field.
+The Nexus standard defines a <<msg_RepeatBranch,Repeat Branch>> message. This message will provide a single <<field_B-CNT,B-CNT>> (Branch Count) field instead of generating many identical <<msg_DirectBranch,Direct Branch>> messages. But this message cannot be used in <<mode_HTM, HTM mode>> as repeated messages (Direct Branch) do not include the HIST field.
 
-In order to allow generation of repeated history of direct conditional branches in HTM mode an extra encoding for <<field_RCODE,RCODE>>=2 in <<msg_Resource_Full,Resource Full>> message is added.
+In order to allow generation of repeated history of direct conditional branches in HTM mode an extra encoding for <<field_RCODE,RCODE>>=2 in <<msg_ResourceFull,Resource Full>> message is added.
 
-IMPORTANT: It is allowed to generate any sequence of <<msg_Resource_Full,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding MSB stop-bit[s]) is the same.
+IMPORTANT: It is allowed to generate any sequence of <<msg_ResourceFull,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding MSB stop-bit[s]) is the same.
 
-Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way similar to <<msg_Repeat_Brach,Repeat Branch>> message)
+Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way similar to <<msg_RepeatBranch,Repeat Branch>> message)
 
 But this approach will not work with more complex code with a conditional statement (or several of them) inside of a loop.
 
 In such a case, it is desired to detect repeated sequences of taken/not-taken direct conditional branches and instead generate many messages with HIST fields, generate a message consisting of a HIST pattern and repeat count.
 
-Let's assume that we have a loop, which generates a long sequence of repeated taken/not-taken, taken/not-taken direct conditional branches. Trace may generate <<msg_Resource_Full,Resource Full>> messages with the following HIST records:
+Let's assume that we have a loop, which generates a long sequence of repeated taken/not-taken, taken/not-taken direct conditional branches. Trace may generate <<msg_ResourceFull,Resource Full>> messages with the following HIST records:
 
     Msg#1:
         TCODE=27 (ResourceFull)
@@ -1498,6 +1515,9 @@ This chapter directly mentions 16-bit and 32-bit instructions (from the currentl
 ** Plain linear instruction => PC is at the next instruction (+2 or +4).
 ** Direct (inferable...) unconditional jump => PC is unconditional jump destination (known from PC and opcode as all unconditional jumps are PC relative).
 ** Not taken direct conditional branch (in BTM mode) => PC is next instruction (+2 or +4).
+. Indirect, unconditional jump instruction is handled as:
+** In BTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message.
+** In HTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message (if the <<field_HIST,HIST>> field is empty) or an <<msg2_IndirectBranchHist,IndirectBranchHist>> message (if the <<field_HIST,HIST>> field is not empty).
 . Direct, conditional branch instruction is handled as:
 ** In BTM mode it generates a <<msg_DirectBranch,DirectBranch>> message (only if taken).
 ** In HTM mode it appends a single bit (1=taken or 0=not-taken) into the branch history buffer (<<field_HIST,HIST>> field).
@@ -1512,9 +1532,11 @@ This chapter directly mentions 16-bit and 32-bit instructions (from the currentl
 These rules are augmenting the above rules if the corresponding configuration setting is set.
 
 . Call and return instructions maintain call stack and if return is matching a call, no trace is generated.
-** This is described in detail in <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
-. As RISC-V architecture is only supporting PC relative direct unconditional jumps/calls with short distance from PC, indirect unconditional jumps/calls are used to make calls/jump to distant locations. 
+** This optional feature is described in detail in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
+. By default, the target of an indirect unconditional jump is always considered an uninferable PC discontinuity. However, if the register that specifies the jump target was loaded with a constant
+then it can be considered inferable under some circumstances. 
 ** Such instruction sequences may be detected and in such a case no trace is generated.
+** This optional feature is described in detail in the <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter.
 
 === Custom Instructions
 
@@ -1525,7 +1547,7 @@ NOTE: Above rule allowed to not change trace decoders after V or Zb extensions w
 Custom instruction which may change PC should be traced in one of the following ways:
 
 * If the PC just advances to the next instruction, it should be traced as plain linear instruction. Decoder will just advance the PC.
-* If the PC changes as result of custom instruction, it should be traced as an indirect unconditional jump, so the destination address will be reported (as F-ADDR or U-ADDR fields). Decoder will change PC to an address specified in this message.
+* If the program flow changes as result of a custom instruction, the custom instruction should be traced as an indirect unconditional jump (even if it is actually not an indirect unconditional jump). That way, the destination address will be reported (as F-ADDR or U-ADDR fields). Decoder will change PC to an address specified in this message. In most cases, this approach should not require any adaptation of the trace decoder. 
 
 Such an approach will NOT require changes in trace decoders. To illustrate this let's consider the following piece of code with custom instruction *XYZ*:
 
