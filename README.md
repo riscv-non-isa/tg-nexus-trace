@@ -1,19 +1,17 @@
 # TG RISC-V Nexus Trace
 Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus).
 
-Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) - documentation as README.md file is provided.
+* Main N-Trace specification is defined here: [RISC-V-N-Trace.adoc](./docs/RISC-V-N-Trace.adoc) and PDF version is here: [PDF](./pdfs/RISC-V-N-Trace.pdf).
 
-File with Nexus Messages is [NexusTrace-TG-Messages.adoc](./docs/NexusTrace-TG-Messages.adoc).
+* Trace Control Interface is defined here: [RISC-V-Trace-Control-Interface.adoc](./docs/RISC-V-Trace-Control-Interface.adoc)  and PDF version is here: [PDF](./pdfs/RISC-V-Trace-Control-Interface.pdf).
 
-Details of messages is provided here [NexusTrace-TG-MessageDetails.adoc](./docs/NexusTrace-TG-MessageDetails.adoc).
-
-Proposed trace connectors are provided here [NexusTrace-TG-Connectors.adoc](./docs/NexusTrace-TG-Connectors.adoc).
-
-RISC-V Trace Control Interface is [here](./docs/RISC-V-Trace-Control-Interface.adoc) (it was converted from original PDF version [here](https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf)).
+* Trace connectors are defined here: [RISC-V-Trace-Connectors.adoc](./docs/RISC-V-Trace-Connectors.adoc) and PDF version is here: [PDF](./pdfs/RISC-V-Trace-Connectors.pdf).
 
 Clicking on ADOC file in the github repo viewer will render a usable version as markdown.
 
-For a better rendering, use "asciidoctor name.adoc".
+For a better rendering to PDF, use Actions in main menu above.
+
+Reference C code for Nexus Trace dumper/encoder/decoder is [here](./refcode/c) - documentation as README.md file is provided.
 
 This work is licensed under a Creative Commons Attribution 4.0
 International License. See the LICENSE file for details.
