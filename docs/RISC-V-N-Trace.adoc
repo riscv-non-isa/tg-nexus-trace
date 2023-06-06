@@ -304,6 +304,8 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|-
 
 As almost every ingress port cycle is updating I-CNT it may overflow. See <<I-CNT Field Overflows, I-CNT Field Overflows>> for more details.
 
+NOTE: If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port must report *itype*=5 (Taken branch) for all direct unconditional jumps (which are normally reported as *itype* = 0). It is also possible (for implementation of both ingress port inside of a core and N-Trace encoder) to use reserved *itype*=7 for that purpose - in such a case trace encoder should handle *itype*=7 as value 0 or 5. 
+
 IMPORTANT: N-Trace encoder does not require *cause* and *tvar* ingress port signals (valid for exceptions and interrupts only) as these are not reported in N-Trace messages. N-Trace is only providing the address of an exception/interrupt handler.
 
 == N-Trace Transmission Protocol
@@ -453,7 +455,7 @@ Table below shows one N-Trace message with several fields. It is an output from 
 This chapter describes how some fields and bits from Trace Encoder control registers are influencing N-Trace messages being generated.
 
 [#Details_Control_Parameters]
-.Trace Parameters and Controls
+.Trace Encoder Parameters and Controls
 [cols="30%,10%,60%",options="header",]
 |======================================================================================================
 |Trace Control Field|Bits|How generated messages are affected
@@ -486,6 +488,8 @@ See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for de
 [[trTeInstImplicitReturnMode]]
 |trTeInstImplicitReturnMode|2|
 See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
+[[trTeInstEnAllJumps]]
+|trTeInstEnAllJumps|1|When set also direct unconditional jumps will be treated as conditional (always taken) jumps. Trace compression will be significantly affected but using this mode will allow more frequent timestamps, what may be useful for profiling.
 [[trTeInstExtendAddrMSB]]
 |trTeInstExtendAddrMSB|1|If set to 1 N-Trace encoder will not report identical MSB bits of an address.
 See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter for details.
@@ -495,7 +499,7 @@ See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter f
 |trTsEnable|1|When set <<field_TSTAMP,TSTAMP>> field will be sent in messages.
 |======================================================================================================
 
-NOTE: Above table does not provide names of trace control registers as names of bits/fields used in Trace Control Interface are unique.
+NOTE: Above table does not provide names of Trace Encoder control registers as names of bits/fields used in Trace Control Interface are unique.
 
 == Main N-Trace Trace Modes
 
@@ -898,7 +902,7 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 * Not repeated HIST field overflow (RCODE=1) will usually include the longest supported by a particular encoder HIST field.
 ** However any number of HIST bits may be transmitted (from 2 to <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits).
 * RCODE = 2: See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details about this optional extension.
-* Both  I-CNT and HIST may overflow at the same time as adding bit to HIST is (which may overflow HIST field) is resetting the I-CNT counter.
+* Both I-CNT and HIST may overflow at the same time - in such a case two Resource Full messages must be generated (in any order, however it is suggested to report I-CNT overflow first).
 
 [[msg2_IndirectBranchHist]]
 === IndirectBranchHist Message
@@ -1490,6 +1494,8 @@ Above example shows a 2-bit pattern, but using the same technique it can be expa
         HREPEAT=150 (Repeat Count is bigger, but pattern is smaller)
 
 NOTE: This type of compression (reporting shorter patterns and larger counts) may not be practical as it may save only a little. Trace is compressed a lot already and it really should not matter if we report 150 iterations of a loop in 6 or 7 bytes. Example above is provided to assure that trace encoders must handle this type of trace compression.
+
+NOTE: When HREPEAT field overflows several message with max HREPEAT value should be generated.
 
 == Rules of Generating Messages
 
