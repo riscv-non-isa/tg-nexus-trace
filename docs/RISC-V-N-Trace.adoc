@@ -85,7 +85,7 @@ This document is describing N-Trace Trace Encoder and Messaging Protocol version
 
 During development of this specification the following key design decisions were made:
 
-* Trace ingress port (connection between hart and trace sub-system) is identical as in ratified E-Trace specification. No other parts of E-Trace specification are used by N-Trace (E-Trace defines different trace packets).
+* Trace ingress port (connection between hart and trace sub-system) is identical as in ratified E-Trace specification. No other parts of E-Trace specification are used by N-Trace (E-Trace protocol just defines different format of trace packets).
 
 * N-Trace messages are kept compatible with the original Nexus specification
 ** An appropriate subset applicable to RISC-V was selected.
@@ -1052,6 +1052,8 @@ The following additional rules are used (when <<trTeInstExtendAddrMSB,trTeInstEx
 . This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at MSB bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
 . Simple implementations may not implement an enable bit and always send full address.  
 .. Benefits of using it on 32-bit cores is small, so it may not be implemented.  
+
+IMPORTANT: Trace encoder must implement a MSB extension (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
 
 ==== Example Encodings
 
