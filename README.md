@@ -3,9 +3,9 @@ Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home pag
 
 * Main N-Trace specification is defined here: [RISC-V-N-Trace.adoc](./docs/RISC-V-N-Trace.adoc) and PDF version is here: [PDF](./pdfs/RISC-V-N-Trace.pdf).
 
-* Trace connectors are defined here: [RISC-V-Trace-Connectors.adoc](./docs/RISC-V-Trace-Connectors.adoc) and PDF version is here: [PDF](./pdfs/RISC-V-Trace-Connectors.pdf).
-
 * Trace Control Interface is defined here: [RISC-V-Trace-Control-Interface.adoc](./docs/RISC-V-Trace-Control-Interface.adoc)  and PDF version is here: [PDF](./pdfs/RISC-V-Trace-Control-Interface.pdf).
+
+* Trace connectors are defined here: [RISC-V-Trace-Connectors.adoc](./docs/RISC-V-Trace-Connectors.adoc) and PDF version is here: [PDF](./pdfs/RISC-V-Trace-Connectors.pdf).
 
 Clicking on ADOC file in the github repo viewer will render a usable version as markdown.
 
