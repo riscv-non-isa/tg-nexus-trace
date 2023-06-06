@@ -380,7 +380,9 @@ Registers in the 4KB range that are not implemented are reserved and read as 0 a
 
 Most trace control registers are optional. Some WARL fields may be hard-coded to any value (including 0). It allows different implementations to provide different functionality.
 
-Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same registers. As almost every register/field/bit is optional this provides good flexibility in implementation.
+Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same 'trTe???' registers - as almost every register/field/bit is optional this provides good flexibility in implementation.
+
+All other trace components are shared between different trace encoders (N-Trace and E-Trace).
 
 ==== Summary of Trace Encoder Registers
 
@@ -462,7 +464,7 @@ Examples of possible additional sub-components in Trace Encoder are:
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trFunnelControl |Required |Trace Funnel control register
 |0x004 |trFunnelImpl |Required |Trace Funnel Implementation information
-|0x008 |trFunnelInDis |Optional |Disable individual funnel inputs
+|0x008 |trFunnelDisInput |Optional |Disable individual funnel inputs
 4+|*_Timestamp control (trTs??)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |-- |Reserved |Reserved for extra timestamp control
@@ -563,7 +565,7 @@ Once the periodic counter is reached, an instruction trace synchronization messa
 |26-24 |trTeFormat |
 Trace recording format: +
 *0:* Format defined by Efficient Trace for RISC-V (E-Trace) Specification +
-*1:* Nexus messages with 6 MDO + 2 MSEO bits +
+*1:* N-Trace messages with 6 MDO + 2 MSEO bits +
 *2-6:* Reserved for future formats +
 *7:* Vendor-specific format
 |WARL |SD
