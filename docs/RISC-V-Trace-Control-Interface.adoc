@@ -1,7 +1,8 @@
 [[header]]
+:description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  May 01, 2023
-:revnumber: 1.0.0_rc3
+:revdate:  June 06, 2023
+:revnumber: 1.0.0_rc4
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -13,6 +14,7 @@
 :experimental:
 :reproducible:
 :WaveDromEditorApp: wavedrom-cli
+:imagesoutdir: images
 :icons: font
 :lang: en
 :listing-caption: Listing
@@ -31,7 +33,7 @@ endif::[]
 :xrefstyle: short 
 
 = RISC-V Trace Control Interface Specification
-RISC-V Task Group
+RISC-V N-Trace Task Group
 
 // Preamble
 [WARNING]
@@ -45,34 +47,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc3
-* Updates after notes from Greg and Nino
-* Clarified some RAM-detection notes (by Nino)
-
-=== Version 1.0.0_rc2
-* 2023-04-24 (The pre-public review version)
-** Fixed links to E-Trace and N-Trace PDFs
-** Removed MDO/MSEO from PIB idle descriptions.
-** Keep only one variant of BTM/HTM in `trTeInstMode` (simpler the better).
-** Added control bit `trTeInstEnAllJumps` to generate message/history for all (unconditional direct) jump.
-** Added control bit `trTeInstExtendAddrMSB` to allow skipping of (identical) MSB bits in virtual addresses.
-** Added control field `trPibAsyncFreq/trRamAsyncFreq/trAtbBridgeAsyncFreq` to set alignment synchronization frequency (not needed for N-trace, needed at each sink for E-Trace).
-** Reserved a register region `trTeDiscovery0` .. `trTeDiscovery7` in the encoder memory space dedicated for protocol-dependent settings to be discoverable by the tools (for E-Trace).
-** Added `trRamMemFormat` field (to allow in-memory format specification in the future).
-* 2023-03-21 (1.0.0_rc1)
-** The pre-public review version
-
-[Preface]
-== Contributors
-Key contributor to RISC-V Trace Control Interface specification in alphabetical order: +
-
-Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
-Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
-Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
-Jay Gamoneda (NXP) => Reviews +
-Markus Goehrle (Lauterbach) => Reviews +
-Iain Robertson (UltraSoC, Siemens) => E-Trace compatibility, filtering chapter, reviews +
-Nino Vidovic (Segger) => Reviews
+=== Version 1.0.0_rc4
+* 2023-06-06
+** The pre-public review version (older history removed)
 
 [Preface]
 == Copyright and license information
@@ -84,6 +61,18 @@ International License. +
 https://creativecommons.org/licenses/by/4.0/.
 
 Please cite as: “RISC-V Trace Control Interface Specification",  RISC-V International
+
+[Preface]
+== Contributors
+Key contributors to RISC-V Trace Control Interface specification in alphabetical order: +
+
+Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
+Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
+Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
+Jay Gamoneda (NXP) => Reviews +
+Markus Goehrle (Lauterbach) => Reviews, updates +
+Iain Robertson (UltraSoC, Siemens) => E-Trace compatibility, filtering chapter, reviews +
+Nino Vidovic (Segger) => Reviews
 
 == Introduction
 
@@ -217,7 +206,7 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 ** Sending a partial packet is NEVER allowed as it will not be possible to process and decode such a trace.
 * If a component cannot send an entire message/packet it must wait until it will be possible to do so.
 * Tracing is typically required to be non-intrusive, and if the Trace Encoder cannot keep up with the hart it must drop the packet and wait for the receiver to be ready.
-** Once trace is allowed to resume it must issue a synchronization packet so the decoder will be aware that some (unknown) amount of trace has been lost.
+** Once trace is allowed to resume it must issue an instruction trace synchronization message/packet so the decoder will be aware that some (unknown) amount of trace has been lost.
 ** It is advisable to drain the trace pipeline to some hysteresis level before resuming - otherwise a lot of short chunks of trace may be produced.
 * Optionally (and if acceptable to the user), the Trace Encoder may be configured to stall the hart in order to avoid packet loss.
 * Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
@@ -550,7 +539,7 @@ Main instruction trace generation mode +
 and Trace-off Debug module or External triggers respectively|WARL |0
 |12  |trTeInstStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RC1 |0
 |13 |trTeInstStallEna |
-*0:* If TE cannot send a message, the message is dropped. The protocol dependent overflow synchronization message is generated when the trace is restarted, so the decoder will know that trace is lost and must reset any internal decoder state. +
+*0:* If TE cannot send a message, the message is dropped. The protocol dependent overflow instruction trace synchronization message/packet is generated when the trace is restarted, so the decoder will know that trace is lost and must reset any internal decoder state. +
 *1:* If TE cannot send a message, the hart is stalled until it can. With this option execution of instructions by the hart may be intrusively affected, but in many cases it is acceptable.
 |WARL |SD
 |14 |--|Reserved |--|0
@@ -569,7 +558,7 @@ Once the periodic counter is reached, an instruction trace synchronization messa
 
 |19-18 |--|Reserved |--|0
 
-|23-20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If a synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
+|23-20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If an instruction trace synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL |SD
 
 |26-24 |trTeFormat |
 Trace recording format: +
@@ -1080,7 +1069,8 @@ Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP??` registers. Disabl
 |11 |--|Reserved |--|0
 |14-12 |trRamSinkAsyncFreq |
 *0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
-*1-7:* Different levels of alignment synchronization (bigger number, bigger distance).
+*1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
+Details should be defined in definition of each trace protocol.
 |WARL |SD
 |===
 
@@ -1425,7 +1415,8 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |11-8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |R | 0xE
 |14-12 |trAtbBridgeAsyncFreq |
 *0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
-*1-7:* Different levels of alignment synchronization (bigger number, bigger distance).
+*1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
+Details should be defined in definition of each trace protocol.
 |WARL |SD
 |23-15 |--|Reserved for future versions of this standard|--|0
 |31-24 |--|Reserved for vendor specific implementation details|--|SD

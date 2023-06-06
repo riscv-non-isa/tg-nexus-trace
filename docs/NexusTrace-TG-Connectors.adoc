@@ -1,4 +1,4 @@
-= Debug and Trace Connectors
+== Debug and Trace Connectors
 
 This specification provides a small extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations - July 2021]. 
 

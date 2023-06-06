@@ -1,8 +1,9 @@
 [[header]]
-:company: RISC-V
-:revdate:  May 15, 2023
-:revnumber: 1.0.0_rc2
-:revremark: This document is in Development state. Assume it may change.
+:description: RISC-V N-Trace (Nexus-based Trace)
+:company: RISC-V.org
+:revdate:  July 06, 2023
+:revnumber: 1.0.0_rc4
+:revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -13,6 +14,7 @@
 :experimental:
 :reproducible:
 :WaveDromEditorApp: wavedrom-cli
+:imagesoutdir: images
 :icons: font
 :lang: en
 :listing-caption: Listing
@@ -31,39 +33,45 @@ endif::[]
 :xrefstyle: short 
 
 = RISC-V N-Trace (Nexus-based Trace) Specification
+RISC-V N-Trace Task Group
 
-// table of contents
-toc::[]
-
-[NOTE]
-.Copyright and licensure:
+// Preamble
+[WARNING]
+.This document is in the link:http://riscv.org/spec-state[Frozen state]
 ====
-This work is licensed under a
-link:http://creativecommons.org/licenses/by/4.0/[Creative Commons Attribution 4.0 International License].
-
-This work is Copyright 2023 by RISC-V International.
-==== 
+Change is extremely unlikely.
+====
 
 [preface]
-== Document State
+== Change Log
 
 PDF generated on: {localdatetime}
 
-2023/5/15: Version 1.0.0_rc2
+=== Version 1.0.0_rc4
+* 2023-06-06
+** The pre-public review version (older history removed)
 
-NOTE: See https://wiki.riscv.org/display/HOME/Specification+States for explanation of specification states.
+[Preface]
+== Copyright and license information
 
-== Version and History
+This RISC-V N-Trace (Nexus-based Trace) specification is © 2019-2023 RISC-V international
 
-[#History of Changes]
-.History of Changes
-[cols="13%,17%,70%",options="header",]
-|======================================================================================================
-|Date| Version (Major. Minor. Edit) | Version description
-|2023/5/15|1.0.0_rc2|*Ready for freeze (older history removed)*
-|======================================================================================================
+This document is released under a Creative Commons Attribution 4.0
+International License. +
+https://creativecommons.org/licenses/by/4.0/.
 
-IMPORTANT: Trace/debug tool should read trTeImpl register (described in details in <<RISC-V Trace Control Interface,RISC-V Trace Control Interface>> specification) and extract <<trTeProtocolMajor,trTeProtocolMajor>> and <<trTeProtocolMinor,trTeProtocolMinor>> fields from it.
+Please cite as: “RISC-V N-Trace (Nexus-based Trace) Specification",  RISC-V International
+
+[Preface]
+== Contributors
+Key contributors to RISC-V N-Trace (Nexus-based Trace) specification in alphabetical order: +
+
+Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
+Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
+Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
+Jay Gamoneda (NXP) => Reviews +
+Markus Goehrle (Lauterbach) => Reviews, updates +
+Nino Vidovic (Segger) => Reviews
 
 == Introduction to N-Trace
 
