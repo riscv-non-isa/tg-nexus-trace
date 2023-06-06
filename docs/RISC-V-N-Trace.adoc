@@ -85,7 +85,7 @@ This document is describing N-Trace Trace Encoder and Messaging Protocol version
 
 During development of this specification the following key design decisions were made:
 
-* Trace ingress port (connection between hart and trace sub-system) is identical as in ratified E-Trace specification.
+* Trace ingress port (connection between hart and trace sub-system) is identical as in ratified E-Trace specification. No other parts of E-Trace specification are used by N-Trace (E-Trace defines different trace packets).
 
 * N-Trace messages are kept compatible with the original Nexus specification
 ** An appropriate subset applicable to RISC-V was selected.
@@ -110,8 +110,9 @@ This document provides reference to separated documents developed together as pa
 * https://github.com/riscv-non-isa/tg-nexus-trace/tree/master/pdfs/RISC-V-Trace-Connectors.pdf[RISC-V Trace Connectors Specification] - Defines RISC-V trace connectors (for external trace probes).
 
 [#E-Trace Specification]
-* link:https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] Specification - it describes RISC-V Trace Ingress Port signals.
+* link:https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] Specification - it describes RISC-V Trace Ingress Port signals in one of chapters.
 ** At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
+** In future ingress port may be defined in separated document - in such a a case reference to E-Trace specification will not be necessary (both N-Trace and E-Trace should reference same RISC-V Trace Ingress Port specification).
 
 Document `Specification of RISC-V Trace Control Interface` is intended to be shared with ratified `Efficient Trace for RISC-V Specification (v2.0.0)` document.
 
@@ -412,9 +413,9 @@ Said so, an idle sequence may be sent using any number of trace clock edges (pos
 
 To explain this let's assume the following serially transmitted (in 1-bit PIB mode) sequences of bits (MSEO[0] bit being first on the left):
 
-* < `11` DDDDDD> - sequence of 8 bits in last byte of message ( `11` = MSEO, DDDDDD = six DATA bits)
+* < `11` DDDDDD> - 8 bits in a last byte of a message (`11` = MSEO, DDDDDD = DATA bits)
 * < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
-* < `00` TTTTTT> - sequence of 8 bits in in  first byte of message ( `00` = MSEO, TTTTTTT = six TCODE bits)
+* < `00` TTTTTT> - 8 bits in a first byte of a message (`00` = MSEO, TTTTTTT = TCODE bits)
 
 The following 4 example sequences:
 
@@ -1047,10 +1048,10 @@ NOTE: Normally (without above bit enabled or implemented) addresses with many MS
 
 The following additional rules are used (when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set):
 
-. If F-ADDR/U-ADDR field has 36 or more bits (at least 6 bytes with 6-bit MDO) then last (MSB) bit of the very last MDO record must be extended to bit#63 (similar to sign-extension, but it is NOT a sign bit).
-. This extension is only applicable for longer addresses - it means that addresses for 32-bit cores are never extended.
+. If F-ADDR/U-ADDR field is sent then last (MSB) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
 . This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at MSB bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
 . Simple implementations may not implement an enable bit and always send full address.  
+.. Benefits of using it on 32-bit cores is small, so it may not be implemented.  
 
 ==== Example Encodings
 

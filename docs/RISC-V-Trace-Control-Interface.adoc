@@ -1251,7 +1251,7 @@ Trace Funnel may optionally include Timestamp Unit. It is described inside of th
 
 == Trace PIB Sink
 
-Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-Wire Trace). Alternative configurations include a trace clock clock (TRC_CLK) and  1/2/4/8/16 parallel trace data signals (TRC_DATA) timed to that trace clock. WARL register fields are used to determine specific PIB capabilities.
+Trace data may be sent to chip pins through an interface called the Pin Interface Block (PIB). This interface typically operates at a few hundred MHz and can sometimes be higher with careful constraints and board layout or by using LVDS or other high-speed signal protocol. PIB may consist of just one signal and in this configuration may be called SWT (Serial-Wire Trace). Alternative configurations include a trace clock (TRC_CLK) and  1/2/4/8/16 parallel trace data signals (TRC_DATA) timed to that trace clock. WARL register fields are used to determine specific PIB capabilities.
 
 The modes and behavior described here are intended to be compatible with trace probes available in the market.
 
@@ -1261,7 +1261,7 @@ The modes and behavior described here are intended to be compatible with trace p
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trPibActive |Primary enable/reset for PIB Sink component. When 0, the PIB Funnel may have clocks gated off or be powered
+|0 |trPibActive |Primary enable/reset for PIB Sink component. When 0, the PIB Sink may have clocks gated off or be powered
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. |RW |0
 |1 |trPibEnable |
 *0:* PIB does not accept input but holds output(s) at idle state defined by pibMode. +
