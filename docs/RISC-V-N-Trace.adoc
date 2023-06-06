@@ -1219,31 +1219,22 @@ IMPORTANT: Decoders must report such incorrect I-CNT values and immediately abor
 
 ==== I-CNT Handling in HTM mode
 
-When the encoder is operating in HTM mode, I-CNT should be incremented at every retired instruction. However direct conditional branches (from code piece above ...) will NOT generate any trace packets, but each of them will add a bit to the HIST field and also reset I-CNT.
+When the encoder is operating in HTM mode, I-CNT should be incremented at every retired instruction. However direct conditional branches (from code piece above ...) will NOT generate any trace packets, but each of them will add a bit to the HIST field.
 
 Above code may generate messages with the following fields (exact types of messages depend on code not visible in that example):
 
-* I-CNT=1, HIST=0b1_1... (MSB=1 is stop bit, bit pattern '1...' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=1 describes a code in <0x200..0x201> range.
-* I-CNT=2, HIST=0b1_01... (MSB=1 is stop bit, bit pattern '01...' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x300..0x303> range.
-* I-CNT=3, HIST-0b1_00... (MSB=1 is stop bit, bit pattern '00...' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=3 describes a code in <0x10E..0x113> range.
+* I-CNT=4, HIST=0b1_1 (MSB=1 is stop bit, bit pattern '1' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=3 describes a code in <0x100..0x105> (I-CNT=3) and <0x200..0x201> (I-CNT=1) ranges.
+* I-CNT=9, HIST=0b1_01 (MSB=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x100..0x10D> (I-CNT=7) and <0x300..0x303> (I-CNT=2) ranges.
+* I-CNT=10, HIST-0b1_00 (MSB=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=10 describes a code in <0x100..0x113> range.
 
 NOTE: It is obviously visible that HTM mode provides much better trace compression as trace messages are not generated at every taken direct conditional branch.
 
 ==== I-CNT Resets
 
-I-CNT is reset in one of these 3 situations:
+I-CNT is reset in one of these two situations (as defined by Nexus standard):
 
 * When a trace starts or is restarted (for any reason).
 * After I-CNT field is sent in a message (all key messages).
-* After a bit is added to HIST buffer (in HTM mode only).
-
-IMPORTANT: Original Nexus specification does not reset I-CNT when HIST bit is added. During development of this standard 3-rd reset choice was considered as an optional feature but later it became mandatory for N-Trace.
-
-*Rationale*
-
-When an encoder is operating in HTM mode and the encoder will emit a HIST bit, it is really not necessary to know how many instructions were executed before or between (taken or not) direct conditional branch instructions as decoder (while processing HIST field) must analyze each instruction until direct conditional branch is encountered.
-
-If we look at the above pseudo-code example, when the decoder knows HIST=0b100... pattern, it will analyze the code from instruction at address 0x100. It will continue forward until branch instruction is found. If branch instruction is found, it will either continue to the next PC (if branch was reported as not-taken) or calculate PC (from an opcode at current PC) and continue from branch destination address.
 
 ==== I-CNT Field Overflows
 
@@ -1251,8 +1242,7 @@ When I-CNT field overflows it may be reported in one of two ways:
 
 * In BTM mode (or when the HIST buffer is empty) the <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0 should be generated.
 ** This message will be generated only when we have a long instruction block or when we have an infinite loop with unconditional direct jump[s].
-* In HTM mode and when the HIST buffer is not empty, I-CNT overflow must be reported using a <<Synchronization Messages,synchronization message>> with *SYNC=4 (Sequential Instruction Counter)*.
-** It is needed as otherwise the encoder would not be able to determine if I-CNT overflowed between conditional branches or after the last conditional branch. 
+* In HTM mode and when the HIST buffer is not empty, I-CNT overflow may be reported using a <<Synchronization Messages,synchronization message>> with *SYNC=4 (Sequential Instruction Counter)*.
 ** First choice (*ResourceFull*) is optional - second choice (*SYNC=4*) can be always generated.
 
 To illustrate *Sequential Instruction Counter* generation let's consider the following example code:
@@ -1265,10 +1255,9 @@ To illustrate *Sequential Instruction Counter* generation let's consider the fol
     0x110:  add ...         ; Plain linear 32-bit instruction
     0x114:  add ...         ; Plain linear 32-bit instruction
     0x118:  add ...         ; Plain linear 32-bit instruction
-    0x11C:  add ...         ; Plain linear 32-bit instruction
-    0x120:  c.ebreak        ; 16-bit breakpoint (to stop the code)
+    0x11C:  c.ebreak        ; 16-bit breakpoint (to stop the code)
 
-and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (MSB bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x120).
+and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (MSB bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
 
 Trace of above code should generate 3 messages:
 
@@ -1276,22 +1265,21 @@ Trace of above code should generate 3 messages:
 ** SYNC=3 (Exit from Debug Mode)
 ** I-CNT=0 (nothing executed as we are stating)
 ** F-ADDR=0x80 (encoding starting address 0x100)
-* <<msg2_IndirectBranchHistSync,IndirectBranchHistSync>> (I-CNT overflown after processing address 0x114)
+* <<msg2_IndirectBranchHistSync,IndirectBranchHistSync>> (I-CNT overflown to 8 after processing address 0x10C)
 ** SYNC=4 (Sequential Instruction Counter)
-** *I-CNT=9* (see note below)
+** *I-CNT=8* (see note below)
 ** HIST=0x2 (one not taken direct conditional branch)
-** F-ADDR=0x8C (encoding address 0x118)
-* <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (from address 0x118 till end of trace at 0x120)
+** F-ADDR=0x88 (encoding address 0x110)
+* <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (from address 0x110 till end of trace at 0x11C)
 ** EVCODE=0 (Entry into Debug Mode)
 ** CDF=1 (HIST field present after I-CNT)
-** *I-CNT=4* (see note below)
+** *I-CNT=6* (see note below)
 ** HIST=0x1 (no branches)
 
 [IMPORTANT]
 ==== 
-* Overflown *I-CNT=9* decodes instructions from the one at addresses 0x106 to the one at address 0x114.
-** Instructions at address 0x100 and 0x102 are not counted-up in I-CNT as adding of HIST bit resets the I-CNT.
-* *I-CNT=4* decodes instructions from addresses 0x118 and 0x11C. Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.  
+* Overflown *I-CNT=8* decodes instructions from instruction at an addresses 0x100 to instruction at address 0x10C (16 bytes long address range).
+* *I-CNT=6* decodes instructions from addresses 0x110 to 0x118 (12 bytes long address range). Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.  
 ====
 
 This method should be rather easy to implement as each encoder must implement 'periodic sync' (and may implement triggers as well). These will generate synchronization messages at any moment. The only difference between these would be different values of the SYNC field. It means a lot of already present (and required) logic can be reused.
