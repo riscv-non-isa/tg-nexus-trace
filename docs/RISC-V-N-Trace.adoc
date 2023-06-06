@@ -737,7 +737,7 @@ NOTE: Non-taken direct conditional branches or direct unconditional jumps are NO
 [[msg2_IndirectBranch]]
 === IndirectBranch Message
 
-This message is generated when an instruction causing indirect unconditional control flow change has retired. It is applicable to <<mode_BTM,BTM>> mode only.
+This message is generated when an instruction causing indirect unconditional control flow change has retired (or interrupt/exception happened) It is applicable to <<mode_BTM,BTM>> mode only.
 
 [#Fields_IndirectBranch]
 .Indirect Branch Message Fields
@@ -754,7 +754,7 @@ This message is generated when an instruction causing indirect unconditional con
 
 *Explanations and Notes* 
 
-Last instruction in the code block (or blocks) (described by I-CNT) is an indirect unconditional control flow change (jump, call, return) instruction. Next PC is determined by the XOR of the U-ADDR field with the recent address being transmitted (either as F-ADDR or as U-ADDR). See <<Address Compression,Address Compression>> chapter for more details.
+Last instruction in the code block (or blocks) (described by HIST and I-CNT fields) is an indirect unconditional control flow change (jump, call, return) instruction or this packet is generated when exception or interrupt is reported in the ingress port. Next PC is determined by the XOR of the U-ADDR field with the recent address being transmitted (either as F-ADDR or as U-ADDR). See <<Address Compression,Address Compression>> chapter for more details.
 
 NOTE: Not-taken direct conditional branches or direct unconditional jumps are NOT generating any trace but increase I-CNT (and direct unconditional jumps are changing PC to direct unconditional jump destination address), so PC of last instruction in code block[s] can be found.
 
@@ -861,7 +861,7 @@ This message is generated in the same conditions as <<msg2_DirectBranch,DirectBr
 
 *Explanations and Notes*
 
-Last instruction in the code block (described by I-CNT) is an indirect unconditional control flow change (jump, call, return) instruction. Next PC is provided as an F-ADDR field in this message.
+Last instruction in the code block (or blocks) (described by HIST and I-CNT fields) is an indirect unconditional control flow change (jump, call, return) instruction or this packet is generated when exception or interrupt is reported in the ingress port. Next PC is provided as an F-ADDR field in this message.
 
 NOTE: Not-taken direct conditional branches or direct unconditional jumps are NOT generating any trace but increase I-CNT (and direct unconditional jumps are changing PC to direct unconditional jump destination address).
 
@@ -1037,11 +1037,11 @@ Example:
 
 === Virtual Addresses Optimization
 
-This optimization must be enabled by <<trTenstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit. 
+This optimization must be enabled by <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit. 
 
 NOTE: Normally (without above bit enabled or implemented) addresses with many MSB bits=1 will be send as long packets (as variable size fields skip MSB=0 only). The following address *0xFFFF_FFFF_8000_31F4* (real address from Linux kernel) will be encoded as *F-ADDR=0x7FFF_FFFF_C000_18FA* (LSB 0-bit skipped). Such 63-bit variable field value will require 11 bytes to be sent (as we have 6 MDO bits in each byte).
 
-The following additional rules are used (when <<trTenstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set):
+The following additional rules are used (when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set):
 
 . If F-ADDR/U-ADDR field has 36 or more bits (at least 6 bytes with 6-bit MDO) then last (MSB) bit of the very last MDO record must be extended to bit#63 (similar to sign-extension, but it is NOT a sign bit).
 . This extension is only applicable for longer addresses - it means that addresses for 32-bit cores are never extended.
@@ -1513,7 +1513,7 @@ This chapter directly mentions 16-bit and 32-bit instructions (from the currentl
 ** Not taken direct conditional branch (in BTM mode) => PC is next instruction (+2 or +4).
 . Indirect, unconditional jump instruction is handled as:
 ** In BTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message.
-** In HTM mode it generates an <<msg2_IndirectBranch,IndirectBranch>> message (if the <<field_HIST,HIST>> field is empty) or an <<msg2_IndirectBranchHist,IndirectBranchHist>> message (if the <<field_HIST,HIST>> field is not empty).
+** In HTM mode it generates an <<msg2_IndirectBranchHist,IndirectBranchHist>> message. If the <<field_HIST,HIST>> field is empty <<msg2_IndirectBranch,IndirectBranch>> message may be (optionally) generated instead.
 . Direct, conditional branch instruction is handled as:
 ** In BTM mode it generates a <<msg_DirectBranch,DirectBranch>> message (only if taken).
 ** In HTM mode it appends a single bit (1=taken or 0=not-taken) into the branch history buffer (<<field_HIST,HIST>> field).
