@@ -453,51 +453,48 @@ Table below shows one N-Trace message with several fields. It is an output from 
 
 == N-Trace Specific Trace Controls
 
-This chapter describes how some fields and bits from Trace Encoder control registers are influencing N-Trace messages being generated.
+This chapter describes how fields and bits from Trace Encoder control registers are influencing N-Trace protocol. Only N-Trace specific details and clarifications are provided - all other details are described in <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+
+IMPORTANT: Registers/fields/bits which are not mentioned in the table below are either generic or are not applicable to this version of N-Trace standard.
 
 [#Details_Control_Parameters]
 .Trace Encoder Parameters and Controls
 [cols="30%,10%,60%",options="header",]
 |======================================================================================================
-|Trace Control Field|Bits|How generated messages are affected
+|Trace Control Field/Bit|Applicability|Description
 [[trTeProtocolMajor]]
-|trTeProtocolMajor|4|Must be 1 to encode version 1.0 of N-Trace protocol. Value different than 1 is considered a non-compatible version and must be rejected.
+|trTeProtocolMajor|*Required*|*Must be 1* to encode this version (1.0) of N-Trace protocol. *Value different than 1 is considered a non-compatible version and must be rejected.*
 [[trTeProtocolMinor]]
-|trTeProtocolMinor|4|Must be 0 to encode version 1.0 of N-Trace protocol. Different values are considered as down-compatible extensions. Any non-compatible feature should be specifically enabled, so older tools should work with it.
-|trTeInstMode|3|N-Trace compliant trace encoder must support one or more of the following values: +
-*3:* BTM (Branch Trace Messaging) mode +
-*6:* HTM (History Branch Messaging) mode +
-See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for more explanations.
-[[trTeInhibitSrc]]
-|trTeInhibitSrc|1|If set to 1 SRC field will NOT be emitted (it is equivalent to set teTrSrcBits = 0).
-[[trTeSrcBits]]
-|trTeSrcBits|4|Number of bits of SRC field (in range 0..12). It must be identical for all enabled trace sources in the same trace stream.
-|trTeSrcID|12|Value of SRC field emitted by this trace encoder. It must be different for each enabled trace source in the same trace stream.
-[[trTeInstSyncMode]]
-|trTeInstSyncMode|2|Select the criteria for the periodic generation of instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
-[[trTeInstSyncMax]]
-|trTeInstSyncMax|4|Configure the maximum interval (in units determined by <<trTeInstSyncMode,trTeInstSyncMode>>) between instruction trace <<Synchronization Messages,synchronization messages>> (with <<field_SYNC,SYNC>>=2).
-[[trTeInstEnRepeatedHistory]]
-|trTeInstEnRepeatedHistory|1|If this bit is set to 1 some sequences of conditional direct branches may be detected and more compressed trace will be generated.
-See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
-[[trTeInstEnSequentialJump]]
-|trTeInstEnSequentialJump|1|If set to 1 encoder may detect indirect unconditional flow changes (JR/JALR) following instructions which set a register to a statically known value.
-See <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter for details.
-[[trTeInstEnImplicitReturn]]
-|trTeInstEnImplicitReturn|1|If set to 1 some returns from a function may not be reported as indirect unconditional flow changes but treated as implicit direct unconditional jumps.
-See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
-[[trTeInstImplicitReturnMode]]
-|trTeInstImplicitReturnMode|2|
-See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
-[[trTeInstEnAllJumps]]
-|trTeInstEnAllJumps|1|When set also direct unconditional jumps will be treated as if they were direct conditional (always taken) branches. Trace compression will be significantly affected but using this mode will allow more frequent timestamps, what may be useful for profiling.
-[[trTeInstExtendAddrMSB]]
-|trTeInstExtendAddrMSB|1|If set to 1 N-Trace encoder will not report identical MSB bits of an address.
-See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter for details.
+|trTeProtocolMinor|*Required*|*Must be 0* to encode this version (1.0) of N-Trace protocol. *Different values are considered as down-compatible extensions as should be accepted by trace tool.* Any future non-compatible feature should be specifically enabled (by new control bits), so older tools (which never set these new bits) should work with it.
+|trTeInstMode|*Required*|N-Trace encoder must support at least one of the following values: +
+*3:* <<mode_BTM,BTM>> (Branch Trace Messaging) mode +
+*6:* <<mode_HTM,HTM>> (History Branch Messaging) mode +
+See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for details.
 [[trTeContext]]
-|trTeContext|1|When set <<msg2_Ownership,Ownership>> messages will be sent.
+|trTeContext|Optional|Controls generation of <<msg2_Ownership,Ownership>> messages.
 [[trTsEnable]]
-|trTsEnable|1|When set <<field_TSTAMP,TSTAMP>> field will be sent in messages.
+|trTsEnable|Optional|Controls generation of <<field_TSTAMP,TSTAMP>> field.
+[[trTeInhibitSrc]]
+|trTeInhibitSrc|Optional|Controls generation of <<field_SRC,SRC>> field.
+[[trTeSrcBits]]
+|trTeSrcBits|Optional|Controls generation of <<field_SRC,SRC>> field.
+|trTeSrcID|Optional|Controls generation of <<field_SRC,SRC>> field.
+[[trTeInstSyncMode]]
+|trTeInstSyncMode|Optional|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2).
+[[trTeInstSyncMax]]
+|trTeInstSyncMax|Optional|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2).
+[[trTeInstEnRepeatedHistory]]
+|trTeInstEnRepeatedHistory|Optional|See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
+[[trTeInstEnSequentialJump]]
+|trTeInstEnSequentialJump|Optional|See <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter for details.
+[[trTeInstEnImplicitReturn]]
+|trTeInstEnImplicitReturn|Optional|See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
+[[trTeInstImplicitReturnMode]]
+|trTeInstImplicitReturnMode|Optional|See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
+[[trTeInstExtendAddrMSB]]
+|trTeInstExtendAddrMSB|Optional|See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter for details.
+[[trTeInstEnAllJumps]]
+|trTeInstEnAllJumps|Optional|As described in <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |======================================================================================================
 
 NOTE: Above table does not provide names of Trace Encoder control registers as names of bits/fields used in Trace Control Interface are unique.
@@ -1794,7 +1791,7 @@ NOTE: This is not specific to N-Trace - every trace system which is compressing 
 
 == Nexus Compliance
 
-The Nexus standard provides a lot of flexibility and in general N-Trace can be considered also fully compatible. There is one incompatible, small changes:
+The Nexus standard provides a lot of flexibility and in general N-Trace can be considered also fully compatible. There is one incompatible, small change:
 
 * Field <<field_ECODE,ECODE>> is variable-length field (to assure TSTAMP field is on byte boundary).
 
