@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  July 27, 2023
-:revnumber: 1.0.0_rc5
+:revdate:  July 05, 2023
+:revnumber: 1.0.0_rc6
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,8 +47,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc5
-* 2023-06-27
+=== Version 1.0.0_rc6
+* 2023-07-05
 ** The pre-public review version (older history removed)
 
 [Preface]
@@ -283,7 +283,7 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 |7|Reserved|-
 |======================================================================================================
 
-When ingress port is implemented as 4-bit, the general un-inferable jump *itype=6* should not be generated and one of the following values should be generated instead. Encode must handle call stack as described in <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
+When ingress port is implemented as 4-bit, the general un-inferable jump *itype=6* should not be generated and one of the following values should be generated instead. Encode must handle call stack as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
 
 [#Handling of 4-bit itype values]
 .Handling of 4-bit itype values
@@ -453,51 +453,68 @@ Table below shows one N-Trace message with several fields. It is an output from 
 
 == N-Trace Specific Trace Controls
 
-This chapter describes how fields and bits from Trace Encoder control registers are influencing N-Trace protocol. Only N-Trace specific details and clarifications are provided - all other details are described in <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+This chapter describes how fields and bits from Trace Encoder control registers (named using *trTe...* pattern) are influencing N-Trace encoder and N-Trace protocol messages. N-Trace specific clarifications, in addition to description in <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> specification are provided. 
 
-IMPORTANT: Registers/fields/bits which are not mentioned in the table below are either generic or are not applicable to this version of N-Trace standard.
+NOTE: The table below does not provide names of Trace Encoder control registers as names of bits/fields used in Trace Control Interface are unique.
 
 [#Details_Control_Parameters]
 .Trace Encoder Parameters and Controls
 [cols="30%,10%,60%",options="header",]
 |======================================================================================================
-|Trace Control Field/Bit|Applicability|Description
+|Trace Control Bit/Field|Applicability|Description
+|trTeActive |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeEnable |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeInstTracing |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeEmpty |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+[[trTeContext]]
+|trTeContext|Optional|Controls generation of <<msg2_Ownership,Ownership>> messages.
+|trTeInstTrigEnable |Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeInstStallOrOverflow |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeInstStallEna |Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+[[trTeInhibitSrc]]
+|trTeInhibitSrc|Optional|Controls generation of <<field_SRC,SRC>> field.
+[[trTeInstSyncMode]]
+|trTeInstSyncMode |*Required*|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2). May be hard-coded to non-0.
+[[trTeInstSyncMax]]
+|trTeInstSyncMax |*Required*|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2). May be hard-coded.
+|trTeFormat |*Required*|Must be set to *1*.
+|trTeVerMajor |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeVerMinor |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeCompType |*Required*|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTeProtocolMajor]]
 |trTeProtocolMajor|*Required*|*Must be 1* to encode this version (1.0) of N-Trace protocol. *Value different than 1 is considered a non-compatible version and must be rejected.*
 [[trTeProtocolMinor]]
 |trTeProtocolMinor|*Required*|*Must be 0* to encode this version (1.0) of N-Trace protocol. *Different values are considered as down-compatible extensions as should be accepted by trace tool.* Any future non-compatible feature should be specifically enabled (by new control bits), so older tools (which never set these new bits) should work with it.
-|trTeInstMode|*Required*|N-Trace encoder must support at least one of the following values: +
-*3:* <<mode_BTM,BTM>> (Branch Trace Messaging) mode +
-*6:* <<mode_HTM,HTM>> (History Branch Messaging) mode +
-See <<Main N-Trace Trace Modes,Main N-Trace Trace Modes>> chapter for details.
-[[trTeContext]]
-|trTeContext|Optional|Controls generation of <<msg2_Ownership,Ownership>> messages.
-[[trTsEnable]]
-|trTsEnable|Optional|Controls generation of <<field_TSTAMP,TSTAMP>> field.
-[[trTeInhibitSrc]]
-|trTeInhibitSrc|Optional|Controls generation of <<field_SRC,SRC>> field.
-[[trTeSrcBits]]
-|trTeSrcBits|Optional|Controls generation of <<field_SRC,SRC>> field.
-|trTeSrcID|Optional|Controls generation of <<field_SRC,SRC>> field.
-[[trTeInstSyncMode]]
-|trTeInstSyncMode|Optional|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2).
-[[trTeInstSyncMax]]
-|trTeInstSyncMax|Optional|Controls generation of <<Synchronization Messages,Synchronization Messages>> (with <<field_SYNC,SYNC>> field=2).
-[[trTeInstEnRepeatedHistory]]
-|trTeInstEnRepeatedHistory|Optional|See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
+|trTeInstNoAddrDiff|*Required*|*Must be 0* as type of address (<<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>>) are statically assigned to types of messages.
+|trTeInstNoTrapAddr|*Required*|*Must be 0* as exception handler addresses must be always provided for successful decoding.
 [[trTeInstEnSequentialJump]]
 |trTeInstEnSequentialJump|Optional|See <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter for details.
 [[trTeInstEnImplicitReturn]]
 |trTeInstEnImplicitReturn|Optional|See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
+|trTeInstEnBranchPrediction||Branch predictor enabled when set.
+|trTeInstEnJumpTargetCache||Jump target cache enabled when set.
 [[trTeInstImplicitReturnMode]]
 |trTeInstImplicitReturnMode|Optional|See <<Implicit Return Optimization,Implicit Return Optimization>> chapter for details.
+[[trTeInstEnRepeatedHistory]]
+|trTeInstEnRepeatedHistory|Optional|See <<Repeated History Optimization,Repeated History Optimization>> chapter for details.
+[[trTeInstEnAllJumps]]
+|trTeInstEnAllJumps|Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTeInstExtendAddrMSB]]
 |trTeInstExtendAddrMSB|Optional|See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter for details.
-[[trTeInstEnAllJumps]]
-|trTeInstEnAllJumps|Optional|As described in <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+[[trTeSrcID]]
+|trTeSrcID|Optional|Controls generation of <<field_SRC,SRC>> field.
+[[trTeSrcBits]]
+|trTeSrcBits|Optional|Controls generation of <<field_SRC,SRC>> field.
+|trTeInstFilters|Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|trTeDataImplemented|Future|*Must be 0* as Nexus data trace messages are not part of version 1.0 of N-Trace specification.
+|*Other* trTeData...|Future|As Next defines data trace messages future versions of N-Trace may allow these (as an optional extension).
+|*All* trTeTrigDbg...|Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|*All* trTeFilter...|Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|*All* trTeComp...|Optional|See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |======================================================================================================
 
-NOTE: Above table does not provide names of Trace Encoder control registers as names of bits/fields used in Trace Control Interface are unique.
+[[trTsEnable]]
+NOTE: Bit *trTsEnable* (part of potentially shared Timestamp Unit) controls generation of <<field_TSTAMP,TSTAMP>> fields in N-Trace messages. See the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification for details of the Timestamp Unit.
 
 == Main N-Trace Trace Modes
 
