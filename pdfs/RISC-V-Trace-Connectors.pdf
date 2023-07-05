@@ -310,9 +310,9 @@ ET
 0.2 0.2 0.2 SCN
 
 BT
-121.74862 297.41136 Td
+124.96162 297.41136 Td
 /F1.0 10.5 Tf
-[<56> 60.05859 <657273696f6e20312e302e305f7263342c204a756e652030362c20323032333a2046726f7a656e20737461746520286265666f72652041726368697465637475726520436f6d6d69747465652072657669657729>] TJ
+[<56> 60.05859 <657273696f6e20312e302e305f7263362c204a756c792030352c20323032333a2046726f7a656e20737461746520286265666f72652041726368697465637475726520436f6d6d69747465652072657669657729>] TJ
 ET
 
 0.0 0.0 0.0 SCN
@@ -474,7 +474,7 @@ ET
 BT
 60.24 714.896 Td
 /F1.0 10.5 Tf
-[<56> 60.05859 <657273696f6e20312e302e305f726334>] TJ
+[<56> 60.05859 <657273696f6e20312e302e305f726336>] TJ
 ET
 
 0.0 0.0 0.0 SCN
@@ -1078,7 +1078,7 @@ endobj
 >>
 endobj
 14 0 obj
-<< /Names [(_adapters_multiple_connectors_and_on_board_debug_considerations) 68 0 R (_change_log) 24 0 R (_contributors) 33 0 R (_copyright_and_license_information) 29 0 R (_debug_and_trace_connectors) 36 0 R (_dual_voltage_different_for_debug_and_different_for_trace_configurations) 60 0 R (_explanation_for_additional_pins_comparing_to_mipi20) 59 0 R (_explanation_for_mictor_38_pins_30323436) 65 0 R (_explanation_of_tgtpwrcap_option_for_pins1113) 51 0 R (_mictor_38_bit_debug_and_trace_connector) 56 0 R (_mipi20_debug_and_trace_connector) 42 0 R (_possible_use_of_trigintrigout_or_tditdo_for_an_application_uart) 48 0 R (_preamble) 17 0 R (_rationale_looking_at_nexus_standard) 71 0 R (_version_1_0_0_rc4) 25 0 R (header) 121 0 R (toc) 12 0 R]
+<< /Names [(_adapters_multiple_connectors_and_on_board_debug_considerations) 68 0 R (_change_log) 24 0 R (_contributors) 33 0 R (_copyright_and_license_information) 29 0 R (_debug_and_trace_connectors) 36 0 R (_dual_voltage_different_for_debug_and_different_for_trace_configurations) 60 0 R (_explanation_for_additional_pins_comparing_to_mipi20) 59 0 R (_explanation_for_mictor_38_pins_30323436) 65 0 R (_explanation_of_tgtpwrcap_option_for_pins1113) 51 0 R (_mictor_38_bit_debug_and_trace_connector) 56 0 R (_mipi20_debug_and_trace_connector) 42 0 R (_possible_use_of_trigintrigout_or_tditdo_for_an_application_uart) 48 0 R (_preamble) 17 0 R (_rationale_looking_at_nexus_standard) 71 0 R (_version_1_0_0_rc6) 25 0 R (header) 121 0 R (toc) 12 0 R]
 >>
 endobj
 15 0 obj
@@ -1271,7 +1271,7 @@ ET
 BT
 48.24 753.206 Td
 /F1.0 10.5 Tf
-[<5044462067656e6572> 20.01953 <61746564206f6e3a20323032332d30362d30362031343a33383a3234205554> 20.01953 <43>] TJ
+[<5044462067656e6572> 20.01953 <61746564206f6e3a20323032332d30372d30352031363a35373a3534205554> 20.01953 <43>] TJ
 ET
 
 0.0 0.0 0.0 SCN
@@ -1282,7 +1282,7 @@ ET
 BT
 48.24 713.366 Td
 /F2.0 18 Tf
-[<56> 60.05859 <657273696f6e20312e302e305f726334>] TJ
+[<56> 60.05859 <657273696f6e20312e302e305f726336>] TJ
 ET
 
 0.0 0.0 0.0 SCN
@@ -1317,7 +1317,7 @@ ET
 BT
 66.24 685.346 Td
 /F1.0 10.5 Tf
-<323032332d30362d3036> Tj
+<323032332d30372d3035> Tj
 ET
 
 0.0 0.0 0.0 SCN
@@ -16600,7 +16600,7 @@ endobj
 endobj
 76 0 obj
 << /Border [0 0 0]
-/Dest (_version_1_0_0_rc4)
+/Dest (_version_1_0_0_rc6)
 /Subtype /Link
 /Rect [60.24 711.83 144.53338 726.11]
 /Type /Annot
@@ -16608,7 +16608,7 @@ endobj
 endobj
 77 0 obj
 << /Border [0 0 0]
-/Dest (_version_1_0_0_rc4)
+/Dest (_version_1_0_0_rc6)
 /Subtype /Link
 /Rect [541.1705 711.83 547.04 726.11]
 /Type /Annot
@@ -16851,7 +16851,7 @@ endobj
 >>
 endobj
 107 0 obj
-<< /Title <feff00560065007200730069006f006e00200031002e0030002e0030005f007200630034>
+<< /Title <feff00560065007200730069006f006e00200031002e0030002e0030005f007200630036>
 /Parent 106 0 R
 /Count 0
 /Dest [23 0 R /XYZ 0 737.39 null]
