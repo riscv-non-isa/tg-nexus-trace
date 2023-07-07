@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  July 05, 2023
-:revnumber: 1.0.0_rc6
+:revdate:  July 06, 2023
+:revnumber: 1.0.0_rc7
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,8 +47,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc6
-* 2023-07-05
+=== Version 1.0.0_rc7
+* 2023-07-06
 ** The pre-public review version (older history removed)
 
 [Preface]
