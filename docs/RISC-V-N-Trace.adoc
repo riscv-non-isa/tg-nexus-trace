@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  July 06, 2023
-:revnumber: 1.0.0_rc7
+:revdate:  July 10, 2023
+:revnumber: 1.0.0_rc8
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -47,8 +47,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc7
-* 2023-07-06
+=== Version 1.0.0_rc8
+* 2023-07-10
 ** The pre-public review version (older history removed)
 
 [Preface]
@@ -513,7 +513,7 @@ must be allowed.
 |trTeInstFilters|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |trTeDataImplemented|Future|*Must be 0* as Nexus data trace messages are not part of version 1.0 of N-Trace specification.
 |*Other* trTeData...|Future|As Nexus defines data trace messages, future versions of N-Trace may allow these (as an optional extension).
-|*All* trTeTrigDbg...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+|*All* trTeTrig...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeFilter...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeComp...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |======================================================================================================
