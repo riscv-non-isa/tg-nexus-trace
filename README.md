@@ -1,8 +1,11 @@
 # TG RISC-V Nexus Trace
-## Curent Status (1.0.0-rc9 2023/9/10 for ARC Review)
-* Updates after emails to TG (detailed report emailed to TG).
+## Curent Status
+
+* 1.0.0-rc9 2023/9/10 for ARC Review
+
+  * Updates after emails to TG (detailed PDF with report emailed to TG).
  
-* **TODO**: Generate 1.0.0-rc PDFs (problem with github actions reported).
+  * **TODO**: Generate 1.0.0-rc PDFs (problem with github actions reported).
 
 ## Repository Overview
 
