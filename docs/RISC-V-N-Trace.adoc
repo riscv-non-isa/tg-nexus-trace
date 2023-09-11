@@ -30,7 +30,10 @@ endif::[]
 :hide-uri-scheme:
 :stem: latexmath
 :footnote:
-:xrefstyle: short 
+:xrefstyle: short
+:bibtex-file: example.bib
+:bibtex-order: alphabetical
+:bibtex-style: apa
 
 = RISC-V N-Trace (Nexus-based Trace) Specification
 RISC-V N-Trace Task Group
