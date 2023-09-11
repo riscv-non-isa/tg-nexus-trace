@@ -1,7 +1,7 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Sep 10, 2023
+:revdate:  Sep 11, 2023
 :revnumber: 1.0.0_rc9
 :revremark: Frozen state (before Architecture Committee review)
 :url-riscv: http://riscv.org
@@ -51,7 +51,7 @@ Change is extremely unlikely.
 PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc9
-* 2023-09-10
+* 2023-09-11
 ** The pre-public review version (older history removed)
 
 [Preface]
