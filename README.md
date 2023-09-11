@@ -5,8 +5,6 @@
 
   * Updates after emails to TG (detailed PDF with report emailed to TG).
  
-  * **TODO**: Generate 1.0.0-rc PDFs (problem with github actions reported).
-
 ## Repository Overview
 
 Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus).
