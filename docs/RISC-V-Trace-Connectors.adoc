@@ -31,6 +31,9 @@ endif::[]
 :stem: latexmath
 :footnote:
 :xrefstyle: short
+:bibtex-file: example.bib
+:bibtex-order: alphabetical
+:bibtex-style: apa
 
 = RISC-V Trace Connectors Specification
 RISC-V N-Trace Task Group

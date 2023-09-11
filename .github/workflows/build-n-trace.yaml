@@ -1,61 +1,38 @@
-# This workflow installs dependencies for PDF generation, generates the PDF,
-# and uploads the PDF as an artifact.
-
-name: Build RISC-V-N-Trace.pdf
+name: Build Build RISC-V-N-Trace.pdf
 
 on:
   push:
     branches:
+      - master
       - main
   pull_request:
     branches:
+      - master
       - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    env:
-      APT_PACKAGES_FILE: ${{ github.workspace }}/dependencies/apt_packages.txt
-      BUNDLE_GEMFILE: ${{ github.workspace }}/dependencies/Gemfile
-      BUNDLE_BIN: ${{ github.workspace }}/bin
-      NPM_PACKAGE_FOLDER: ${{ github.workspace }}/dependencies
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: 'true'
-    - name: Install Ubuntu packages
-      run: |
-        sudo apt-get update
-        grep -vE '^#' ${APT_PACKAGES_FILE} | xargs sudo apt-get install --yes --no-install-recommends
-    # Ruby for asciidoctor
-    - name: Setup Ruby and Gemfile content
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: "3.2.0"
-        bundler-cache: true
-    # Node.js for wavedrom
-    - uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-    - name: Install Node.js dependencies
-      run: npm install ${NPM_PACKAGE_FOLDER}
-    - name: Generate PDF
-      run: |
-        PATH=${PATH}:${BUNDLE_BIN}:$(npm bin):$(pwd) \
-        make -C docs/ RISC-V-N-Trace.pdf
-    - name: Archive PDF result
-      uses: actions/upload-artifact@v3
-      with:
-        name: RISC-V-N-Trace
-        path: docs/RISC-V-N-Trace.pdf
-        retention-days: 7
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      # Step 2: Pull the latest RISC-V Docs container image
+      - name: Pull Container
+        run: docker pull riscvintl/riscv-docs-base-container-image:latest
+
+      # Step 3: Build Files
+      - name: Build Files
+        run: cd ./docs && make RISC-V-N-Trace.pdf
+
+      # Step 4: Upload the built PDF files as independent artifacts
+      - name: Upload RISC-V-Trace-Control-Interface PDF
+        uses: actions/upload-artifact@v3
+        with:
+          name: RISC-V-Trace-Control-Interface
+          path: ${{ github.workspace }}/docs/RISC-V-N-Trace.pdf
+          retention-days: 7
