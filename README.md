@@ -1,6 +1,14 @@
 # TG RISC-V Nexus Trace
 ## Curent Status
 
+* 2023/11/27 - initial review of ARC issues provided as 3 google-doc files (for easier comments):
+  
+  * [Notes to N-Trace PDF](https://docs.google.com/document/d/1h__c0Kc7TQAWMh5bw9cNC9bl_IGqyY_ylPV14uc2xj0)
+
+  * [Notes to Trace Control PDF](https://docs.google.com/document/d/1u-38MaR0gwWTkSDfgIp7YXk9xNdySPZNIA50UENZQWE)
+ 
+  * [Notes to Trace Connectors PDF](https://docs.google.com/document/d/1iNbB7-nTiQQ4vQBzLqxtBDQxT51QeUQMd9MFOe0jsBs)
+
 * Feedback from ARC provided (as set of github issues)
 
 * 1.0.0-rc9 2023/9/10 for ARC Review
