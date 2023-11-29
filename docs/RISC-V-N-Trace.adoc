@@ -273,14 +273,14 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 
 *For HTM mode:* +
   Update <<field_I-CNT,I-CNT>> field. +
-  Add 0 as LSB bit to HIST field. See <<HIST Field Overflows, HIST Field Overflows>> for handling of overflow.
+  Add 0 as least significant bit to HIST field. See <<HIST Field Overflows, HIST Field Overflows>> for handling of overflow.
 |5|Taken branch|*For BTM mode:* +
   Update <<field_I-CNT,I-CNT>> field. +
   Generate <<msg_DirectBranch,DirectBranch>> message.
 
 *For HTM mode:* +
 Update <<field_I-CNT,I-CNT>> field. +
-Add 1 as LSB bit to HIST field. See <<HIST Field Overflows, HIST Field Overflows>> for handling of overflow.
+Add 1 as least significant bit to HIST field. See <<HIST Field Overflows, HIST Field Overflows>> for handling of overflow.
 |6|Uninferable jump|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
@@ -320,9 +320,9 @@ The Nexus standard defines a trace messaging protocol using a number of *MDO* (M
 N-Trace specification defines 6-bit *MDO* and 2-bit *MSEO* so both fit in a single byte.
 
 * It allows easy storage in memory as well as sending using 1-bit/ 2-bit/ 4-bit/ 8-bit/ 16-bit parallel transport (which is supported by many existing trace probes and connectors).
-* Decoding software may work on bytes and 32-bit/64-bit words and expect MSEO bits at two LSB bits of each byte.
+* Decoding software may work on bytes and 32-bit/64-bit words and expect MSEO bits at two least significant bits of each byte.
 
-N-Trace messages transmission protocol is a strict subset of Nexus trace messaging protocol.
+N-Trace message transmission protocol is a strict subset of Nexus trace messaging protocol.
 
 [N-Trace subset]
 .N-Trace subset
@@ -332,41 +332,42 @@ N-Trace messages transmission protocol is a strict subset of Nexus trace messagi
 |Number of *MSEO* bits|1 or 2|2
 |Number of *MDO* bits|At least 1|6
 |Total (*MDO*+*MSEO*) bits|At least 2|8 (one byte)
-|Order (transmitted or stored)|Vendor defined|*MSEO* before *MDO*, each LSB first
+|Order (transmitted or stored)|Vendor defined|*MSEO* before *MDO*,  least significant bit for each field first
 |Max field size|Not specified|64 bits (some 32 bits or less)
 |Max message size|Not specified|38 bytes (worst sum of all fields)
 |====
 
 Max message size (38 bytes) is calculated for <<msg_IndirectBranchHistSync,IndirectBranchHistSync>> message which includes TCODE/ SRC/ SYNC/ B-TYPE(5 bytes total), I-CNT(30 bits, 5 bytes), F-ADDR(63 bits, 11 bytes), HIST(32 bits, 6 bytes) TSTAMP(64 bits, 11 bytes).
 
-* Particular hardware may provide a smaller limit (usually I-CNT is smaller), but always must assure that internal FIFOs must be designed to hold at least two longest messages.
-* Decoding software may avoid allocating dynamic memory, but every conforming decoder must survive any size of message as trace memory may be corrupted (trace with all 0-s may be considered as a very long variable-length field).
+* While implementations may have a shorter maximum message size (e.g, due to I-CNT being smaller), they must assure that the internal FIFOs are designed to hold at least two maximum sized messages that the implementation can produce.
+* While decoding software may be designed to avoid dynamic memory allocation, it must nonetheless be robust enough to handle messages of any size. This is to account for scenarios where trace memory could be corrupted, such as a trace consisting entirely of zeros, which could be interpreted as an unusually long variable-length field.
 
 === MSEO Sequences
 
-*MSEO[1:0]* bits (on LSB part of each byte) are defined by the follow rules:
+*MSEO[1:0]* bits (located in the least significant bits of each byte) are defined by the follow rules:
 
-* The first byte of a message sends the LSBs of the message and is indicated by *MSEO[1:0]=00*.
-* The last byte of a variable-length field is indicated by *MSEO[1:0]=01*.
+* The first byte of a message sends the least significant bits of the message and is indicated by *MSEO[1:0]=00*.
+* Bytes occupied by fixed-length fields are sent using *MSEO[1:0]=00*.
+* The last byte of a variable-length field, that is not last byte of a message, is indicated by *MSEO[1:0]=01*.
 ** A variable-length field in a message always ends on a byte boundary (zero extended as needed).
-** Bytes occupied by fixed-length fields and initial parts of longer variable-length fields are sent using *MSEO[1:0]=00*.
+** The non-last bytes of a variable-length fields are indicated by *MSEO[1:0]=00*.
 * The last byte of a message is indicated by *MSEO[1:0]=11*.
-**It also implies an end of the last (fixed-length or variable-lenght) field of a message.
+** It also implies an end of the last (fixed-length or variable-lenght) field of a message.
 * Idle bytes (between messages or used as padding) are indicated by *MSEO[1:0]=11* and *MDO[5:0]=111111* (entire byte is *0xFF*).
 * Value of *MSEO[1:0]=10* is reserved for future extensions.
 
-Table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actuation function): 
+Table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
 
 [#MSEO Transitions]
-.Allowed MSEO Transitions
+.Allowed Transitions of MSEO Bits 
 [cols="30%,30%",options="header",]
 |====
-|MSEO Function|Dual MSEO[1:0] Sequence
-|Start of message|11s-*00*
-|End of message|00 (or 01)-*11*-(more 11s)
+|MSEO Function|Previous-*Current* MSEO[1:0] Sequence
+|Start of message|11-*00*
+|Middle of field|00 (or 01)-*00*
 |End of variable-length field|00 (or 01)-*01*
-|Message transmission|*00* s
-|Idle (no message)|*11* s
+|End of message|00 (or 01)-*11*
+|Idle (no message)|11-*11*
 |Reserved|any-*10*
 |====
 
@@ -387,8 +388,8 @@ Dual MSEO protocol (utilized by this N-Trace specification) is a subset of this 
 
 Each N-Trace message has identical structure (100% compatible with Nexus):
 
-* Very first field is ALWAYS fixed-length *TCODE* (Transport Code) which defines the meaning and format of subsequent fields.
-* In case of simultaneous tracing from more than one hart, the second field is ALWAYS fixed-length *SRC* (Message Source) field, which provides a unique ID of message source.
+* Very first field is always fixed-length *TCODE* (Transport Code) which defines the meaning and format of subsequent fields.
+* In case of simultaneous tracing from more than one hart, the second field is always fixed-length *SRC* (Message Source) field, which provides a unique ID of message source.
 ** This field allows trace decoders to separate messages from different trace sources (Trace Encoders, harts) without knowing any details of each of the messages.
 ** This method can be used to handle different (opaque) trace or debug or performance data using N-Trace transport/storage/export infrastructure. 
 * One or more (fixed-length or variable-length) payload fields. Sequence and selection of these fields depend on the value of *TCODE* field.
@@ -400,10 +401,10 @@ Each N-Trace message has identical structure (100% compatible with Nexus):
 
 Order of bits and bytes:
 
-* Trace messages/packets are considered as sequences of bytes and are always transmitted with LSB bits/bytes first.
-* Nexus MSEO bits are transmitted on the LSB part and bit#0 first.
-* Idle state must be transmitted as all MSEO and MDO bits = 1.
-* For transmission on a 16bit interface (e.g. PIB 16-bit mode), the first byte of message/packet is transmitted on the LSB part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
+* Trace messages/packets are considered as sequences of bytes and are always transmitted with least significant bits/bytes first.
+* Nexus MSEO bits are transmitted on the least significant part and bit#0 first.
+* Idle state must be transmitted as all 1s MSEO and MDO bits.
+* For transmission on a 16bit interface (e.g. PIB 16-bit mode), the first byte of message/packet is transmitted on the least significant part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
 
 NOTE: Above rules allow receiving trace probes to skip idle messages.
 
@@ -423,14 +424,12 @@ To explain this let's assume the following serially transmitted (in 1-bit PIB mo
 * < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
 * < `00` TTTTTT> - 8 bits in a first byte of a message (`00` = MSEO, TTTTTTT = TCODE bits)
 
-The following 4 example sequences:
+The following 4 example sequences are all valid:
 
 * ... < `11` DDDDDD> < `00` TTTTTT> ...           => No idle bits/cycles between consecutive messages.
 * ... < `11` DDDDDD> < `1*2` > < `00` TTTTTT> ... => Two (even) idle bits.
 * ... < `11` DDDDDD> < `1*3` > < `00` TTTTTT> ... => Three (odd) idle bits (second message starts at another trace clock edge).
 * ... < `11` DDDDDD> < `1*8` > < `00` TTTTTT> ... => 8 idle bits (idle sequence can be considered as byte 0xFF).
-
-are all valid.
 
 NOTE: Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
 
@@ -448,12 +447,12 @@ Table below shows one N-Trace message with several fields. It is an output from 
 |0xFF| 111111|11 | Idle | Most likely idle, but can also be the last byte of the previous message.
 |0x70| 011100|00 | TCODE[6] = 28 - IndirectBranchHist| First byte, all 6 MDO bits have TCODE.
 5+|Here we could have an SRC field (it would shift the start of B-TYPE).
-|0xD0| 110100|00 | BTYPE[2] = 0x0| This is a 2-bit (fixed-length) field. As B-TYPE is a fixed-length field, four MSB bits are part of the next field (I-CNT).
-|0x1D| 000111|01 | ICNT[10] = 0x7D| This is a second byte of the 7-bit (0x7D) variable-length I-CNT field. Here three MSB bits are all 0-s to assure that the variable-length field uses all 6 MDO bits.
-|0x1D| 000111|01 | UADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three MSB 0-s bits).
-|0xF8| 111110|00 || Normal transfer of new field (6 LSB bits).
-|0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra 0-bits on MSB.
-5+|Here we could have TSTAMP field (previous MSEO should became 01, what means end of field, but not end of message)
+|0xD0| 110100|00 | BTYPE[2] = 0x0| This is a 2-bit (fixed-length) field. As B-TYPE is a fixed-length field, four most significant bits are part of the next field (I-CNT).
+|0x1D| 000111|01 | ICNT[10] = 0x7D| This is a second byte of the 10-bit (value 0x7D) variable-length I-CNT field. Four least significant bits (0b1101=0xD) are define in previous MDO. Three most significant bits are all 0-s as variable-length field uses all 6 MDO bits.
+|0x1D| 000111|01 | UADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three most significant 0-s).
+|0xF8| 111110|00 || Normal transfer of new field (6 least significant bits).
+|0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra most significant 0-s.
+5+|Here optional TSTAMP field could be sent (previous MSEO should became 01 encoding end of HIST field, but not end of the message).
 |0xFF| 111111|11 | Idle|This is idle as this is the second byte with MSEO=11 (NOTE: Last byte of message is also 0xFF).
 |====
 
@@ -639,7 +638,7 @@ NOTE: The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> fi
 [[field_I-CNT]]
 | I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is a number of 16-bit half-instructions executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
 [[field_F-ADDR]]
-| F-ADDR      | *Var* | Full Target Address | Full PC address (LSB bit, which is always 0 for RISC-V is skipped).
+| F-ADDR      | *Var* | Full Target Address | Full PC address (least significant bit, which is always 0 for RISC-V is skipped).
 See <<Address Compression,Address Compression>> chapter for more details.
 
  NOTE: The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
@@ -649,7 +648,7 @@ See <<Address Compression,Address Compression>> chapter for more details.
 
 The U-ADDR field is always sent together with the <<field_B-TYPE,B-TYPE>> field.
 [[field_HIST]]
-| HIST       | *Var* | Direct Branch History map |  MSB = 1 is 'stop-bit', LSB denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
+| HIST       | *Var* | Direct Branch History map |  Most significant bit = 1 is 'stop-bit', least significant bit denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
 [[field_TSTAMP]]
 | TSTAMP     | *Var* | Timestamp (optional) | Either absolute or relative timestamp value. It must be enabled by <<trTsEnable,trTsEnable>> control bit. See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details.
 |======================================================================================================
@@ -664,9 +663,9 @@ Original Nexus specification does not define limits for variable-length fields, 
 [[NTRACE_MAX_SRC]]
 |SRC|NTRACE_MAX_SRC|12|Determined by size of Trace Control register field. Enough for 4096 (4K) trace sources.
 [[NTRACE_MAX_ICNT]]
-|I-CNT|NTRACE_MAX_ICNT|22|Usually a smaller value will be sufficient. MSB bit serves as overflow marker and I-CNT overflow must be generated when it is set.
+|I-CNT|NTRACE_MAX_ICNT|22|Usually a smaller value will be sufficient. Most significant bit serves as overflow marker and I-CNT overflow must be generated when it is set.
 [[NTRACE_MAX_ADDR]]
-|F-ADDR, U-ADDR|NTRACE_MAX_ADDR|63|LSB bit is always 0 for RISC-V addresses so 63 bits only.
+|F-ADDR, U-ADDR|NTRACE_MAX_ADDR|63|Least significant bit is always 0 for RISC-V addresses so 63 bits only.
 [[NTRACE_MAX_HIST]]
 |HIST|NTRACE_MAX_HIST|32|It includes stop-bit. This size is optimal for not wasting any bits in very often used <<msg_ResourceFull,ResourceFull>> messages.
 [[NTRACE_MAX_TSTAMP]]
@@ -718,7 +717,7 @@ Field PROCESS is encoded as 4 sub-fields (FORMAT, PRV, V, CONTEXT). Bit layout c
 
  PROCESS[x+5:0] = {CONTEXT[x:0], V[0], PRV[1:0], FORMAT[1:0]}
 
-.Encoding of PROCESS field (in LSB to MSB bit-order)
+.Encoding of PROCESS field (in LSB to MSB order)
 [cols="35%,20%,12%,8%,25%",options="header",]
 |======================================================================================================
 |Reason|FORMAT[1:0]|PRV[1:0]|V[0]|CONTEXT[x:0]
@@ -815,7 +814,7 @@ NOTE: Not-taken direct conditional branches or direct unconditional jumps are NO
  *xx1xxxxx:*   Standard: Reserved (for data trace in future). +
  *x1xxxxxx:*   Standard: Reserved. +
  *1xxxxxxx:*   Standard: Vendor Defined Message(s) lost. +
-*IMPORTANT:* Implementation may always report this field as 0. It is important to have this field ALWAYS generated as it assures that the TSTAMP field will start at the byte boundary.
+*IMPORTANT:* Implementation may always report this field as 0. It is important to have this field always generated as it assures that the TSTAMP field will start at the byte boundary.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
 |======================================================================================================
 
@@ -916,15 +915,15 @@ This message is emitted when the HIST mask or I-CNT counter has reached maximum 
 *3..7:* Standard: Reserved for future encodings. +
 *8..15:* Standard: Reserved for vendor specific encodings.
 [[field_RDATA]]
-|Var|RDATA [0]         |Standard: For RCODE=0, this is the I-CNT field. For RCODE=1 this is the HIST field (with MSB=1 being stop-bit). +
-*Extension:* For RCODE=2 this is the HIST field (with MSB=1 being stop-bit).
+|Var|RDATA [0]         |Standard: For RCODE=0, this is the I-CNT field. For RCODE=1 this is the HIST field (with most significant bit=1 being stop-bit). +
+*Extension:* For RCODE=2 this is the HIST field (with most significant bit=1 being stop-bit).
 |Var,Opt|RDATA [1]     |*Extension:* When RCODE=2 is reported this field includes HREPEAT (History Repeat) count.
 |Var,Cfg |TSTAMP       |Standard Timestamp (<<field_TSTAMP,TSTAMP>>) field.
 |======================================================================================================
 
 *Explanations and Notes*
 
-* I-CNT value (with RCODE=0) will be reported with the MSB bit in the <<NTRACE_MAX_ICNT,NTRACE_MAX_ICNT>>-bit counter. It is just a simple counter, but when MSB bit is set a message with overflown I-CNT should be generated.
+* I-CNT value (with RCODE=0) will be reported with the most significant bit in the <<NTRACE_MAX_ICNT,NTRACE_MAX_ICNT>>-bit counter. It is just a simple counter, but when most significant bit is set a message with overflown I-CNT should be generated.
 ** See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for more details.
 * Not repeated HIST field overflow (RCODE=1) will usually include the longest supported by a particular encoder HIST field.
 ** However any number of HIST bits may be transmitted (from 2 to <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits).
@@ -1039,12 +1038,12 @@ This chapter describes in detail how key fields (I-CNT, HIST, U-ADDR/F-ADDR and 
 
 === Address Compression
 
-Address transmissions is compliant with the Nexus specification (MSB 0-s skipped) with optional extension allowing to skip identical MSB bits (following Sv39/Sv48/Sv57 address generation rules). See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter below for clarifications.
+Address transmissions is compliant with the Nexus specification (most significant bit 0-s skipped) with optional extension allowing to skip identical most significant bits (following Sv39/Sv48/Sv57 address generation rules). See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter below for clarifications.
 
 Key rules when generating addresses:
 
 * Only execution addresses (as seen by the hart) are reported. In case MMU is enabled these are virtual addresses.
-* Address fields are being sent beginning with bit 1 since all execution addresses are on 2-byte boundaries (LSB bit always 0).
+* Address fields are being sent beginning with bit 1 since all execution addresses are on 2-byte boundaries (least significant bit always 0).
 * Addresses sent in <<field_U-ADDR,U-ADDR>> compressed form are computed based on a reference address sent by or computed from the most recent preceding message containing an address field. 
 * Starting with an <<field_F-ADDR,F-ADDR>>, each U-ADDR modifies the reference address used for the next address. 
 * A U-ADDR is generated by XORing the full address with the reference address and sending the result starting with bit 1 and with high-order zeroes suppressed.
@@ -1070,49 +1069,49 @@ Example:
 
 This optimization must be enabled by <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit. 
 
-NOTE: Normally (without above bit enabled or implemented) addresses with many MSB bits=1 will be send as long packets (as variable size fields skip MSB=0 only). The following address *0xFFFF_FFFF_8000_31F4* (real address from Linux kernel) will be encoded as *F-ADDR=0x7FFF_FFFF_C000_18FA* (LSB 0-bit skipped). Such 63-bit variable field value will require 11 bytes to be sent (as we have 6 MDO bits in each byte).
+NOTE: Normally (without above bit enabled or implemented) addresses with many most significant bits=1 will be send as long packets (as variable size fields skip most significant bit=0 only). The following address *0xFFFF_FFFF_8000_31F4* (real address from Linux kernel) will be encoded as *F-ADDR=0x7FFF_FFFF_C000_18FA* (least significant 0-bit skipped). Such 63-bit variable field value will require 11 bytes to be sent (as we have 6 MDO bits in each byte).
 
 The following additional rules are used (when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set):
 
-. If F-ADDR/U-ADDR field is sent then last (MSB) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
-. This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at MSB bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
+. If F-ADDR/U-ADDR field is sent then last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
+. This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at most significant bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
 . Simple implementations may not implement an enable bit and always send full address.  
 .. Benefits of using it on 32-bit cores is small, so it may not be implemented.  
 
-IMPORTANT: Trace encoder must implement a MSB extension (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
+IMPORTANT: Trace encoder must implement a most significant bit extension (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
 
 ==== Example Encodings
 
-*Non-extended address (MSB MDO bit = 0)*
+*Non-extended address (most significant MDO bit = 0)*
 
             MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is MSB)
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
   -------------------
     #0:  111111_00
     #1:  111111_00
     #2:  111111_00
     #3:  111111_00
     #4:  111111_00
-    #5:  011111_01     <- Last MDO+MSO byte. MSB bit #5 is 0, so NO extension.
+    #5:  011111_01     <- Last MDO+MSO byte. Most significant bit #5 is 0, so NO extension.
                        F-ADDR field=0x7_FFFF_FFFF, Encoded address=0xF_FFFF_FFFE
 
-*Extended address (MSB MDO bit = 1)*
+*Extended address (most significant MDO bit = 1)*
 
             MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is MSB)
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
   -------------------
     #0:  111111_00
     #1:  111111_00
     #2:  111111_00
     #3:  111111_00
     #4:  011111_00
-    #5:  111100_01     <- Last MDO+MSEO byte. MSB bit #5 is 1, so WITH extension.
+    #5:  111100_01     <- Last MDO+MSEO byte. Most significant bit #5 is 1, so WITH extension.
                        F-ADDR field=0xF_1FFF_FFFF, Encoded address=0xFFFF_FFFE_3FFF_FFFE
 
 *Non-extended address (extra MDO with all 0-s prevents extension)*
 
             MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is MSB)
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
   -------------------
     #0:  111111_00
     #1:  111111_00
@@ -1120,13 +1119,13 @@ IMPORTANT: Trace encoder must implement a MSB extension (skipping identical 1-s 
     #3:  111111_00
     #4:  111111_00
     #5:  111111_00
-    #6:  000000_01     <- Last MDO+MSEO byte. MSB bit #5 is 0, so NO extension.
+    #6:  000000_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
                        F-ADDR field=0xF_FFFF_FFFF, Encoded address=0x1F_FFFF_FFFE
 
 *Non-extended full 64-bit address (invalid address)*
 
             MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is MSB)
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
   -------------------
     #0:  111111_00
     #1:  111111_00
@@ -1138,10 +1137,10 @@ IMPORTANT: Trace encoder must implement a MSB extension (skipping identical 1-s 
     #7:  111111_00
     #8:  111111_00
     #9:  111111_00
-   #10:  000101_01     <- Last MDO+MSEO byte. MSB bit #5 is 0, so NO extension.
+   #10:  000101_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
                        F-ADDR field=0x5FFF_FFFF_FFFF_FFFF, Encoded address=0xBFFF_FFFF_FFFF_FFFE
 
-NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any Sv39/Sv48/Sv57 modes as it does not have all MSB bits identical. But such an address may be encountered as result of a bug and as such should be reported.
+NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any Sv39/Sv48/Sv57 modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
 
 ==== Rationale
 
@@ -1151,7 +1150,7 @@ RISC-V ISA defines 3 different virtual memory addressing modes: Sv39, Sv48 and S
 * For Sv48 => must have bits 63-48 all equal to bit 47
 * For Sv57 => must have bits 63-57 all equal to bit 56
 
-It means that there is no need to send full 64-bit addresses and report 39, 48 or 57 LSB bits of an address should be enough.
+It means that there is no need to send full 64-bit addresses and report 39, 48 or 57 least significant bits of an address should be enough.
 
 Additionally addresses sent by trace may be one of the following addresses (encoded in F-ADDR/U-ADDR fields as described above)
 
@@ -1159,15 +1158,15 @@ Additionally addresses sent by trace may be one of the following addresses (enco
 . Virtual address (in S/U-mode when MMU is enabled).
 . Any illegal address (for example as result of an return address taken from corrupted stack).
 
-Also, RISC-V System with S and U modes cannot use any physical memory above 56-bit address. This is because of PMP (54-bit field without 2 LSB bits) and Sv39/48/57 limitations (44 bit for page index + 12 bit of page offset).
+Also, RISC-V System with S and U modes cannot use any physical memory above 56-bit address. This is because of PMP (54-bit field without 2 least significant bits) and Sv39/48/57 limitations (44 bit for page index + 12 bit of page offset).
 
 Some systems may even allow less bits as physical memory map may not have anything above certain (reasonably low) address - this is dictated by simplicity of address decoder and true number of address bits on internal busses.
 
 === HIST Field Generation
 
-When the encoder is operating in <<mode_HTM,HTM>> mode direct conditional branches do NOT generate any messages. Instead each taken or not-taken direct conditional branch is adding a single bit as LSB bit of HIST field (simple left-shift register). If a direct conditional branch is taken, bit=1 is added at the LSB position. If a direct conditional branch is not-taken, bit=0 is added at the LSB position.
+When the encoder is operating in <<mode_HTM,HTM>> mode direct conditional branches do NOT generate any messages. Instead each taken or not-taken direct conditional branch is adding a single bit as least significant bit of HIST field (simple left-shift register). If a direct conditional branch is taken, bit=1 is added at the least significant position. If a direct conditional branch is not-taken, bit=0 is added at the least significant position.
 
-MSB value 1 in the HIST field is used as a stop-bit. It allows the HIST field to be transmitted as a variable-length field efficiently (as MSB=0 bits are not transmitted).
+Most significant bit value 1 in the HIST field is used as a stop-bit. It allows the HIST field to be transmitted as a variable-length field efficiently (as most significant 0-bits are not transmitted).
 
 Examples:
 
@@ -1178,11 +1177,11 @@ Examples:
 
 The HIST field is reset (to 1, which is just a stop-bit with no bits encoding direct conditional branches) each time it is transmitted (including when any <<Synchronization Messages,synchronization message>> is transmitted).
 
-As LSB bit encodes the last direct conditional branch, decoders must interpret the HIST field starting from MSB bit (the one before stop-bit = 1). This is the bit which is describing the first encountered (taken or not-taken) direct conditional branch.
+As least significant bit encodes the last direct conditional branch, decoders must interpret the HIST field starting from most significant bit (the one before stop-bit = 1). This is the bit which is describing the first encountered (taken or not-taken) direct conditional branch.
 
 ==== HIST Field Overflows
 
-The HIST field is usually implemented as a shift register (initialized to 1 at reset). This register is shifted left and 0 or 1 is added to it. When the MSB bit of this register becomes 1, it means that the stop-bit reached the end of the HIST register and HIST field must be sent before next bit can be added.
+The HIST field is usually implemented as a shift register (initialized to 1 at reset). This register is shifted left and 0 or 1 is added to it. When the most significant bit of this register becomes 1, it means that the stop-bit reached the end of the HIST register and HIST field must be sent before next bit can be added.
 
 If this is happening, a <<msg2_ResourceFull,ResourceFull>> with the HIST field (<<field_RCODE,RCODE>>=1 or 2) must be generated.
 
@@ -1256,9 +1255,9 @@ When the encoder is operating in <<mode_HTM,HTM>> mode, I-CNT should be incremen
 
 Above code may generate messages with the following fields (exact types of messages depend on code not visible in that example):
 
-* I-CNT=4, HIST=0b1_1 (MSB=1 is stop bit, bit pattern '1' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=3 describes a code in <0x100..0x105> (I-CNT=3) and <0x200..0x201> (I-CNT=1) ranges.
-* I-CNT=9, HIST=0b1_01 (MSB=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x100..0x10D> (I-CNT=7) and <0x300..0x303> (I-CNT=2) ranges.
-* I-CNT=10, HIST-0b1_00 (MSB=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=10 describes a code in <0x100..0x113> range.
+* I-CNT=4, HIST=0b1_1 (most significant bit=1 is stop bit, bit pattern '1' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=3 describes a code in <0x100..0x105> (I-CNT=3) and <0x200..0x201> (I-CNT=1) ranges.
+* I-CNT=9, HIST=0b1_01 (most significant bit=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x100..0x10D> (I-CNT=7) and <0x300..0x303> (I-CNT=2) ranges.
+* I-CNT=10, HIST-0b1_00 (most significant bit=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=10 describes a code in <0x100..0x113> range.
 
 NOTE: It is obviously visible that HTM mode provides much better trace compression as trace messages are not generated at every taken direct conditional branch.
 
@@ -1290,7 +1289,7 @@ To illustrate *Sequential Instruction Counter* generation let's consider the fol
     0x118:  add ...         ; Plain linear 32-bit instruction
     0x11C:  c.ebreak        ; 16-bit breakpoint (to stop the code)
 
-and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (MSB bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
+and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (most significant bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
 
 Trace of above code should generate 3 messages:
 
@@ -1383,7 +1382,7 @@ Timestamp recording must be enabled by <<trTsEnable,trTsEnable>> trace control b
 
 If timestamp is enabled all <<Synchronization Messages,synchronization messages>> include an absolute timestamp value with upper zeroes suppressed. Other message types with timestamp emit the timestamp relative to recently reported (absolute or relative timestamp).
 
-NOTE: The TSTAMP field is a variable-length field and MSB bits=0 will not be transmitted. It will provide good compression for relative and absolute timestamps.
+NOTE: The TSTAMP field is a variable-length field and most significant bits=0 will not be transmitted. It will provide good compression for relative and absolute timestamps.
 
 To reconstruct the full timestamp, software begins at a <<Synchronization Messages,synchronization message>> and stores the TSTAMP value found there, zero-extended to the full timestamp width. Shortly after starting a trace session, even a 64-bit timestamp will typically require far less than 64 bits to transmit. Software extracts the compressed TSTAMP from each message thereafter and adds it with the previous decompressed timestamp to obtain the full timestamp value associated with this message.
 
@@ -1459,7 +1458,7 @@ prediction, it must be reported explicitly via a packet. This ensures that the d
 
 *Stack with Partial Addresses (<<trTeInstImplicitReturnMode,trTeInstImplicitReturnMode>>=2)* 
 
-Call stack maintained by encoder may not include all addresses, but only keep some LSB part of it and use them to compare if return is matching the call or not. Changes that program making incorrect return will return to address with the same LSB portion are very slim.
+Call stack maintained by encoder may not include all addresses, but only keep some least significant part of it and use them to compare if return is matching the call or not. Changes that program making incorrect return will return to address with the same least significant portion are very slim.
 
 IMPORTANT: Decoder does not need to know what is actual depth of the call stack implemented by encoder but for efficiency reasons it should assume max depth. N-Trace implementation should never implement call stack deeper than 32 levels. Such deep calls will be most likely 'broken' by other events/messages (like periodic SYNC).
 
@@ -1476,7 +1475,7 @@ The Nexus standard defines a <<msg_RepeatBranch,Repeat Branch>> message. This me
 
 In order to allow generation of repeated history of direct conditional branches in HTM mode an extra encoding for <<field_RCODE,RCODE>>=2 in <<msg_ResourceFull,Resource Full>> message is added.
 
-IMPORTANT: It is allowed to generate any sequence of <<msg_ResourceFull,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding MSB stop-bit[s]) is the same.
+IMPORTANT: It is allowed to generate any sequence of <<msg_ResourceFull,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding most significant stop-bit[s]) is the same.
 
 Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way similar to <<msg_RepeatBranch,Repeat Branch>> message)
 
@@ -1650,7 +1649,7 @@ const uint32_t  enco_opt_limHIST    = 0x40000000;   // Limit of HIST (max is 5*6
 // Encoder state variables
 static uint32_t encoNextEmit = 0;   // TCODE to be emitted next time
 static uint32_t encoICNT = 0;       // ICNT accumulated
-static uint32_t encoHIST = 1;       // HIST accumulated (MSB is guardian bit)
+static uint32_t encoHIST = 1;       // HIST accumulated (most significant bit is guardian bit)
 static uint64_t encoADDR = 0;       // Last emitted address
 
 void NTraceEncoderInit()
@@ -1714,7 +1713,7 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
     {
         if (enco_opt_branch_history)
         {
-            // Update branch history buffer (add LSB bit)
+            // Update branch history buffer (add least significant bit)
             if (InfoIsBranchTaken(info))
                 encoHIST = (encoHIST << 1) | 0; // Mark branch as taken
             else
@@ -1753,13 +1752,13 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
     // Optionally emit HIST overflow
     if (encoHIST & enco_opt_limHIST) // Is HIST buffer overflown?
     {
-        // Emit history BEFORE this instruction (remove LSB bit)
+        // Emit history BEFORE this instruction (remove least significant bit)
         EmitFix(6, NEXUS_TCODE_ResourceFull);
         EmitFix(4, 1);                          // RCODE=1 (HIST overflow)
         EmitVar(encoHIST >> 1);                 // RDATA=HIST
         EmitEnd();  // It will mark last entry with MSEO=11 and flush it
 
-        // Keep single HIST for this branch (guardian | single LSB bit from encoHIST)
+        // Keep single HIST for this branch (guardian | single least significant bit from encoHIST)
         encoHIST = (0x1 << 1) | (encoHIST & 0x1);
     }
 }
@@ -1783,7 +1782,7 @@ Algorithm to reconstruct complete PC flow from N-Trace messages is very simple:
 
 * Handle <<field_HIST,HIST>> field (if available and not 0x1)
 ** Analyze code from the current PC through inferable unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* field).
-** At the end (after the LSB bit from *HIST* is processed), the PC will be after the last direct conditional branch (either taken or not-taken).
+** At the end (after the least significant bit from *HIST* is processed), the PC will be after the last direct conditional branch (either taken or not-taken).
 * Handle <<field_I-CNT,I-CNT>> field (if available and not 0x0)
 ** Analyze code from current PC through inferable unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken
 ** Each encountered instruction should subtract 1 or 2 from I-CNT (depending on a size of particular instruction)
