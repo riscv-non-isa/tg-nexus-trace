@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Sep 11, 2023
-:revnumber: 1.0.0_rc9
-:revremark: Frozen state (before Architecture Committee review)
+:revdate: Dec 06, 2023
+:revnumber: 1.0.0_rc10
+:revremark: Stable state (before Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -40,7 +40,7 @@ RISC-V N-Trace Task Group
 
 // Preamble
 [WARNING]
-.This document is in the link:http://riscv.org/spec-state[Frozen state]
+.This document is in the link:http://riscv.org/spec-state[Stable state]
 ====
 Change is extremely unlikely.
 ====
@@ -50,8 +50,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc9
-* 2023-09-11
+=== Version 1.0.0_rc10
+* 2023-12-06
 ** The pre-public review version (older history removed)
 
 [Preface]
@@ -75,9 +75,9 @@ Markus Goehrle (Lauterbach) => Dual voltage, reviews
 
 == Debug and Trace Connectors
 
-This specification provides a small extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations - July 2021]. 
+This specification provides a small, optional extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations - July 2021]. 
 
-These extensions are as follows:
+These optional extensions are as follows:
 
 * Clarifying dual voltage debug and trace via Mictor 38 connector (re-defining obsolete pin #14).
 
@@ -85,7 +85,7 @@ These extensions are as follows:
 
 * Defining some signal as (optional) serial trace and/or application UART.
 
-MIPI Alliance positively reviewed proposals for above extensions and should adopt them.
+MIPI Alliance positively reviewed proposals for above optional extensions and hopefully will adopt them in the future.
 
 Additionally the following MIPI20 signals are clarified as follows:
 
@@ -96,7 +96,7 @@ Above two signals were present in older RISC-V Debug Specification but were neve
 
 This specification also adds the following option (described in dedicated chapter):
 
-* Defining MIPI20 pins #11 and #13 as optional TgtPwr+Cap pins (to supply 5V to power-up a small, evaluation target board).
+* Defining MIPI20 pins #11 and #13 as optional TgtPwr+Cap pins (to supply 5V to power-up a small, evaluation target board). This option is supported by several debug and trace probe vendors.
 
 == MIPI20 Debug and Trace Connector
 
@@ -117,17 +117,19 @@ This connector adds 1-bit/2-bit/4-bit parallel trace and serial trace options on
 |Signal         |Odd Pin#|Even Pin#|Signal
 |VREF           |1	|2	|TMS / TMSC
 |GND	        |3	|4	|TCK / TCKC
-|GND	        |5	|6	|TDO / `*SerialTrace*`
+|GND	        |5	|6	|TDO / `*SerialTrace*` (primary)
 |GND or KEY	    |7	|8	|TDI
 |GNDDetect	    |9	|10	|nRESET
 |GND / TgtPwr+Cap	|11	|12	|`*TRC_CLK*`
-|GND / TgtPwr+Cap	|13	|14	|`*TRC_DATA[0]*` / `*SerialTrace*`
+|GND / TgtPwr+Cap	|13	|14	|`*TRC_DATA[0]*` / `*SerialTrace*` (secondary)
 |GND	        |15	|16	|`*TRC_DATA[1]*` / nTRST
 |GND	        |17	|18	|`*TRC_DATA[2]*` / TRIGIN
 |GND	        |19	|20	|`*TRC_DATA[3]*` / TRIGOUT
 |=========================================================
 
-NOTE: Smaller MIPI10 version of this connector (pins #1 .. #10) may still provide `*SerialTrace*` via TDO signal when cJTAG interface is used for debugging.
+NOTE: `*SerialTrace*` via pin #6 (TDO signal) is considered primary but it requires cJTAG interface to be used for debugging. Pin #14 is secondary and can be used when JTAG is used for debugging.
+
+NOTE: Smaller MIPI10 version of this connector (pins #1 .. #10 only) is capable of providing `*SerialTrace*` via pin #6 (TDO signal) when cJTAG is used for debugging.
 
 [#Details of MIPI20 Signals]
 .Details of MIPI20 Signals
@@ -157,25 +159,25 @@ Some debug probes may allow definition of pin functions and provide a virtual UA
 
 === Explanation of TgtPwr+Cap option for pins#11/#13
 
-NOTE: This chapter explains optional use of MIPI20 pins #11/#13 to power-up small evaluations boards. If you are not interested in such a functionality you may skip reading this chapter and simply connect these pins to GND on the target PCB.
+NOTE: This chapter explains optional use of MIPI20 pins #11/#13 to power-up small evaluations boards. This optional functionality is already provided by several debug and trace probe vendors. If you are not interested in such a functionality you may skip reading this chapter and simply connect these pins to GND on the target PCB.
 
 Meaning of optional TgtPwr+Cap function of pins #11/#13 is often misunderstood, so it deserves a more elaborated explanation.
 
 When the target cannot be powered from MIPI20 both these pins must be GND (as most of the pins on the odd side of MIPI20 connector).
 
-Another function of these pins (TgtPwr+Cap) is to provide target power supply voltage into the evaluation target. This way to power-up evaluation target is equivalent to power from the USB connector, so expected voltage is ~5V. Target should not assume this voltage is regulated - more or less the same way as voltage provided by USB cable is.
+Another function of these pins (TgtPwr+Cap) is to provide target power supply voltage into the evaluation target. This way to power-up evaluation target is equivalent to power from the USB connector VBUS, so expected voltage is around 5V. Target should not assume this voltage is regulated - more or less the same way as voltage provided by USB cable is. Max current taken from these pins should not be larger than 100mA. 
 
 NOTE: Some debug probes may provide regulated voltage and dynamically measure total power consumption by the target via TgtPwr pins.
 
 Target boards should use jumper/switch to select board power-source (either from MIPI20 or USB connector). It is recommended to use a jumper/switch layout preventing both sources to be enabled at the same time.
 
-WARNING: It is specifically *FORBIDDEN* to short together 5V power from USB (VBUS) and MIPI20 (pins#11/13) on target PCB. It will allow handling a case when a trace/debug probe or adapter has both pin#11/#13 connected to GND.
+IMPORTANT: It is specifically *FORBIDDEN* to short together 5V power from USB (VBUS) and MIPI20 (pins#11/13) on target PCB. It will allow handling a case when a trace/debug probe or adapter has both pin#11/#13 connected to GND.
 
 It is possible to use two diodes (instead of jumpers) to auto-select the 5V power source and prevent back-feeding voltage from one source to the other, but it is not recommended as diodes will provide additional voltage drop.
 
-Term '+Cap' means that if these pins are used to provide power to the target, it must have a capacitor (as close to the pin as possible) to improve the quality of adjacent TRC_CLK and TRC_DATA pins. Another term for using a Cap on the supply pin is to make it an "AC ground" or "high frequency ground". We recommend 10pf capacitors placed extremely close to pins#11/#13. 
+Term *TgtPwr+Cap* means that if these pins are used to provide power to the target, it must have a capacitor (as close to the pin as possible) to improve the quality of adjacent TRC_CLK and TRC_DATA pins. Another term for using a capacitor on the supply pin is an "AC ground" or "high frequency ground". We recommend 10pf capacitors placed extremely close to pins#11/#13. 
 
-Leaving these pins not connected (NC) as can be seen on some schematics, is not a very good option when trace is used. There is simply not enough GND around TRC_CLK and TRC_DATA[0] signals. Some leave it as NC as they perhaps worry that debug probes may provide voltage there and it will create problems. Debug probes which support TgtPwr function provide current protection and will disable TgtPwr voltage once detecting that target has these pins shorted to GND.
+WARNING: Leaving these pins not connected (NC) as can be seen on some schematics, is not a very good option when trace is used. There is simply not enough GND around TRC_CLK and TRC_DATA[0] signals. Some leave it as NC as they perhaps worry that debug probes may provide voltage there and it will create problems. Debug probes which support TgtPwr function provide GND detection and/or current protection and will disable TgtPwr voltage once detecting that target has these pins shorted to GND.
 
 No matter what pins #11 and #13 must be *always* connected together - it is NOT possible that one of them will function as GND and second as TgtPwr.
 
@@ -187,7 +189,7 @@ Middle pin *B* should go to MIPI20 pins#11/#13, the left pin *A* should be GND a
 
 * Jumper between *B-C* => MIPI20 pins #11/#13 will be able to supply 5V power to the target.
 
-* No jumper => MIPI20 pins #11/#13 are left NC (this is not a recommended option).
+* No jumper => MIPI20 pins #11/#13 are left NC (*this is not a recommended option*).
 
 NOTE: It is not possible to have both GND and 5V connections enabled at the same time as two jumpers cannot physically fit into 3 pins.
 
