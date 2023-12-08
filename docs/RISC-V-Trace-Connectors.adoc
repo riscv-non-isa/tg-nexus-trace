@@ -1,7 +1,7 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate: Dec 06, 2023
+:revdate: Dec 08, 2023
 :revnumber: 1.0.0_rc10
 :revremark: Stable state (before Architecture Committee review)
 :url-riscv: http://riscv.org
@@ -51,7 +51,7 @@ Change is extremely unlikely.
 PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc10
-* 2023-12-06
+* 2023-12-08
 ** The pre-public review version (older history removed)
 
 [Preface]
@@ -96,7 +96,7 @@ Above two signals were present in older RISC-V Debug Specification but were neve
 
 This specification also adds the following option (described in dedicated chapter):
 
-* Defining MIPI20 pins #11 and #13 as optional TgtPwr+Cap pins (to supply 5V to power-up a small, evaluation target board). This option is supported by several debug and trace probe vendors.
+* Defining MIPI20 pins #11 and #13 as optional TgtPwr+Cap pins (to supply 5V to power-up a small, evaluation target board). This option is already supported by several debug and trace probe vendors.
 
 == MIPI20 Debug and Trace Connector
 
