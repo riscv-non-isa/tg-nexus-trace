@@ -528,7 +528,7 @@ NOTE: Bit *trTsEnable* (part of potentially shared Timestamp Unit) controls gene
 
 == Main N-Trace Trace Modes
 
-Nexus standard defined two main modes of tracing program flow:
+Nexus standard defines two main modes of tracing program flow:
 
 [[mode_BTM]]
 * *BTM (Branch Trace Messaging)* - every taken direct conditional branch is generating at least two byte message, but repeated branches may be counted and reported as a single message with a count (instead of many identical messages).
@@ -536,7 +536,7 @@ Nexus standard defined two main modes of tracing program flow:
 [[mode_HTM]]
 * *HTM (Branch History Messaging)* - every direct conditional branch (taken or not-taken) adds a single bit to the history buffer. It is much more efficient. 
 
-Encoder must implement at least one of these modes, however it is unlikely both HTM and BTM modes will be available.
+The encoder is required to implement at least one of these modes. Both may be supported, but is not required.
 
 IMPORTANT: The Nexus standard defines different conformance levels. These levels are not directly applicable to N-Trace as Nexus levels always include debug levels. Different N-Trace options are provided in <<N-Trace Specific Trace Controls,N-Trace Specific Trace Controls>> chapter.
 
@@ -547,9 +547,9 @@ IMPORTANT: Names `Indirect Branch ...` used by Nexus standard may be confusing a
 // [#Fields in Messages]
 === Fields in Messages
 
-Table below shows all types of messages. Single row shows all fields in particular message type. Many messages share fields and these fields are always present in the same order.
+Table below shows all types of messages that can be generated. A single row shows all fields in particular message type. Many messages share fields and these fields are always present in the same order.
 
-Attributes of fields is described as follows:
+Attributes of fields are described as follows:
 
 * *[n]* means *n*-bit (fixed-length) field
 * *[Var]* means variable-length, at least 1-bit wide, field
@@ -586,8 +586,12 @@ Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/maste
 
 [source,c]
 ----
+  // Naming:
+  //    NEXM=Nexus Message, BEG/END=Beginning/End of definition,
+  //    FLD/VAR=fixed/variable size field
+  //    ADR=special case of variable field (without least significant bit) 
   NEXM_BEG(IndirectBranchSync, 12),
-    NEXM_FLD(SYNC, 4),
+    NEXM_FLD(SYNC, 4),  
     NEXM_FLD(BTYPE, 2),
     NEXM_VAR(ICNT),
     NEXM_ADR(FADDR),
@@ -621,7 +625,7 @@ Table below provides details for fields which are used in more than one message 
 | Name | Bits | Description | Values/Notes
 4+|*Fields used in many messages*
 [[field_TCODE]]
-| TCODE      | 6             | Transfer Code | Message header that identifies the number and/or size of fields to be transferred, and how to interpret each of the fields following it. Table
+| TCODE      | 6             | Transfer Code | Message header that identifies the number and/or size of fields to be transferred, and how to interpret each of the fields following it.
 [[field_SRC]]
 | SRC        | *Cfg* | Source of Message Transmission | Width of SRC field is defined by <<trTeSrcBits,trTeSrcBits>> control field and it may be enabled/disabled by <<trTeInhibitSrc,trTeInhibitSrc>> control bit. This optional field is used to identify the source of the message transmission. In configurations that comprise only a single hart, this field need not be transmitted. For processors that comprise multiple harts, this field must be transmitted as part of the message to identify the source of the message transmission. Within a given device, the SRC field bit size should be the same size across all trace encoders associated with same trace stream.
 [[field_SYNC]]
