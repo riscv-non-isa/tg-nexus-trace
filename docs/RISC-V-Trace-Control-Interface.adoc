@@ -863,7 +863,7 @@ When set, start matching from exception cause codes specified by `trTeFilterMatc
 stop matching upon return from the 1st matching exception.
 |WARL|0
 |3     |trTeFilterMatchInterrupt | 
-When set, start matching from a trap with the interrupt level codes specified by 
+When set, start matching from either an interrupt or exception as specified by by 
 `trTeFilterMatchValueInterrupt` field for filter #__i__, and stop matching upon return from the 1st matching trap.
 |WARL|0
 |4     |trTeFilterMatchComp1 | 
@@ -930,7 +930,7 @@ example, if bit N is 1, then match if the *ecause* is N.
 |31-0   |trTeFilterMatchValueImpdef | 
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
-(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
+(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
 |WARL|SD 
 |===
 
@@ -941,7 +941,7 @@ When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 |31-0   |trTeFilterMatchMaskImpdef | 
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
-(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
+(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
 |WARL|SD 
 |===
 
@@ -976,24 +976,26 @@ Determines which input to compare against the primary comparator. +
 Selects the primary comparator function.  Primary result is true if input selected via `trTeCompPInput` is: +
 *0:* equal to `trTeCompPMatch` +
 *1:* not equal to `trTeCompPMatch` +
-*2:* less than to `trTeCompPMatch` +
+*2:* less than `trTeCompPMatch` +
 *3:* less than or equal to `trTeCompPMatch` +
-*4:* greater than to `trTeCompPMatch` +
+*4:* greater than `trTeCompPMatch` +
 *5:* greater than or equal to `trTeCompPMatch` +
 *6:* Result always false (input ignored).  Prime latch to 1 if `trTeCompMatchMode` is 3 +
 *7:* Result always true (input ignored)
+(Arithmetic comparisons are unsigned)
 |WARL|SD
 |7 |--|Reserved|--|0
 |10-8   |trTeCompSFunction |
 Selects the secondary comparator function.  Secondary result is true if input selected via `trTeCompSInput` is: +
 *0:* equal to `trTeCompSMatch` +
 *1:* not equal to `trTeCompSMatch` +
-*2:* less than to `trTeCompSMatch` +
+*2:* less than `trTeCompSMatch` +
 *3:* less than or equal to `trTeCompSMatch` +
-*4:* greater than to `trTeCompSMatch` +
+*4:* greater than `trTeCompSMatch` +
 *5:* greater than or equal to `trTeCompSMatch` +
 *6:* Result always true (input ignored).  Use `trTeCompSMatch` as a mask for `trTeCompPMatch` +
 *7:* Result always true (input ignored)
+(Arithmetic comparisons are unsigned)
 |WARL|SD
 |11 |--|Reserved|--|0
 |13-12   |trTeCompMatchMode |
@@ -1006,14 +1008,14 @@ Selects the match condition used to assert the overall comparator output +
 |14   |trTeCompPNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
-primary match (requires `trTeCompPInput` to be 0). This is also
-known as a watchpoint.
+primary match. This is also known as a watchpoint.
+Requires `trTeCompPInput` to be 0, and has no effect otherwise. 
 |WARL|SD
 |15   |trTeCompSNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
-secondary match (requires `trTeCompSInput` to be 0). This is also
-known as a watchpoint.
+secondary match.  This is also known as a watchpoint.
+Requires `trTeCompSInput` to be 0, and has no effect otherwise. 
 |WARL|SD
 |31-16 |--|Reserved|--|0
 |===
