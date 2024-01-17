@@ -365,6 +365,7 @@ Trace control register access by an internal debugger:
 
 NOTE: Additional control path(s) may also be implemented, such as extra JTAG registers or devices, a dedicated DMI debug bus or message-passing network. Such an access (which is NOT based on System Bus) may require custom implementation by trace probe vendors as this specification only mandates probe vendors to provide access via SBA commands.
 
+[[register-map]]
 === Trace Component Register Map
 
 Each  block of 32-bit registers (for each component) has the following layout:
