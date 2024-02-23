@@ -1,6 +1,8 @@
 # TG RISC-V Nexus Trace
 ## Curent Status
 
+* 2024/02/23 - more clarification changes
+
 * 2024/02/22 - clarification changes (before doing synchronization cleanup)
 
 * 2023/11/27 - initial review of ARC issues provided as 3 google-doc files (for easier comments):
