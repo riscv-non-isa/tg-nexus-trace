@@ -1,4 +1,4 @@
-[[[[header]]
+[[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
 :revdate:  Feb 23, 2024
