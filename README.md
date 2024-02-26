@@ -7,7 +7,7 @@
   * Fixed generation of Trace Control PDF (broken yesterday).
   * Fixed PDF column widths and several small fixes.
   * Links to other specifications replaced by names.
-  * All PDFs (1.0.0_rc13) are here: [Build artifacts]( https://github.com/riscv-non-isa/tg-nexus-trace/actions/runs/8056218695)
+  * All PDFs (1.0.0_rc13) are here: [Build artifacts](https://github.com/riscv-non-isa/tg-nexus-trace/actions/runs/8056565103)
 
 * 2024/02/23 - more clarification changes
 
