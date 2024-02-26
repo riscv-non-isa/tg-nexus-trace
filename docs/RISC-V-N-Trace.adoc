@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Feb 23, 2024
-:revnumber: 1.0.0_rc12
+:revdate:  Feb 26, 2024
+:revnumber: 1.0.0_rc13
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,7 +50,11 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc12
+=== Version 1.0.0_rc13
+* 2024-02-24
+** Removed links to other specifications and cleanup 'Related Specifications' chapter.
+** Fixed PDF column widths and small small fixes.
+** Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)
 * 2024-02-23
 ** Made more changes (all on clarification level)
 * 2024-02-22
@@ -111,20 +115,20 @@ NOTE: This specification does NOT require developers (both IP developers and tra
 
 === Related Specifications
 
-This document provides reference to separated documents developed together as part of RISC-V N-Trace Specification:
+This document provides reference to separated documents developed together with this *RISC-V N-Trace Specification*:
 
 [#RISC-V_Trace_Control_Interface]
-* https://github.com/riscv-non-isa/tg-nexus-trace/tree/master/pdfs/RISC-V-Trace-Control-Interface.pdf[RISC-V Trace Control Interface Specification] - Defines RISC-V trace control interface.
-* https://github.com/riscv-non-isa/tg-nexus-trace/tree/master/pdfs/RISC-V-Trace-Connectors.pdf[RISC-V Trace Connectors Specification] - Defines RISC-V trace connectors (for external trace probes).
+* *RISC-V Trace Control Interface Specification* - Defines RISC-V trace control interface.
+* *RISC-V Trace Connectors Specification* - Defines RISC-V trace connectors (for external trace probes).
+
+Document *RISC-V Trace Control Interface Specification* is intended to be shared with ratified *Efficient Trace for RISC-V Specification*.
 
 [#E-Trace_Specification]
-* https://github.com/riscv-non-isa/riscv-trace-spec/releases/download/v2.0rc2/riscv-trace-spec.pdf[Efficient Trace for RISC-V] Specification - Defines RISC-V Trace Ingress Port signals (chapter *4 Instruction Trace Interface*).
-** At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
-** In future ingress port may be defined in separated document - in such a a case reference to E-Trace specification will not be necessary (both N-Trace and E-Trace should reference same RISC-V Trace Ingress Port specification).
 
-Document `Specification of RISC-V Trace Control Interface` is intended to be shared with ratified `Efficient Trace for RISC-V Specification (v2.0.0)` document.
+*Efficient Trace for RISC-V Specification* defines RISC-V Trace Ingress Port signals (chapter *4 Instruction Trace Interface*).
 
-NOTE: Above links are pointing into github repositories, as there is no consistent storage or naming conventions for ratified RISC-V specifications.
+* At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
+* In future ingress port may be defined in separated document - in such a a case reference to E-Trace specification will not be necessary (both N-Trace and E-Trace should reference same RISC-V Trace Ingress Port specification).
 
 ////
 This comment is taken AS-IS from iommu_intro.adoc file
@@ -260,7 +264,7 @@ Table below defines how N-Trace encoder should handle different 3-bit *itype* va
 
 [#Handling of 3-bit itype values]
 .Handling of 3-bit itype values
-[cols="7%,23%,60%",options="header",]
+[cols="5%,20%,75%",options="header",]
 |======================================================================================================
 |#|itype|Encoder Action
 |0|None below|Only update <<field_I-CNT,I-CNT>> field.
@@ -296,9 +300,10 @@ When ingress port is implemented as 4-bit, the general uninferable jump *itype=6
 
 [#Handling of 4-bit itype values]
 .Handling of 4-bit itype values
-[cols="7%,23%,58%,12%",options="header",]
+[cols="5%,20%,63%,12%",options="header",]
 |======================================================================================================
-|8|Uninferable call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Stack Action
+|#|itype|Encoder Action|Stack Action
+|8|Uninferable call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
 |9|Inferrable call|Only update <<field_I-CNT,I-CNT>> field.|Push
 |10|Reseved||-
 |11|Reseved||-
@@ -331,9 +336,9 @@ N-Trace message transmission protocol is a strict subset of IEEE-5001 Nexus Stan
 
 [N-Trace subset]
 .N-Trace subset
-[cols="33%,22%,45%",options="header",]
+[cols="33%,20%,45%",options="header",]
 |====
-|Protocol Feature|IEEE-5001 Nexus Standard|N-Trace (strict subset of Nexus)
+|Protocol Feature|Nexus Standard|N-Trace (strict subset of Nexus)
 |Number of *MSEO* bits|1 or 2|2
 |Number of *MDO* bits|At least 1|6
 |Total (*MDO*+*MSEO*) bits|At least 2|8 (one byte)
@@ -368,7 +373,7 @@ Custom messages and fields may carry different payloads and may be larger than 6
 Table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
 
 [#MSEO Transitions]
-.Allowed Transitions of MSEO Bits 
+.Transitions of MSEO Bits 
 [cols="30%,30%",options="header",]
 |====
 |MSEO Function|Previous-*Current* MSEO[1:0] Sequence
@@ -451,7 +456,7 @@ Table below shows one N-Trace message with several fields. It is an output from 
 
 [#MDO_MSEO Examples]
 .MDO and MSEO Encoding Example
-[cols="7%,10%,8%,30%,45%",options="header",]
+[cols="7%,10%,8%,25%,50%",options="header",]
 |====
 |Byte|MDO [5:0]|MSEO [1:0]|Decoded (by reference tool)|Explanation
 |0xFF| 111111|11 | Idle | Most likely idle, but can also be the last byte of the previous message.
@@ -561,9 +566,9 @@ Table below shows all types of messages that can be generated. A single row defi
 
 Terms used as attributes of field:
 
-* *[n]* means *n*-bit (fixed-length) field
-* *[Var]* means variable-length, at least 1-bit wide, field
-* *[Cfg]* means configurable field (existence and size of this field depends on the encoder configuration option)
+* *[n]* fixed-length *n*-bit wide field
+* *[Var]* variable-length, at least 1-bit wide, field
+* *[Cfg]* configurable field (existence/size depends on the encoder configuration option)
 
 .Fields in Messages
 [cols="26%,9%,7%,7%,9%,17%,8%,10%,7%",options="header",]
@@ -698,7 +703,6 @@ Size of field in *Bits* column may be one or more of the following values:
 * *n (1..6)* - This is an *n*-bits wide, fixed-length field.
 * *Var* - This is a variable-length, at least 1-bit wide field.
 * *Cfg* - Size of this field depends on configuration setting (*Cfg* fields are always optional).
-* *Opt* - This field is optional (depends on the value of one of the preceding fields).
 
 Each message has its own table showing all fields in that message.
 
@@ -1852,7 +1856,7 @@ Table below is proposing some future enhancements for N-Trace messages. These we
 
 [#Future Enhancements]
 .Future Enhancements
-[cols="25%,18%,57%",options="header",]
+[cols="25%,17%,58%",options="header",]
 |====
 |Enhancement|Conformance|Notes
 |Instrumentation Data Trace|Nexus Compatible|Very likely (Nexus defines appropriate messages). It will require software to be instrumented by code sending data using trace infrastructure (Arm CoreSight ITM enabled many use-cases).

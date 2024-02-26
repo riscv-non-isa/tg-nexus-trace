@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  Feb 23, 2024
-:revnumber: 1.0.0_rc10
+:revdate:  Feb 26, 2024
+:revnumber: 1.0.0_rc13
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,7 +50,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc10
+=== Version 1.0.0_rc13
+* 2024-02-26
+** Fixed PDF column widths and small small fixes.
+** Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)
 * 2024-02-23
 ** Made many changes (all on clarification level)
 ** TODO: Continue
@@ -194,17 +197,17 @@ Each Trace Component is controlled by a set of 32-bit registers occupying up to 
 
 Each hart being traced must have its own separate Trace Encoder control component. A system with multiple harts must allow generating messages with a field indicating which hart is responsible for that message.
 
-This specification defines the following trace components (#*<N>* denotes 0-based index of particular component)
+This specification defines the following trace components (*_<N>* in a symbol name denotes 0-based index of particular component)
 
 .*Trace Components*
-[cols="20%,30%,~",options="header",]
+[cols="40%,30%,40%",options="header",]
 |===
 |*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)*
-|Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder#*<N>*
-|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel#*<N>*
-|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink#*<N>*
-|Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink#*<N>*
-|Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge#*<N>*
+|Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder_<N>
+|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel_<N>
+|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink_<N>
+|Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink_<N>
+|Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge_<N>
 |===
 
 NOTE: This specification is NOT addressing discovery of base addresses of trace components. These base addresses (symbols in above table) must be specified as part of trace tool configuration. Connections between different trace components must be also defined. Future versions of this specification may allow a single base address to be sufficient to access and discover all trace components in the system.
@@ -391,7 +394,7 @@ Registers in the 4KB range that are not implemented are reserved and read as 0 a
 
 Most trace control registers are optional. Some WARL fields may be hard-coded to any value (including 0). It allows different implementations to provide different functionality.
 
-Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same `trTe???` registers - as almost every register/field/bit is optional this provides good flexibility in implementation.
+Both N-Trace and E-Trace encoders are controlled by the same set of bits/fields in the same `trTe???` registers - as almost every register, field, bit is optional this provides good flexibility in implementation.
 
 All other trace components are shared between different trace encoders (N-Trace and E-Trace).
 
@@ -439,7 +442,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trRamControl |Required |RAM Sink control register
 |0x004 |trRamImpl |Required |RAM Sink Implementation information
-|0x008 - 0x00F |--|Reserved|Reserved for more control registers
+|0x008 - 0x00F |--|Reserved |Reserved for more control registers
 |0x010 |trRamStartLow |Required |Lower 32 bits of start address of circular trace buffer
 |0x014 |trRamStartHigh |Optional |Upper bits of start address of circular trace buffer
 |0x018 |trRamLimitLow |Required |Lower 32 bits of end address of circular trace buffer
@@ -448,8 +451,9 @@ All other trace components are shared between different trace encoders (N-Trace 
 |0x024 |trRamWPHigh |Optional |Upper  bits of current write location for trace data in circular buffer
 |0x028 |trRamRPLow |Optional |Lower 32 bits of access pointer for trace readback
 |0x02C |trRamRPHigh |Optional |Upper bits of access pointer for trace readback
+|0x030 - 0x03F |--|Reserved |Reserved for more control registers
 |0x040 |trRamData |Optional |Read/write access to SRAM trace memory (32-bit data)
-|0x044 - 0x07F |--|Optional |Reserved for bigger read buffer
+|0x044 - 0x07F |--|Reserved |Reserved for bigger read buffer
 |===
 
 ==== Summary of Trace PIB Sink Registers
@@ -471,6 +475,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 |0x000 |trFunnelControl |Required |Trace Funnel control register
 |0x004 |trFunnelImpl |Required |Trace Funnel Implementation information
 |0x008 |trFunnelDisInput |Optional |Disable individual funnel inputs
+|0x00C - 0x03F |--|Reserved |Reserved for more control registers
 4+|*_Timestamp control (trTs??)_*
 |0x040 |trTsControl |Optional |Timestamp control register
 |0x044 |--|Reserved|Reserved for extra timestamp control
@@ -693,7 +698,7 @@ In a system with an Internal Core timestamp counter (implemented in Trace Encode
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTsActive |Primary reset/enable for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
+|0 |trTsActive |Primary activate/reset bit for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
 |1 |trTsCount |Internal timestamp only. *1:* counter runs, *0:* counter stopped.|RW |0
 |2 |trTsReset |Internal timestamp only. Write 1 to reset the timestamp counter.|W1 |0
 |3 |trTsRunInDebug |Internal Core timestamp only. *1:* counter runs when hart is halted (in debug mode), *0:* stopped |WARL|0
@@ -775,9 +780,14 @@ External Trigger Outputs may also be present. A trigger out may be generated by 
 Select action to perform when external trigger input 0 fires. If external trigger input 0 does not exist, then its action is fixed at 0. +
 *0:* No action +
 *1:* Reserved +
-*2:* *Trace-on action*. When `trTeInstTrigEnable` = 1 it will start instruction tracing (`trTeInstTracing` -> 1). When `trTeDataTrigEnable` = 1 it will start data tracing (`trTeDataTracing` -> 1). +
-*3:* *Trace-off action*. When `trTeInstTrigEnable` = 1 it will stop instruction tracing (`trTeInstTracing` -> 0). When `trTeDataTrigEnable` = 1 it will stop data tracing (`trTeDataTracing` -> 0). +
-*4:* *Trace-notify action*. If tracing is active (`trTeInstTracing` = 1), then the encoder generates a packet with the current PC and, if enabled, a timestamp. +
+|2 |*Trace-on action* +
+When `trTeInstTrigEnable` = 1 it will start instruction tracing (`trTeInstTracing` -> 1). +
+When `trTeDataTrigEnable` = 1 it will start data tracing (`trTeDataTracing` -> 1).
+|3 |*Trace-off action* +
+When `trTeInstTrigEnable` = 1 it will stop instruction tracing (`trTeInstTracing` -> 0). +
+When `trTeDataTrigEnable` = 1 it will stop data tracing (`trTeDataTracing` -> 0). 
+|4 |*Trace-notify action* +
+If tracing is active (`trTeInstTracing` = 1), then the encoder generates a packet with the current PC and, if enabled, a timestamp.
 *5-15:* Reserved +
 |WARL|0
 |31-4 |trTeTrigExtInAction *__n__* |Select actions (as defined for bits 3-0) for external trigger input *__n__* (1..7). If an external trigger input does not exist, then its action is fixed at 0. |WARL|0
@@ -789,8 +799,10 @@ Select action to perform when external trigger input 0 fires. If external trigge
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3-0 |trTeTrigExtOutEvent0 a|
 Bitmap to select which event(s) cause external trigger 0 output to fire. If external trigger output 0 does not exist, then all bits are fixed at 0. Bits 2 and 3 may be fixed at 0 if the corresponding feature is not implemented. +
-*Bit 0:* Start trace transition (`trTeInstTracing` 0 -> 1) will fire the trigger. +
-*Bit 1:* Stop trace transition (`trTeInstTracing` 1 -> 0) will fire the trigger. +
+*Bit 0:* +
+Start trace transition (`trTeInstTracing` 0 -> 1) will fire the trigger. +
+*Bit 1:* + 
+Stop trace transition (`trTeInstTracing` 1 -> 0) will fire the trigger. +
 *Bit 2-3:* Vendor-specific event (optional)
 |WARL|0
 |31-4 |trTeTrigExtOutEvent *__n__* |Select events for external trigger output *__n__* (1..7). If an external trigger output does not exist, then its event bits are fixed at 0 |WARL|0
@@ -1303,7 +1315,7 @@ After the PIB reset value of this field should be set to safe (not too fast cloc
 Software can determine what modes are available by attempting to write each mode setting to the WARL field `trPibMode` and reading back to see if the value was accepted.
 
 .*Allowed PIB Configurations*
-[cols="40%,20%,20%,20%",options="header",align=center,width=80%]
+[cols="40%,20%,23%,17%",options="header",align=center,width=80%]
 |===
 |*Mode* |*trPibMode* |*trPibClkCenter* |*Bit rate*
 |Off |0 |X |--
@@ -1597,11 +1609,10 @@ Value of `trTeVerMajor` as 0 means this is the original version of this control 
 
 Initially this specification was kept somewhat compatible, but after the split of components into 4K regions it was hard to list all changes.
 
-In general the migration path from 'ver 0' (for both IP providers and tool vendors) should not be hard as the main concepts remain.
+In general the migration path from 'ver 0' (for both IP providers and tool vendors) should not be hard as the main concepts remain unchanged.
 
-The best reference for this is the original donation from SiFive:
-
-https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf
+Original donation from SiFive is located here: 
+https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf[RISC-V-Trace-Control-Interface-Proposed-20200612.pdf]
 
 IMPORTANT: Not all trace tools may support legacy version 0. But all such tools should reject the version 0 with a very clear message.
 
