@@ -52,6 +52,7 @@ PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc14
 * 2024-02-28
+** More ARC review (only 8 left!).
 ** More ARC review notes. Especially:
 ** Improved introduction
 ** Combined last 3 chapters
@@ -1182,7 +1183,7 @@ The HIST field is usually implemented as a shift register (initialized to 1 at r
 
 If this is happening, a <<msg2_ResourceFull,ResourceFull>> with the HIST field (<<field_RCODE,RCODE>>=1 or 2) must be generated.
 
-NOTE: Trace decoders do not have to be aware about the actual size of the HIST field implemented by the encoder, however in order to allow efficient implementation of trace encoders (and also allowing HIST pattern detection) N-Trace implementation limits HIST size to max 32-bits. Longer HIST fields would not provide much gain and are making HIST pattern detection more costly (in terms of hardware resources).
+NOTE: Trace decoders do not have to be aware about the actual size of the HIST field implemented by the encoder, however in order to allow efficient implementation of trace encoders (and also allowing HIST pattern detection) this N-Trace specification limits HIST field size to max 32-bits. Longer HIST fields would not provide much of a gain and would make repeated HIST field detection more costly (in terms of hardware resources).
 
 When a HIST buffer is identical in two or more consecutive <<msg2_ResourceFull,ResourceFull>> messages, it can be detected and reported using the HIST + HREPEAT (History Repeat Counter) instead of many identical messages.
 
@@ -1339,11 +1340,11 @@ Trace requires different types of synchronization on different abstraction level
 |3| Exit from Debug Mode | Yes | Very first synchronizing message after exit from debug mode. If trace is disabled (at exit from debug more) no messages should be generated.
 |4| Sequential Instruction Counter | No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details.
 |5| Trace Enable | No | Generated when trace is re-enabled after a gap caused by trace being disabled (e.g. due to trace filters). This must not be used for exit from debug mode (in which case SYNC=3 must be used).
-|6| Trace Event | No | Serves as a marker when debug watchpoint with action=4 triggered .
-|7| Restart from FIFO overrun | Yes |First synchronization after a gap caused by lost trace
-|8| Reserved |-|
+|6| Trace Event | No | Serves as a marker when debug watchpoint with action=4 triggered. See *RISC-V Debug Specification* for watchpoint setting details.
+|7| Restart from FIFO overrun | Yes |First synchronization after a gap caused by an internal FIFO overun. Some trace messages before this synchronization message were lost.
+|8| Reserved |-| For future standard use.
 |9| Exit from Power-down | No | When the hart is restarted after powered-down. Similar to SYNC=1 (Exit from Reset) described above.
-|10..13| Reserved |-|
+|10..13| Reserved |-| For future standard use.
 |14..15| Reserved |-| For vendor defined codes.
 |====
 
