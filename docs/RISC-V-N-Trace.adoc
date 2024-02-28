@@ -1084,14 +1084,20 @@ NOTE: Normally (without above bit enabled or implemented) addresses with many mo
 
 The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set:
 
-. If F-ADDR/U-ADDR field is sent then last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
-. This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at most significant bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
-. Simple implementations may not implement an enable bit and always send full address.  
-.. Benefits of using it on 32-bit cores is small, so it may not be implemented.  
+* If F-ADDR/U-ADDR field is sent then last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
+* This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at most significant bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
+* Simple implementations may not implement an enable bit and always send full address.  
+** Benefits of using it on 32-bit cores is small, so it may not be implemented.  
 
-IMPORTANT: Trace encoder must implement a most significant bit extension (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
+This way of encodign allows an encoder to efficiently send:
 
-==== Example Encodings
+* Any physical address.
+* Any virtual address (in any mode).
+* Any illegal address.
+
+Trace encoder must implement a most significant bit detection (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
+
+*Example Encodings*
 
 *Non-extended address (most significant MDO bit = 0)*
 
@@ -1152,26 +1158,6 @@ IMPORTANT: Trace encoder must implement a most significant bit extension (skippi
                        F-ADDR field=0x5FFF_FFFF_FFFF_FFFF, Encoded address=0xBFFF_FFFF_FFFF_FFFE
 
 NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any Sv39/Sv48/Sv57 modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
-
-==== Rationale
-
-RISC-V ISA defines 3 different virtual memory addressing modes: Sv39, Sv48 and Sv57. Privilege ISA specification says:
-
-* For Sv39 => must have bits 63-39 all equal to bit 38
-* For Sv48 => must have bits 63-48 all equal to bit 47
-* For Sv57 => must have bits 63-57 all equal to bit 56
-
-It means that there is no need to send full 64-bit addresses and report 39, 48 or 57 least significant bits of an address should be enough.
-
-Additionally addresses sent by trace may be one of the following addresses (encoded in F-ADDR/U-ADDR fields as described above)
-
-. Physical address (in M-mode or when virtual memory system is not enabled).
-. Virtual address (in S/U-mode when virtual memory system is enabled).
-. Any illegal address.
-
-Also, RISC-V System with S and U modes cannot use any physical memory above 56-bit address. This is because of PMP (54-bit field without 2 least significant bits) and Sv39/48/57 limitations (44 bit for page index + 12 bit of page offset).
-
-Some systems may even allow less bits as physical memory map may not have anything above certain (reasonably low) address - this is dictated by simplicity of address decoder and true number of address bits on internal busses.
 
 === HIST Field Generation
 
@@ -1275,8 +1261,8 @@ Example <<ICNT_code,code>> (used to illustrate BTM) from may generate messages w
 
 I-CNT is reset in one of these two situations (as defined by IEEE-5001 Nexus Standard):
 
+* After I-CNT field is sent in a message.
 * When a trace starts or is restarted (for any reason).
-* After I-CNT field is sent in a message (all key messages).
 
 ==== I-CNT Field Overflows
 
@@ -1329,44 +1315,44 @@ This method should be rather easy to implement as each encoder must implement 'p
 === Synchronizing Messages
 
 Synchronizing messages are messages with a <<field_SYNC,SYNC>> field.
-The SYNC field identifies the reason for synchronization and such messages include the <<field_F-ADDR,F-ADDR>> (full address) field to synchronize the PC with the PC observed by the encoder
+That field identifies the reason for synchronization and such messages include the <<field_F-ADDR,F-ADDR>> (full address) field to synchronize the PC with the PC observed by the encoder.
+
+All synchronizing messages MUST fully reset the encoder state, so decoding can be started from any of synchronizing messages.
 
 [IMPORTANT]
 ====
 Trace requires different types of synchronization on different abstraction levels. Two major categories of synchronization are:
 
-* *Instruction trace synchronization*: allows the trace decoder to synchronize onto an ongoing instruction trace stream. This is done via "synchronizing messages", which are described in this chapter in more detail.
+* *Instruction trace synchronization*: allows the trace decoder to synchronize onto an ongoing instruction trace stream. This is done via synchronizing messages, which are described in this chapter in more detail.
 * *Message alignment synchronization*: allows the trace decoder to detect the trace message boundaries (i.e. start and end of a trace message) within a trace stream. This kind of synchronization is not described in this chapter. It can be done via idle cycles, and is described in the <<PIB Idle Cycles Explained,PIB Idle Cycles Explained>> chapter in more detail.
 ====
 
-Most synchronizing messages fully reset the encoder state, so decoding can be started from such a message. When trigger is reported (either by debug watchpoint or external trigger) or I-CNT counter overflows, then decoder state is not reset, but still full address and absolute timestamp is reported.
 
 [#SYNC Field Values]
 .SYNC Field Values
-[cols="7%,20%,10%,13%,50%",options="header",]
+[cols="7%,20%,10%,63%",options="header",]
 |====
-|Value|Name |Encoder Reset|Required|Description
-|0| External Trace Trigger | *No* | No | This message serves as a marker (encoder state is not reset) of external trigger input. If trace is enabled by a trigger SYNC=5 should be used.
-|1| Exit from Reset | Yes | No | Core was reset without stopping (by watchdog for example). Address should be a reset vector, but HIST and I-CNT should provide the PC of the last instruction before reset.
-|2| Periodic Synchronization | Yes | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when circular RAM buffer was wrapped around overwriting part of earlier trace). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
-|3| Exit from Debug Mode |  Yes | Yes | Very first synchronizing message after exit from debug mode. If trace is disabled (at exit from debug more) no messages should be generated.
-|4| Sequential Instruction Counter | *No* | Yes/No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details. Required for HTM mode.
-|5| Trace Enable |  Yes | No | Generated when trace is re-enabled after a gap caused by trace being disabled (e.g. due to trace filters). This must not be used for exit from debug mode (in which case SYNC=3 must be used).
-|6| Trace Event | *No* | No | Serves as a marker (encoder state is not reset) when debug watchpoint with action=4 triggered .
-|7| Restart from FIFO overrun |  Yes | Yes |First synchronization after a gap caused by lost trace
-|8| Reserved |Yes|-|
-|9| Exit from Power-down | Yes | No | When the hart is restarted after powered-down. Similar to SYNC=1 (Exit from Reset) described above.
-|10..13| Reserved |Yes|-|
-|14..15| Reserved |Yes|-| For vendor defined codes.
+|Value|Name |Required|Description
+|0| External Trace Trigger | No | This message serves as a marker of external trigger. If trace is enabled by an external trigger SYNC=5 should be used.
+|1| Exit from Reset | No | Core was reset without stopping (by watchdog for example). Address should be a reset vector, but HIST and I-CNT should provide the PC of the last instruction before reset.
+|2| Periodic Synchronization | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when circular RAM buffer was wrapped around overwriting part of earlier trace). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
+|3| Exit from Debug Mode | Yes | Very first synchronizing message after exit from debug mode. If trace is disabled (at exit from debug more) no messages should be generated.
+|4| Sequential Instruction Counter | No | Generated when I-CNT overflows. See <<I-CNT Field Overflows,I-CNT Field Overflows>> chapter for details.
+|5| Trace Enable | No | Generated when trace is re-enabled after a gap caused by trace being disabled (e.g. due to trace filters). This must not be used for exit from debug mode (in which case SYNC=3 must be used).
+|6| Trace Event | No | Serves as a marker when debug watchpoint with action=4 triggered .
+|7| Restart from FIFO overrun | Yes |First synchronization after a gap caused by lost trace
+|8| Reserved |-|
+|9| Exit from Power-down | No | When the hart is restarted after powered-down. Similar to SYNC=1 (Exit from Reset) described above.
+|10..13| Reserved |-|
+|14..15| Reserved |-| For vendor defined codes.
 |====
 
-Decoders should report different synchronization codes (including reserved codes) as it provides extra explanation for a program flow change. Periodic synchronization are generated to allow easier decoding (not necessarilly from the start ...) and may only be reported when desired by the user (for debugging?).
+Decoders should report synchronization codes reported in messages (including reserved codes) as it provides extra explanation for a program flow change. Periodic synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
 
 [IMPORTANT]
 ====
-* All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled).
-* Most synchronizing messages fully reset the encoder state, so decoding can be started from this message.
-** When trigger is reported (either by debug watchpoint or external trigger) or I-CNT counter overflows, then decoder state is not reset, but still full address and absolute timestamp is reported.
+* All synchronizing messages fully reset the encoder state, so decoding can be started from this message.
+* All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may report full/absolute timestamp.
 ====
 
 === Corner Cases and Sequences
