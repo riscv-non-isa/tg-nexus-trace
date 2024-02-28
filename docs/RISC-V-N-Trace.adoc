@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Feb 26, 2024
-:revnumber: 1.0.0_rc13
+:revdate:  Feb 28, 2024
+:revnumber: 1.0.0_rc14
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,7 +50,11 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc13
+=== Version 1.0.0_rc14
+* 2024-02-28
+** More ARC review notes. Especially:
+** Improved introduction
+** Combined last 3 chapters
 * 2024-02-24
 ** Removed links to other specifications and cleanup 'Related Specifications' chapter.
 ** Fixed PDF column widths and small small fixes.
@@ -77,41 +81,34 @@ Copyright 2019-2024 by RISC-V International.
 Key contributors to RISC-V N-Trace (Nexus-based Trace) specification in alphabetical order: +
 
 Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
-Robert Chyla (IAR, SiFive, Individual) => Most topics, editing, publishing +
+Robert Chyla (IAR, SiFive, MIPS) => Most topics, editing, publishing +
 Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
-Jay Gamoneda (NXP) => Reviews +
+Jay Gamoneda (NXP) => Reviews, updating after ARC review +
 Markus Goehrle (Lauterbach) => Reviews, updates +
 Nino Vidovic (Segger) => Reviews
 
 == Introduction to N-Trace
 
-N-Trace specification provides specification of complete, end-to-end, trace system for RISC-V cores, harts and SoC/MCU designs.
+This *RISC-V N-Trace (Nexus based trace) Specification* is based on the well-established *IEEE-5001 Nexus Standard* tailored to support the trace of RISC-V ISA cores, harts and SoC/MCU designs.
 
-N-Trace is based on IEEE "The Nexus 5001 Forum™ Standard for a Global Embedded Processor Debug Interface Version 3.0" standard.
-
-This document is describing N-Trace Trace Encoder and Messaging Protocol version 1.0. It serves multiple audiences:
+It serves multiple audiences:
 
 * N-Trace encoder logic/IP developers.
-* Validation teams seeking validation of N-Trace trace implementation.
-* Debug and trace tools (probes, decoders, analyzers) developers.
+* Validation teams testing of N-Trace implementation.
+* Debug and trace tools developers.
+* Software programmers utilizing the trace for debugging and performance tuning of RISC-V-based systems.
 
-During development of this specification the following key design decisions were made:
+Together with the *RISC-V Trace Control Interface Specification* and *RISC-V Trace Connectors Specification* provide a complete, end-to-end, trace system for RISC-V based SoC.
 
-* Trace ingress port (connection between hart and trace sub-system) is identical as in ratified E-Trace specification. No other parts of E-Trace specification are used by N-Trace (E-Trace protocol just defines different format of trace packets).
+Trace system is observing execution of a code and transferring trace messages (encoding the code flow and execution timing information in compressed format) for storage in the memory or transmission out of the SoC. Trace decoders will reconstruct original code flow from set of captured trace messages.
 
-* N-Trace messages are kept compatible with the original IEEE-5001 Nexus Standard specification
-** An appropriate subset applicable to RISC-V was selected.
-** Subset was limited to program trace only, but it will be followed by IEEE-5001 Nexus Standard compliant data and bus trace.
-** Handful of IEEE-5001 Nexus Standard compatible extensions allowing better trace compression are defined.
+A trace ingress port (connection between the RISC-V hart and trace system) defined in the ratified *Efficient Trace for RISC-V Specification* allows the RISC-V hart to communicate execution information to the trace system. N-Trace encoder is encoding an execution flow into stream of messages. An appropriate selection of N-Trace messages (compatible with the original IEEE-5001 Nexus Standard) is described in this document.
 
-* Trace control layer defined in IEEE-5001 Nexus Standard specification was message based and it would be hard to adopt it. Instead, donated by SiFive, a proven working control layer specification was adopted and extended. It assured that in the moment of N-Trace ratification most trace tool vendors will be able to provide full support with minimal changes in trace control software.
+The primary objective was to define the program flow trace messages. Extensions have been allowing for better trace compression. Future versions may include IEEE-5001 Nexus compatible data and bus trace. 
 
-** This control specification was agreed to be shared with ratified E-Trace specification, so the RISC-V trace sub-system will be more unified and easier to understand and handle.
+Registers controlling the N-trace decoder are defined by the *RISC-V Trace Control Interface Specification*. The control documentation is shared with E-trace so not all register and register fields are supported by N-trace.
 
-* Trace connectors defined by IEEE-5001 Nexus Standard were debug oriented, so could not be easily used. Instead, industry standard MIPI-compliant connectors (MIPI20 and Mictor-38) which are supported by all debug and trace probes for a long time are used (with small, generic extensions).
-** These connectors are pure extensions of connectors defined in ratified RISC-V Debug Specification.
-
-NOTE: This specification does NOT require developers (both IP developers and trace tool developers) to become familiar with any other documentation besides PDF files provided below. These PDF files are providing links to original PDF files (IEEE-5001 Nexus Standard, SiFive Control Layer Donation, MIPI Connectors White Paper) as references.
+Trace connectors defined by IEEE-5001 Nexus Standard were debug oriented, so could not be directly applied. Instead, industry standard MIPI-compliant connectors are defined in *RISC-V Trace Connectors Specification*. These connectors are pure extensions of debug-only, MIPI-compliant connectors defined by ratified *RISC-V Debug Specification*.
 
 === Related Specifications
 
@@ -119,16 +116,15 @@ This document provides reference to separated documents developed together with 
 
 [#RISC-V_Trace_Control_Interface]
 * *RISC-V Trace Control Interface Specification* - Defines RISC-V trace control interface.
+** This document is intended to be shared with ratified *Efficient Trace for RISC-V Specification*.
 * *RISC-V Trace Connectors Specification* - Defines RISC-V trace connectors (for external trace probes).
 
-Document *RISC-V Trace Control Interface Specification* is intended to be shared with ratified *Efficient Trace for RISC-V Specification*.
 
 [#E-Trace_Specification]
 
-*Efficient Trace for RISC-V Specification* defines RISC-V Trace Ingress Port signals (chapter *4 Instruction Trace Interface*).
+Ratified *Efficient Trace for RISC-V Specification* defines RISC-V Trace Ingress Port signals (chapter *4 Instruction Trace Interface*). At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
 
-* At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
-* In future ingress port may be defined in separated document - in such a a case reference to E-Trace specification will not be necessary (both N-Trace and E-Trace should reference same RISC-V Trace Ingress Port specification).
+NOTE: In the future trace ingress port may be defined in separated document - in such a a case reference to E-Trace specification will not be necessary.
 
 ////
 This comment is taken AS-IS from iommu_intro.adoc file
@@ -151,7 +147,7 @@ Other potential unicode characters might be found in the following links:
 
 === Trace Encoder Interfaces
 
-Diagram below shows only a single RISC-V hart. In a system with multiple cores/harts the *Trace Ingress Port*, *Trace Encoder Control* and *Trace Encoder* blocks should be replicated for each hart.
+Diagram below shows one possible implementation with only a single RISC-V hart. In a system with multiple cores/harts the *Trace Ingress Port*, *Trace Encoder Control* and *Trace Encoder* blocks should be replicated for each hart.
 The main *Trace Control Layer* controlling other (shared) components in the trace system is not replicated.
 
 [[fig:trace-encoder-interfaces]]
@@ -184,6 +180,8 @@ The main *Trace Control Layer* controlling other (shared) components in the trac
 +----------------+       +-- signals defined        optional source ID)
                              in E−Trace spec
 ....
+
+NOTE: Placement of the Trace Encoder and Trace Control Layer are implementation dependent. 
 
 === Definitions and Terminology
 
@@ -536,10 +534,9 @@ must be allowed.
 |*All* trTeTrig...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeFilter...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeComp...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
-|======================================================================================================
-
 [[trTsEnable]]
-NOTE: Bit *trTsEnable* (part of potentially shared Timestamp Unit) controls generation of <<field_TSTAMP,TSTAMP>> fields in N-Trace messages. See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification for details of the Timestamp Unit.
+|trTsEnable|Optional| Part of (potentially shared Timestamp Unit) controls generation of <<field_TSTAMP,TSTAMP>> field. See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification for details of the Timestamp Unit.
+|======================================================================================================
 
 == Main N-Trace Trace Modes
 
@@ -1380,17 +1377,17 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 
 [#Corner Cases]
 .Corner Cases
-[cols="20%,80%",options="header",]
+[cols="30%,70%",options="header",]
 |====
 |Sequence of events|Messages Generated
 |Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
 |Other back to back jumps or branches|Same as above (depending on the size of a second instruction)
 |Back to back exceptions|Second message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception) and <<field_I-CNT,I-CNT>>=0 (nothing executed in between).
 |Exception at interrupt destination|Same as above.
-|Pending interrupt at start of hart|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
+|Pending interrupt at debug mode exit|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
 |Exception at first instruction traced|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by a message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception).
 |Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
-|Hart stops with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
+|Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
 |====
 
 === Timestamp Reporting
@@ -1405,15 +1402,20 @@ To reconstruct the full timestamp, software begins at a <<Synchronizing Messages
 
 The following rules must be observed:
 
-* If timestamps are enabled, ALL <<Synchronizing Messages,Synchronizing Messages>> (which include full address) must include absolute TSTAMP value.
-** Otherwise some sections of decoded trace would have a timestamp and some not and it would be hard for a programmer to comprehend such a trace.
-* It is permitted that some non-synchronizing messages are not reporting timestamp but debugger may not be able to provide profiling data. 
+* If timestamps are enabled, ALL <<Synchronizing Messages,Synchronizing Messages>> must include absolute TSTAMP value.
+* It is not required that ALL non-synchronizing messages are always reporting timestamp.
+** It may be done to save trace bandwidth or in case of sending back to back messages.
 * Absolute timestamp cannot exceed 64 bits (even with 1ps resolution, 64-bit counters will overflow in about 584 years).
 ** Implementation may choose a smaller counter - trace tools may assume timestamp will not overflow in a single session, however it would not be very hard to add support for it.
 * It is suggested that in multi-hart systems all Trace Encoders use a shared timestamp (for better trace correlation), but it is not necessary.
 * Timestamp at all cases, when an address is provided should be at a time when an event leading to that particular address being sent happened.
-** If the above is not possible, timestamps should be at least reported in a consistent way, so distance between distant events can be reliably calculated. 
-** It is needed to assure that time reported at exceptions/interrupt handlers will be a moment when exception or interrupt was observed.
+
+[NOTE]
+====
+If the above is not possible, timestamps should be at least reported in a consistent way, so time distance between distant events (for example periodic timer interrupt every) can be reliably calculated.
+
+It is needed to assure that time reported at exceptions/interrupt handlers will be a moment when exception or interrupt was observed.
+====
 
 == Optimization Extensions
 
@@ -1540,7 +1542,7 @@ Above example shows a 2-bit pattern, but using the same technique it can be expa
 
 NOTE: This type of compression (reporting shorter patterns and larger counts) may not be practical as it may save only a little. Trace is compressed a lot already and it really should not matter if we report 150 iterations of a loop in 6 or 7 bytes. Example above is provided to assure that trace encoders must handle this type of trace compression.
 
-NOTE: When HREPEAT counter (which may have limited number of bits in particular implementation) overflows several consecutive message with max HREPEAT value should be generated. Total count represented by all these messages (sum of all HREPEAT fields) will be a number of repeated branch history message.
+NOTE: When number of repeated branches is bigger than max HREPEAT counter value then several consecutive messages with max HREPEAT value should be generated. Total count represented by all these messages (sum of all HREPEAT fields) will be a number of repeated branch history message.
 
 NOTE: HREPEAT counter should not have too many bits as it is not desired to not generate any trace messages for longer periods of time. Bigger HREPEAT will not make compression better but will produce timestamp rarelly.
 
@@ -1797,7 +1799,7 @@ NOTE: In order to provide partial decoding of big trace, messages with <<field_F
 
 === Decoding Algorithm Principles
 
-Algorithm to reconstruct control from the program from N-Trace messages is simple:
+To reconstruct the control flow of the program from N-Trace messages do the following:
 
 * Handle <<field_HIST,HIST>> field (if available and not empty)
 ** Analyze code from the current PC through inferable unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* field).
@@ -1808,11 +1810,11 @@ Algorithm to reconstruct control from the program from N-Trace messages is simpl
 ** It will reach either non-inferable unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
 * At the last step the <<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>> field (if available) should be applied. This will be the next PC where analysis of the next trace message should start.
 ** This is either a destination address of indirect unconditional jump or an address of an exception/interrupt handler.
+* Handle the <<field_B-CNT,B-CNT>> or <<field_RCODE,RCODE>> fields by processing data from previous trace message.
 
 [NOTE]
 =====
 * Phrase *inferable unconditional jumps (all types)* include indirect unconditional jumps, which may be inferable.
-* Some messages may encode I-CNT and HIST fields under different names (RDATA/CDATA), but meaning and processing is the same.
 * Extra fields like SYNC/B-TYPE only provide extra details, but are NOT essential for a decoder to reconstruct the PC flow.
 =====
 
@@ -1837,20 +1839,19 @@ The IEEE-5001 Nexus Standard provides a lot of flexibility and in general N-Trac
 
 * Field <<field_ECODE,ECODE>> is variable-length field (to assure TSTAMP field is on byte boundary).
 
-Several compatible extensions are described in appropriate chapters and are marked with *Extension:* marker. Each of them is disabled by default and must be directly enabled. 
+Several compatible extensions are described in preceeding chapters and are marked with *Extension:* marker. Each of them is disabled by default and must be directly enabled. 
 
 == Additional Material
 
-=== Trace Bandwidth Considerations
+*Trace Bandwidth Considerations*
 
-* SRC field (if enabled) may change the otherwise optimal layout of <<Fields in Messages,Fields in Messages>>.
+SRC field (if enabled) may change the otherwise optimal layout of <<Fields in Messages,Fields in Messages>>.
 
-=== Validation Considerations
+*Validation Considerations*
 
-* Resource Full message with I-CNT overflow is rare and may not be experienced in normal code. Simplest way to generate is to have an infinite loop and (rare) interrupt handler.
-** This loop should increment a register or memory location - this value should correspond to total accumulated I-CNT.
+Resource Full message with I-CNT overflow is rare and may not be experienced in normal code. Simplest way to generate is to have an infinite loop and (rare) interrupt handler. This loop should increment a register or memory location - this value should correspond to total accumulated I-CNT.
 
-=== Potential Future Enhancements
+*Potential Future Enhancements*
 
 Table below is proposing some future enhancements for N-Trace messages. These were discussed during the development of the N-Trace specification.
 

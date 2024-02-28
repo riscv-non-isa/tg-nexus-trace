@@ -73,7 +73,7 @@ Key contributors to RISC-V Trace Control Interface specification in alphabetical
 Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
 Robert Chyla (IAR, SiFive, MIPS) => Most topics, editing, publishing +
 Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
-Jay Gamoneda (NXP) => Reviews, editing after ARC review +
+Jay Gamoneda (NXP) => Reviews, updating after ARC review +
 Markus Goehrle (Lauterbach) => Reviews, updates +
 Iain Robertson (UltraSoC, Siemens) => E-Trace compatibility, filtering chapter, reviews +
 Nino Vidovic (Segger) => Reviews
