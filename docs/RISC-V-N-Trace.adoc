@@ -665,7 +665,7 @@ See <<Address Compression,Address Compression>> chapter for more details.
 
  NOTE: The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
 [[field_U-ADDR]]
-| U-ADDR      | *Var* | Unique part of Target Address | Unique part of PC address (XOR with recent x-ADDR drop).
+| U-ADDR      | *Var* | Unique part of Target Address | Unique part of PC address (XOR with recently reported address).
 See <<Address Compression,Address Compression>> chapter for more details.
 
 The U-ADDR field is always sent together with the <<field_B-TYPE,B-TYPE>> field.
@@ -1101,7 +1101,7 @@ This way of encodign allows an encoder to efficiently send:
 * Any virtual address (in any mode).
 * Any illegal address.
 
-Trace encoder must implement a most significant bit detection (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
+Trace encoder must implement a most significant bit detection (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending F-ADDR/U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an F-ADDR/U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
 
 *Example Encodings*
 
@@ -1363,7 +1363,7 @@ Decoders should report synchronization codes reported in messages (including res
 
 === Corner Cases and Sequences
 
-Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and x-ADDR fields (to report non-inferable unconditional flow changes).
+Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report non-inferable unconditional flow changes).
 
 However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases. 
 
