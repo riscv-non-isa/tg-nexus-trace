@@ -1,6 +1,12 @@
 # TG RISC-V Nexus Trace
 ## Curent Status
 
+* 2024/02/28 - more clarification changes
+
+  * N-Trace almost done.
+  * HIST/I-CNT overflow to be replaced by 'became full' (related to SYNC).
+  * Only SYNC/overflow clarifications left.
+
 * 2024/02/26 - more clarification changes
 
   * Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)  .
