@@ -3,9 +3,7 @@
 
 * 2024/02/28 - more clarification changes
 
-  * N-Trace almost done.
-  * HIST/I-CNT overflow to be replaced by 'became full' (related to SYNC).
-  * Only SYNC/overflow clarifications left.
+  * N-Trace almost done (only synchronization messages clarifications is TODO).
 
 * 2024/02/26 - more clarification changes
 
