@@ -52,6 +52,7 @@ PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc14
 * 2024-02-28
+** Added link to reference decoder.
 ** More ARC review (only 8 left!).
 ** More ARC review notes. Especially:
 ** Improved introduction
@@ -595,7 +596,7 @@ NOTE: Messages marked as *Reserved* or *Vendor Defined* should be ignored by dec
 However decoders should provide an option to display/dump them and/or generate a warning as such a message may be seen when trace capture is corrupted.
 *Vendor Defined* messages can be used for prototyping, debugging, validation and maintenance purposes.
 
-Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h defines all messages in machine-readable format. Here is small snipped from this file as an example:
+Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all messages in machine-readable format. Here is small snipped from this file as an example:
 
 [source,c]
 ----
@@ -1799,10 +1800,12 @@ To reconstruct the control flow of the program from N-Trace messages do the foll
 ** This is either a destination address of indirect unconditional jump or an address of an exception/interrupt handler.
 * Handle the <<field_B-CNT,B-CNT>> or <<field_RCODE,RCODE>> fields by processing data from previous trace message.
 
+
 [NOTE]
 =====
 * Phrase *inferable unconditional jumps (all types)* include indirect unconditional jumps, which may be inferable.
-* Extra fields like SYNC/B-TYPE only provide extra details, but are NOT essential for a decoder to reconstruct the PC flow.
+* Extra fields like <<field_SYNC,SYNC>>/<<field_B-TYPE,B-TYPE>> only provide extra details, but are NOT essential for a decoder to reconstruct the PC flow.
+* See https://github.com/riscv-non-isa/tg-nexus-trace/tree/master/refcode/c[N-Trace Reference Code] for simple but fully functional implementation.
 =====
 
 === Decoding trace from multiple harts
