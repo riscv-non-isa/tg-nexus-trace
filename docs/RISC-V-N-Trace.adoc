@@ -1,7 +1,7 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Feb 28, 2024
+:revdate:  Feb 29, 2024
 :revnumber: 1.0.0_rc14
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
@@ -51,6 +51,8 @@ Change is extremely unlikely.
 PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc14
+* 2024-02-29
+** Fix formatting/typo spotted in PDF.
 * 2024-02-28
 ** Renamed I-CNT/FILE Overflow to I-CNT/HIST Full.
 ** Other overflow/overrun/full related changes.
@@ -563,7 +565,7 @@ IMPORTANT: Names `Indirect Branch ...` used by IEEE-5001 Nexus Standard may be c
 // [#Fields in Messages]
 === Fields in Messages
 
-Table below shows all types of messages that can be generated. A single row defines all fields in particular message type. Many messages share fields and these fields are always present in the same order.
+Table below shows all types of messages that can be generated. A single row defines all fields in particular message type (shared fields are always present in the same order).
 
 Terms used as attributes of field:
 
@@ -598,7 +600,7 @@ NOTE: Messages marked as *Reserved* or *Vendor Defined* should be ignored by dec
 However decoders should provide an option to display/dump them and/or generate a warning as such a message may be seen when trace capture is corrupted.
 *Vendor Defined* messages can be used for prototyping, debugging, validation and maintenance purposes.
 
-Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all messages in machine-readable format. Here is small snipped from this file as an example:
+Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all N-Trace messages in machine-readable format. Here is small snipped from this file as an example:
 
 [source,c]
 ----
@@ -811,7 +813,7 @@ NOTE: Not-taken direct conditional branches or direct unconditional jumps are NO
 [[msg2_Error]]
 === Error Message
 
-Error message must be produced when internal FIFO will messages overflows and trace message is lost.
+Error message must be produced when internal messages FIFO overflows and trace message is lost.
 
 [#Fields_Error]
 .Error Message Fields
@@ -842,7 +844,7 @@ Error message must be produced when internal FIFO will messages overflows and tr
 
 *Explanations and Notes*
 
-Error Message must be sent immediately prior to a <<Synchronizing Messages,synchronizing message>> as soon as space is available in the Trace Encoder output queue. It is suggested to have a  timestamp at the moment when the first trace messages got dropped, but it is not required.
+Error Message must be sent immediately prior to a <<Synchronizing Messages,synchronizing message>> as soon as space is available in the Trace Encoder output queue. It is suggested to have a timestamp at the moment when the first trace messages got dropped, but it is not required.
 
 [NOTE]
 ====
@@ -1334,7 +1336,7 @@ Trace requires different types of synchronization on different abstraction level
 
 [#SYNC Field Values]
 .SYNC Field Values
-[cols="7%,20%,10%,63%",options="header",]
+[cols="7%,18%,12%,63%",options="header",]
 |====
 |Value|Name |Required|Description
 |0| External Trace Trigger | No | This message serves as a marker of external trigger. If trace is enabled by an external trigger SYNC=5 should be used.
@@ -1367,7 +1369,7 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 
 [#Corner Cases]
 .Corner Cases
-[cols="30%,70%",options="header",]
+[cols="25%,75%",options="header",]
 |====
 |Sequence of events|Messages Generated
 |Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
