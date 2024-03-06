@@ -53,6 +53,7 @@ PDF generated on: {localdatetime}
 === Version 1.0.0_rc14
 * 2024-03-06
 ** Many updates from ARC review notes.
+** Changed 'R' into 'RO' (read-only) - this is separated commit. 
 * 2024-02-26
 ** Fixed PDF column widths and small small fixes.
 ** Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)
@@ -127,7 +128,7 @@ This section briefly describes features of the Trace Encoder and other trace com
 
 *Trace Decoder* - Software program that takes a recorded trace (from Trace Sink) and produces readable execution history.
 
-*R* - Denotes read-only bit/field - it does not mean it will return the same value each time when read.
+*RO* - Denotes read-only bit/field - it does not mean it will return the same value each time when read.
 
 *RW* - Denotes read-write bit/field - value being read may not be the same as what was written as some fields may change their values because of other reasons.
 
@@ -542,7 +543,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 
 |2 |trTeInstTracing |*1:* Instruction trace is being generated. Written from a trace tool (after a write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
 
-|3 |trTeEmpty |Reads as 1 when all generated trace have been emitted. |R|1
+|3 |trTeEmpty |Reads as 1 when all generated trace have been emitted. |RO|1
 |6-4 |trTeInstMode |
 Instruction trace generation mode +
 *0:* Full Instruction trace is disabled, but other trace (data trace) may be emitted. +
@@ -595,14 +596,14 @@ Trace recording/protocol format: +
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |R| 1
-|7-4 |trTeVerMinor |Trace Encoder Component Minor Version. Value 0 means the component is compliant with this document. |R|0
-|11-8 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |R|0x1
+|3-0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |RO| 1
+|7-4 |trTeVerMinor |Trace Encoder Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11-8 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |RO|0x1
 |15-12 |--|Reserved for future versions of this standard|--|0
 |19-16 |trTeProtocolMajor |Trace Protocol Major Version. As specified by specification governing `trTeFormat`.
-|R|SD
+|RO|SD
 |23-20 |trTeProtocolMinor |Trace Protocol Minor Version. As specified by specification governing `trTeFormat`.
-|R|SD
+|RO|SD
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
 
@@ -648,7 +649,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTeDataImplemented|Read as 1 if data trace is implemented.|R|SD
+|0 |trTeDataImplemented|Read as 1 if data trace is implemented.|RO|SD
 |1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tool or controlled by triggers. When trTeDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL|SD
 |2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL|0
 |3 |trTeDataStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RW1C|0
@@ -732,7 +733,7 @@ Prescale timestamp clock by 2^(2*trTsPrescale) (1, 4, 16, 64).
 |14-10 |--|Reserved|--|0
 |15 |trTsEnable |Enable for timestamp field in trace messages/packets (for Trace Encoder only). |WARL|0
 |23-16 | |System-dependent fields to control what message/packet types include timestamp fields. |WARL|0
-|29-24 |trTsWidth |Width of timestamp in bits (0..63)|R|SD
+|29-24 |trTsWidth |Width of timestamp in bits (0..63)|RO|SD
 |31-30 |--|Reserved|--|0
 |===
 
@@ -740,14 +741,14 @@ Prescale timestamp clock by 2^(2*trTsPrescale) (1, 4, 16, 64).
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0 |trTsCounterLow |Lower 32 bits of timestamp counter. |R|0
+|31-0 |trTsCounterLow |Lower 32 bits of timestamp counter. |RO|0
 |===
 
 .*Register: trTsCounterHigh: Timestamp Counter Upper Bits (trBaseEncoder/Funnel+0x04C)*
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31-0 |trTsCounterHigh |Upper bits of timestamp counter, zero-extended. |R|0
+|31-0 |trTsCounterHigh |Upper bits of timestamp counter, zero-extended. |RO|0
 |===
 
 === Trace Encoder Triggers
@@ -1095,7 +1096,7 @@ Be aware that in case trace memory wraps around some protocols may require addit
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
 |1 |trRamEnable |*1:* Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to memory (idle bytes/packet may be appended after the last message/packet to assure memory access alignment). See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details. Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP??` registers. Disabling trace may update `trRamWP??` as a result of flushing.|RW |0
 |2 |--|Reserved|--|0
-|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, which means that all trace data is flushed.|R|1
+|3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, which means that all trace data is flushed.|RO|1
 |4 |trRamMode |
 *0:* This RAM Sink will operate in SRAM mode +
 *1:* This RAM Sink will operate in SMEM mode
@@ -1120,11 +1121,11 @@ Details should be defined in definition of each trace protocol.
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trRamVerMajor |Trace RAM Sink Component Major Version. Value 1 means the component is compliant with this document. |R|1
-|7-4 |trRamVerMinor |Trace RAM Sink Component Minor Version. Value 0 means the component is compliant with this document. |R|0
-|11-8 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |R|0x9
-|12 |trRamHasSRAM |This RAM Sink supports SRAM mode|R|SD
-|13 |trRamHasSMEM |This RAM Sink supports SMEM (System Memory) mode|R|SD
+|3-0 |trRamVerMajor |Trace RAM Sink Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7-4 |trRamVerMinor |Trace RAM Sink Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11-8 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |RO|0x9
+|12 |trRamHasSRAM |This RAM Sink supports SRAM mode|RO|SD
+|13 |trRamHasSMEM |This RAM Sink supports SMEM (System Memory) mode|RO|SD
 |23-14 |--|Reserved for future versions of this standard|--|0
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
@@ -1135,7 +1136,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
+|1-0 |--|Always 0 (two LSB of 32-bit address)|RO|0
 |31-2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL|Undef or fixed to 0
 |===
 
@@ -1152,7 +1153,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
+|1-0 |--|Always 0 (two LSB of 32-bit address)|RO|0
 |31-2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. |WARL|Undef
 |===
 
@@ -1168,7 +1169,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trRamWrap |Set to 1 by hardware when `trRamWP` wraps. It is only set to 0 if `trRamWPLow` is written|WARL|0
-|1 |--|Always 0 (bit B1 of 32-bit address)|R|0
+|1 |--|Always 0 (bit B1 of 32-bit address)|RO|0
 |31-2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to a natural boundary. After a trace word write occurs while `trRamWP` = `trRamLimit`, `trRamWP` is set to `trRamStart`.|WARL|Undef
 |===
 
@@ -1183,7 +1184,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|1-0 |--|Always 0 (two LSB of 32-bit address)|R|0
+|1-0 |--|Always 0 (two LSB of 32-bit address)|RO|0
 |31-2 |trRamRPLow |Absolute 32-bit part of address in trace circular memory buffer visible through `trRamData`. `trRamRP` auto-increments following an access to `trRamData`. After a trace word read occurs while `trRamRP` = `trRamLimit`, `trRamRP` is set to `trRamStart`. Required for SRAM mode and optional for SMEM mode. |WARL|Undef
 |===
 
@@ -1262,7 +1263,7 @@ The Trace Funnel combines messages/packets from multiple sources into a single t
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
 |1 |trFunnelEnable |*1:* Trace Funnel enabled. Setting `trFunnelEnable` to 0 flushes any queued trace data to output. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW |0
 |2 |--|Reserved|--|0
-|3 |trFunnelEmpty |Reads 1 when Trace Funnel internal buffers are empty |R|1
+|3 |trFunnelEmpty |Reads 1 when Trace Funnel internal buffers are empty |RO|1
 |31-4 |--|Reserved|--|0
 |===
 
@@ -1270,9 +1271,9 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trFunnelVerMajor |Trace Funnel Component Major Version. Value 1 means the component is compliant with this document. |R|1
-|7-4 |trFunnelVerMinor |Trace Funnel Component Minor Version. Value 0 means the component is compliant with this document. |R|0
-|11-8 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |R|0x8
+|3-0 |trFunnelVerMajor |Trace Funnel Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7-4 |trFunnelVerMinor |Trace Funnel Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11-8 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |RO|0x8
 |23-12 |--|Reserved for future versions of this standard|--|0
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
@@ -1311,7 +1312,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
  See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.
 |RW |0
 |2 |--|Reserved|--|0
-|3 |trPibEmpty |Reads 1 when PIB internal buffers are empty.|R|1
+|3 |trPibEmpty |Reads 1 when PIB internal buffers are empty.|RO|1
 |7-4 |trPibMode |Select mode for output pins. Allowed values are described in the `Allowed PIB Configurations` table below.|WARL|0
 |8 |trPibClkCenter |In parallel modes, adjust TRC_CLK timing to the center of the bit period. This can be set only if `trPibMode` selects one of the parallel protocols.|WARL|SD
 |9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. In this mode input to the sink is not consumed. The calibration pattern is described below.|WARL|0
@@ -1331,9 +1332,9 @@ After the PIB reset value of this field should be set to safe (not too fast cloc
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trPibVerMajor |Trace PIB Sink Component Major Version. Value 1 means the component is compliant with this document. |R|1
-|7-4 |trPibVerMinor |Trace PIB Sink Component Minor Version. Value 0 means the component is compliant with this document. |R|0
-|11-8 |trPibCompType |Trace PIB Sink Component Type (PIB Sink) |R|0xA
+|3-0 |trPibVerMajor |Trace PIB Sink Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7-4 |trPibVerMinor |Trace PIB Sink Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11-8 |trPibCompType |Trace PIB Sink Component Type (PIB Sink) |RO|0xA
 |23-12 |--|Reserved for future versions of this standard|--|0
 |31-24 |--|Reserved for vendor specific implementation details|--|SD
 |===
@@ -1446,7 +1447,7 @@ Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace pr
 down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
 |1 |trAtbBridgeEnable |*1:* ATB Bridge enabled. Setting `trAtbBridgeEnable` to 0 flushes any queued trace data to ATB. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW |0
 |2 |--|Reserved|--|0
-|3 |trAtbBridgeEmpty |Reads 1 when ATB Bridge internal buffers are empty |R|1
+|3 |trAtbBridgeEmpty |Reads 1 when ATB Bridge internal buffers are empty |RO|1
 |7-4 |--|Reserved|--|0
 |14-8 |trAtbBridgeID |ID of this node on ATB. Values of 0x00 and 0x70-0x7F are reserved by the ATB specification and should not be used. |RW |0
 |31-15 |--|Reserved|--|0
@@ -1456,9 +1457,9 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3-0 |trAtbBridgeVerMajor |ATB Bridge Component Major Version. Value 1 means the component is compliant with this document. |R|1
-|7-4 |trAtbBridgeVerMinor |ATB Bridge Component Minor Version. Value 0 means the component is compliant with this document. |R|0
-|11-8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |R|0xE
+|3-0 |trAtbBridgeVerMajor |ATB Bridge Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7-4 |trAtbBridgeVerMinor |ATB Bridge Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11-8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |RO|0xE
 |14-12 |trAtbBridgeAsyncFreq |
 *0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
