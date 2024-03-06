@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  Feb 26, 2024
-:revnumber: 1.0.0_rc13
+:revdate:  Mar 6, 2024
+:revnumber: 1.0.0_rc14
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,7 +50,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc13
+=== Version 1.0.0_rc14
+* 2024-03-06
+** Many updates from ARC review notes.
 * 2024-02-26
 ** Fixed PDF column widths and small small fixes.
 ** Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)
@@ -73,7 +75,7 @@ Key contributors to RISC-V Trace Control Interface specification in alphabetical
 Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
 Robert Chyla (IAR, SiFive, MIPS) => Most topics, editing, publishing +
 Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
-Jay Gamoneda (NXP) => Reviews, updating after ARC review +
+Jay Gamoneda (NXP) => Reviews, editing and updating after ARC review +
 Markus Goehrle (Lauterbach) => Reviews, updates +
 Iain Robertson (UltraSoC, Siemens) => E-Trace compatibility, filtering chapter, reviews +
 Nino Vidovic (Segger) => Reviews
@@ -179,7 +181,7 @@ The Trace Encoder sends trace messages to the PIB Sink. Each message is transmit
 
 The ATB Bridge transmits bytes of RISC-V trace messages as an ATB initiator.
 
-ATB width is byte aligned (8, 16, 32, 64, 128) which is well matching packet=sequence-of-bytes definition.
+ATB width is byte aligned (8, 16, 32, 64, 128) which allows transport of trace messages/packets defined as sequence of bytes.
 
 === Trace Funnel
 
@@ -197,17 +199,17 @@ Each Trace Component is controlled by a set of 32-bit registers occupying up to 
 
 Each hart being traced must have its own separate Trace Encoder control component. A system with multiple harts must allow generating messages with a field indicating which hart is responsible for that message.
 
-This specification defines the following trace components (*_<N>* in a symbol name denotes 0-based index of particular component)
+This specification defines the following trace components (**__N__** in at the end of symbol name denotes 0-based index of particular component)
 
 .*Trace Components*
 [cols="30%,40%,30%",options="header",]
 |===
-|*Component Name* |*Component Type (value=symbol)*|*Base Address (symbol)*
-|Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder_<N>
-|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel_<N>
-|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink_<N>
-|Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink_<N>
-|Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge_<N>
+|*Component Name* |*Component Type* (value=symbol)|*Base Address* (symbol #**__N__**)
+|Trace Encoder |0x1=TRCOMP_ENCODER|trBaseEncoder**__N__**
+|Trace Funnel |0x8=TRCOMP_FUNNEL|trBaseFunnel**__N__**
+|Trace RAM Sink |0x9=TRCOMP_RAMSINK|trBaseRamSink**__N__**
+|Trace PIB Sink |0xA=TRCOMP_PIBSINK|trBasePibSink**__N__**
+|Trace ATB Bridge |0xE=TRCOMP_ATBBRIDGE|trBaseAtbBridge**__N__**
 |===
 
 NOTE: This specification is NOT addressing discovery of base addresses of trace components. These base addresses (symbols in above table) must be specified as part of trace tool configuration. Connections between different trace components must be also defined. Future versions of this specification may allow a single base address to be sufficient to access and discover all trace components in the system.
@@ -219,13 +221,15 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 * Each component sending a trace message/packet must assure the entire packet can be accepted by the destination component (or pushed into the FIFO buffer).
 ** Sending a partial packet is NEVER allowed as it will not be possible to process and decode such a trace.
 * If a component cannot send an entire message/packet it must wait until it will be possible to do so.
-* Tracing is typically required to be non-intrusive, and if the Trace Encoder cannot keep up with the hart it must drop the packet and wait for the receiver to be ready.
+* Tracing is typically required to be non-intrusive, and if the Trace Encoder cannot keep up with the hart it should drop the packet and wait for the receiver to be ready.
 ** Once trace is allowed to resume it must issue an instruction trace synchronization message/packet so the decoder will be aware that some (unknown) amount of trace has been lost.
 ** It is advisable to drain the trace pipeline to some hysteresis level before resuming - otherwise a lot of short chunks of trace may be produced.
-* Optionally (and if acceptable to the user), the Trace Encoder may be configured to stall the hart in order to avoid packet loss.
-* Easiest way to prevent trace overflows is to assure FIFO capable of holding several trace messages/packets is placed AFTER Trace Encoder and/or use wider internal busses to provide more bandwidth.
-** Bandwidth at input to the sink must be in general larger than the data being produced.
-** Amount of data being generated can be limited by creating tracing windows with the help of triggers.
+* Optionally the Trace Encoder may be configured to stall the hart in order to avoid trace data loss.
+* To prevent trace overflows the following techniques can be used:
+** Add a FIFO capable of holding several trace messages/packets to mitigate bursts of trace data.
+** Use wider internal busses to provide more bandwidth.
+** Make sure funnels and sinks provide the same or more bandwidth than encoders.
+** Use triggers to create trace windows/ranges to limit amount of trace data - especially in multi-core configurations.
 
 .*Allowed Connections Between Components*
 [cols="20%,20%,~",options="header",]
@@ -246,7 +250,7 @@ Different components must be connected via internal busses and/or FIFO buffers. 
 |Trace ATB Bridge |Arm ATB bus|Sending trace to ATB (to combine RISC-V trace with other Arm components on the system)
 |===
 
-NOTE: Sending to Arm ATB infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from (possible) Arm components in the system using RISC-V Trace sub-system.
+NOTE: Sending RISC-V trace to Arm CoreSight infrastructure is allowed (via ATB Bridge), but this specification does not specify how to transport trace data from other Arm CoreSight components in the system using RISC-V Trace sub-system.
 One of possible ways of doing so would be to create a custom trace component, configure it to encapsulate it as custom N-Trace trace messages and connect it as input to one of trace funnels.
 
 ==== Example Component Connection Diagrams 
@@ -340,9 +344,9 @@ Other potential unicode characters might be found in the following links:
 +-------------------------+   |
                               |
 +-----------+   +---------+   |   +--------+     +-------------+ 
-| Hart with |   |  Trace  |   +-->| Trace  |     | Trace Sink  |
-| Ingress   |==>| Encoder |------>| Funnel |---->|    or       |
-|  Port     |   |         |---+   | (top)  |     | ATB Bridge  |
+| Hart #4   |   |  Trace  |   +-->| Trace  |     | Trace Sink  |
+|           |==>| Encoder |------>| Funnel |---->|    or       |
+|           |   |   #4    |---+   | (top)  |     | ATB Bridge  |
 +-----------+   +---------+   |   +--------+     +-------------+
                               |
                               v
@@ -352,7 +356,7 @@ Other potential unicode characters might be found in the following links:
                       +----------------+ 
 ....
 
-NOTE: In above configuration top Trace Funnel should allow disabling an input from an extra Trace Encoder so trace from 3-hart cluster may go to Trace Sink only and trace from an extra hart may go to Trace RAM Sink only.
+NOTE: Trace data from *Trace Encoder #4* may be combined with trace from other 3 Trace Encoders. But it may be also sent to dedicated *Trace RAM Sink* - in such a case corresponding input to *Trace Funnel (top)* should be disabled.
 
 === Accessing Trace Control Registers
 
@@ -453,7 +457,6 @@ All other trace components are shared between different trace encoders (N-Trace 
 |0x02C |trRamRPHigh |Optional |Upper bits of access pointer for trace readback
 |0x030 - 0x03F |--|Reserved |Reserved for more control registers
 |0x040 |trRamData |Optional |Read/write access to SRAM trace memory (32-bit data)
-|0x044 - 0x07F |--|Reserved |Reserved for bigger read buffer
 |===
 
 ==== Summary of Trace PIB Sink Registers
@@ -508,6 +511,9 @@ Each component has a `tr??Impl` register, which includes two 4-bit `tr??VerMinor
 
 Software tools must report the version number as two decimal numbers __major.minor__ - initial version of this specification is defined as *__1.0__*.
 
+[NOTE]
+====
+
 Trace software should handle versions as follows (let's assume hypothetical version 2.3 was defined as current version in moment of release of trace software)
 
 * 0.x => Reject as not supported or generate a warning and handle as legacy version 0.
@@ -518,7 +524,8 @@ Trace software should handle versions as follows (let's assume hypothetical vers
 * 1.x => Generate a warning and continue or reject as an obsolete (referring to last debugger supporting this version).
 * 3.x => Abort with an error that this future version is not compatible with existing software and possibly redirect to the tool update page.
 
-NOTE: Displayed messages should report component name, component base address and current and supported version numbers. It is suggested to display the full hexadecimal value of `tr??Impl` register as it may aid in debugging of possibly incorrect/incompatible component configuration.
+Displayed messages should report component name, component base address and current and supported version numbers. It is suggested to display the full hexadecimal value of `tr??Impl` register as it may aid in debugging of possibly incorrect/incompatible component configuration.
+====
 
 == Trace Encoder Control Interface
 
@@ -546,7 +553,7 @@ Instruction trace generation mode +
 *7:* Reserved for vendor-defined instruction trace mode.
 |WARL|SD
 |8-7 |--|Reserved|--|0
-|9 |trTeContext |Send Ownership messages to indicate processor context when scontext, mcontext, v, or prv changes and full context information immediately after all Sync messages. |WARL|SD
+|9 |trTeContext |Enable sending trace messages/fields with scontext/mcontext values and/or privilege levels. |WARL|SD
 |10 |--|Reserved|--|0
 |11  |trTeInstTrigEnable |*1:* Allows `trTeInstTracing` to be set or cleared by Trace-on
 and Trace-off Debug module or External triggers respectively|WARL|0
@@ -568,7 +575,7 @@ and Trace-off Debug module or External triggers respectively|WARL|0
 *1:* Count trace messages/packets +
 *2:* Count hart clock cycles +
 *3:* Count instruction 16-bit half-words +
-Once the periodic counter is reached, an instruction trace synchronization message/packet should be generated at the nearest opportunity.|WARL|SD
+Once the max value of periodic counter is reached, an instruction trace synchronization message/packet should be generated.|WARL|SD
 
 |19-18 |--|Reserved|--|0
 
@@ -618,11 +625,11 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 *3:* Full address compare (always assures skipped return addresses are the same as addresses deducted from call instruction). Implementation may take advantage of RAS (Return Address Stack) if implemented by the hart.
 |WARL|SD
 |8 |trTeInstEnRepeatedHistory|Enable repeated branch history detection when set.|WARL|0
-|9 |trTeInstEnAllJumps|Emit trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder is able to determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|0
+|9 |trTeInstEnAllJumps|Enable emitting of trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder is able to determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|0
 |10 |trTeInstExtendAddrMSB|When set, allow extension of virtual address MSB bits (RISC-V Sv39/48/57 virtual address modes assume MSB bits to be all identical). Encoding details are trace protocol dependent.|WARL|0
 |15-11 |--|Reserved for additional instruction trace control/status bits|--|0
-|27-16 |trTeSrcID |Trace source ID assigned to this trace encoder. If `trTeSrcBits` is not 0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field. May be fixed or variable.|WARL|SD
-|31-28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. May be fixed or variable. Some trace protocols may require that this field is identical for all enabled trace encoders within the same trace stream. |WARL|SD
+|27-16 |trTeSrcID |Trace source ID assigned to this trace encoder. If `trTeSrcBits` is not 0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field.|WARL|SD
+|31-28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. Some trace protocols may require that this field is identical for all enabled trace encoders within the same trace stream. |WARL|SD
 |===
 
 NOTE: Applicability of different `trTeInst??` fields for each trace encoding protocol is described in a document which defines the protocol (and not all fields are applicable to all protocols).
@@ -692,18 +699,25 @@ In a system with Funnels, typically all the Funnels are built with a Timestamp U
 
 An Internal Timestamp Unit may include a timestamp clock prescaler divider, which can extend the range of a narrower timestamp and uses less power but has less resolution.
 
-In a system with an Internal Core timestamp counter (implemented in Trace Encoder associated with a hart), it may be desirable to stop the counter when the hart is halted by a debugger. An optional control bit is provided for this purpose.
+In a system with an Internal Core timestamp counter (implemented in Trace Encoder associated with a hart) an optional control bit is provided to stop the counter when the hart is halted by a debugger.
 
 .*Register: trBaseEncoder/Funnel+0x040 trTsControl: Timestamp Control Register*
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTsActive |Primary activate/reset bit for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
-|1 |trTsCount |Internal timestamp only. *1:* counter runs, *0:* counter stopped.|RW |0
-|2 |trTsReset |Internal timestamp only. Write 1 to reset the timestamp counter.|W1 |0
-|3 |trTsRunInDebug |Internal Core timestamp only. *1:* counter runs when hart is halted (in debug mode), *0:* stopped |WARL|0
+|1 |trTsCount |*Internal* timestamp only. +
+*1:* counter runs, +
+*0:* counter stopped.
+|RW |0
+|2 |trTsReset |*Internal* timestamp only. +
+Write 1 to reset the timestamp counter.|W1 |0
+|3 |trTsRunInDebug |*Internal Core* timestamp only. +
+*1:* counter runs when hart is halted (in debug mode), +
+*0:* stopped 
+|WARL|0
 |6-4 |trTsMode a|
-Mode used by Timestamp unit +
+Mode used by Timestamp unit: +
 *0:* None +
 *1:* External +
 *2:* Internal System +
@@ -712,7 +726,9 @@ Mode used by Timestamp unit +
 *5-7:* Vendor-specific mode
 |WARL|SD
 |7 |--|Reserved|--|0
-|9-8 |trTsPrescale |Internal timestamp only. Prescale timestamp clock by 2^(2*trTsPrescale) (1, 4, 16, 64). |WARL|0
+|9-8 |trTsPrescale |*Internal* timestamp only. +
+Prescale timestamp clock by 2^(2*trTsPrescale) (1, 4, 16, 64).
+|WARL|0
 |14-10 |--|Reserved|--|0
 |15 |trTsEnable |Enable for timestamp field in trace messages/packets (for Trace Encoder only). |WARL|0
 |23-16 | |System-dependent fields to control what message/packet types include timestamp fields. |WARL|0
@@ -738,14 +754,14 @@ Mode used by Timestamp unit +
 
 ==== Debug Module Triggers
 
-Debug triggers are signals from the hart that a trigger (breakpoint or watchpoint) was hit, but the action associated with that trigger is a trace-related action. Action identifiers 2-5 are reserved for trace actions in the RISC-V Debug Spec, where triggers are defined. Actions 2-4 are defined by the Efficient Trace for RISC-V (E-Trace) Specification. The desired action is written to the action field of the Match Control mcontrol CSR (0x7a1). Not all harts support trace actions; the debugger should read back mcontrol CSR after setting one of these actions to verify that the option exists.
+Debug triggers are signals from the hart that a trigger (breakpoint or watchpoint) was hit, but the action associated with that trigger is a trace-related action. Action identifiers 2-5 are reserved for trace actions in the RISC-V Debug Specification, where triggers are defined. Actions 2-4 are defined by the Efficient Trace for RISC-V (E-Trace) Specification. The desired action is written to the action field of the Match Control mcontrol CSR (0x7a1). Not all harts support trace actions; the debugger should read back mcontrol CSR after setting one of these actions to verify that the option exists.
 
 .*Debug Trigger Actions*
 [cols="30%,70%",options="header",align=center]
 |===
 |*Action (from debug spec)* |*Effect*
-|0 |Breakpoint exception
-|1 |Debug exception
+|0 |Breakpoint exception (as defined in RISC-V Debug Specification)
+|1 |Debug exception (as defined in RISC-V Debug Specification)
 |2 |*Trace-on action* +
 When `trTeInstTrigEnable` = 1 it will start instruction tracing (`trTeInstTracing` -> 1). +
 When `trTeDataTrigEnable` = 1 it will start data tracing (`trTeDataTracing` -> 1).
@@ -819,7 +835,7 @@ All registers with offsets 0x400 .. 0x7FC are reserved for additional trace enco
 
 Trace encoder filters are an optional feature that can be used to control the generated trace in various ways.
 
-The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enabling a filter option), the corresponding register from the bit's description must have a valid value. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
+The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enabling a filter option), the corresponding register from the bit's description must have a correct value already set as otherwise the trigger may fire unintentionally. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
 
 NOTE: Filter and comparator registers refer to values of some signals (as *priv*, *itype*, *ecause*, *dtype*, '*dsize*, ...) available on Trace Ingress Port. See E-Trace specification for details of encoding of these values.
 
@@ -829,8 +845,8 @@ NOTE: Filter and comparator registers refer to values of some signals (as *priv*
 |*Address Offset*   |*Register Name*  |*Compliance* |*Description*
 |0x400 + 0x20*__i__ |trTeFilter__i__Control |Optional |Filter _i_ control
 |0x404 + 0x20*__i__ |trTeFilter__i__MatchInst |Optional |Filter _i_ instruction match control
-|0x408 + 0x20*__i__ |trTeFilter__i__MatchEcause |Optional |Filter _i_ Ecause match control
-|0x40C + 0x20*__i__ |--| Optional |Reserved
+|0x408 + 0x20*__i__ |trTeFilter__i__MatchEcauseLow |Optional |Filter _i_ Ecause match control (bits 31:0)
+|0x40C + 0x20*__i__ |trTeFilter__i__MatchEcauseHigh |Optional |Filter _i_ Ecause match control (bits 63:32)
 |0x410 + 0x20*__i__ |trTeFilter__i__MatchValueImpdef |Optional |Filter _i_ impdef value
 |0x414 + 0x20*__i__ |trTeFilter__i__MatchMaskImpdef |Optional |Filter _i_ impdef mask
 |0x418 + 0x20*__i__ |trTeFilter__i__MatchData |Optional |Filter _i_ Data trace match control
@@ -863,7 +879,7 @@ When set, start matching from exception cause codes specified by `trTeFilterMatc
 stop matching upon return from the 1st matching exception.
 |WARL|0
 |3     |trTeFilterMatchInterrupt | 
-When set, start matching from a trap with the interrupt level codes specified by 
+When set, start matching from a trap with itypes codes specified by 
 `trTeFilterMatchValueInterrupt` field for filter #__i__, and stop matching upon return from the 1st matching trap.
 |WARL|0
 |4     |trTeFilterMatchComp1 | 
@@ -899,7 +915,7 @@ When set, match *dsize* values as specified by `trTeFilterMatchChoiceDsize` fiel
 |===
 
 .*Register: trTeFilter__i__MatchInst : Filter _i_ Instruction Match Control Register (trBaseEncoder+0x404 + 0x20__i__)*
-[cols="5%,30%,~,8%,8%",options="header",]
+[cols="5%,40%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |7-0   |trTeFilterMatchChoicePrivilege | 
@@ -913,13 +929,20 @@ respectively.
 |31-9 |--|Reserved|--|0
 |===
 
-.*Register: trTeFilter__i__MatchEcause : Filter _i_ Ecause Match Control Register (trBaseEncoder+0x408 + 0x20__i__)*
-[cols="5%,30%,~,8%,8%",options="header",]
+.*Register: trTeFilter__i__MatchEcauseLow : Filter _i_ Ecause Match Control (low) Register (trBaseEncoder+0x408 + 0x20__i__)*
+[cols="5%,40%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31-0   |trTeFilterMatchChoiceEcause | 
-When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion causes for which the corresponding bit is set. For
-example, if bit N is 1, then match if the *ecause* is N.
+When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion causes for which the corresponding bit is set. If bit N is 1, then match if the *ecause* is N.
+|WARL|SD 
+|===
+
+.*Register: trTeFilter__i__MatchEcauseHigh : Filter _i_ Ecause Match Control (high) Register (trBaseEncoder+0x40C + 0x20__i__)*
+[cols="5%,40%,~,8%,8%",options="header",]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|31-0   |trTeFilterMatchChoiceEcauseHigh | This register stores bits 63:32 to allow matching of higher *ecause* codes. If bit N is 1, then match if the *ecause* is N+32.
 |WARL|SD 
 |===
 
@@ -930,7 +953,7 @@ example, if bit N is 1, then match if the *ecause* is N.
 |31-0   |trTeFilterMatchValueImpdef | 
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
-(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
+(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
 |WARL|SD 
 |===
 
@@ -941,7 +964,7 @@ When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 |31-0   |trTeFilterMatchMaskImpdef | 
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
-(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`.
+(`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
 |WARL|SD 
 |===
 
@@ -976,9 +999,9 @@ Determines which input to compare against the primary comparator. +
 Selects the primary comparator function.  Primary result is true if input selected via `trTeCompPInput` is: +
 *0:* equal to `trTeCompPMatch` +
 *1:* not equal to `trTeCompPMatch` +
-*2:* less than to `trTeCompPMatch` +
+*2:* less than `trTeCompPMatch` +
 *3:* less than or equal to `trTeCompPMatch` +
-*4:* greater than to `trTeCompPMatch` +
+*4:* greater than `trTeCompPMatch` +
 *5:* greater than or equal to `trTeCompPMatch` +
 *6:* Result always false (input ignored).  Prime latch to 1 if `trTeCompMatchMode` is 3 +
 *7:* Result always true (input ignored)
@@ -988,9 +1011,9 @@ Selects the primary comparator function.  Primary result is true if input select
 Selects the secondary comparator function.  Secondary result is true if input selected via `trTeCompSInput` is: +
 *0:* equal to `trTeCompSMatch` +
 *1:* not equal to `trTeCompSMatch` +
-*2:* less than to `trTeCompSMatch` +
+*2:* less than `trTeCompSMatch` +
 *3:* less than or equal to `trTeCompSMatch` +
-*4:* greater than to `trTeCompSMatch` +
+*4:* greater than `trTeCompSMatch` +
 *5:* greater than or equal to `trTeCompSMatch` +
 *6:* Result always true (input ignored).  Use `trTeCompSMatch` as a mask for `trTeCompPMatch` +
 *7:* Result always true (input ignored)
@@ -1017,6 +1040,8 @@ known as a watchpoint.
 |WARL|SD
 |31-16 |--|Reserved|--|0
 |===
+
+IMPORTANT: Comparisions are performed as unsigned numbers. Only bits from an input signal, as defined by `trTeCompPInput` or `trTeCompSInput`, should be compared. Additional bits from `trTeComp__j__PMatchLow/High` must be ignored.
 
 .*Register: trTeComp__j__PMatchLow : Comparator _j_ Primary match (low) Register (trBaseEncoder+0x610 + 0x20__j__)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -1520,13 +1545,14 @@ This chapter describes what trace tools should do to reset and discover trace fe
 
 IMPORTANT: Trace tools must be provided with base addresses of all trace components.
 
-There are several (independent) reset bits defined by this specification
+There are several (independent) reset bits defined by this specification:
 
 * `trTeActive` - reset for Trace Encoder component (this will disable encoder from single hart)
 * `trFunnelActive` - reset for Trace Funnel component
 * `trPibActive` - reset for PIB component (resets Pin Interface Block only)
 * `trRamActive` - reset for RAM component (resets RAM Sink only)
 * `trAtbBridgeActive` - resets ATB Bridge component (resets ATB Bridge interface)
+* `trTsActive` - resets the Timestamp Unit sub-component (resets timestamp generation logic)
 
 These reset bits should (when kept low) reset most of other registers/fields/bits to defined reset values.
 
@@ -1534,7 +1560,7 @@ Releasing components from reset may take time - debug tools should monitor (with
 
 NOTE: Some of the reset values are defined as `SD` (system dependent) and these values should reset as well and each time to the same value as would be after power-up.
 
-NOTE: Some bigger registers (holding RAM addresseses) may not reset - debugger is expected to write to them before enabling trace. These registers have `Undef` in reset the field. It should not prevent some implementations from resetting these.
+NOTE: Some bigger registers (holding RAM addresseses) may not reset - debugger is expected to write to them before enabling trace. These registers have `Undef` specified in reset behavior of the field. It should not prevent some implementations from resetting these.
 
 Reset and Discovery should be performed as follows:
 
