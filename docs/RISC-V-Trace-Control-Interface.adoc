@@ -1203,7 +1203,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 
 NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in the trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
 
-Implementations when a trace buffer in system memory will be bigger than 4GB is desired will be unlikely, so in most cases trace tools would not need to use `trRamWPHigh` and `trRamRPHigh` registers.
+Implementations when a trace buffer in system memory will be bigger than 4GB is implemented will be unlikely, so in most cases trace tools would not need to use `trRamWPHigh` and `trRamRPHigh` registers.
 
 Table below shows typical Trace RAM Sink configurations. Implementing other configurations is not suggested as trace tools may not support it without adjustments.
 
@@ -1224,7 +1224,7 @@ Trace tool should start interacting with Trace RAM Sink by releasing RAM Sink fr
 
 Later `trRamMode` should be set (depending on desired RAM Sink mode). It is important to set this field first as other registers may behave differently for SRAM and SMEM modes.
 
-In SRAM mode, the trace memory is dedicated for trace storage and `trRamStart??` registers should be settable (usually both not implemented and return 0). `trRamLimitLow` registers may be either hardcoded (to reflect physical SRAM size) or writable (allowing trimming RAM size allowing faster wrap-around or sharing same memory with some other components in the system).
+In SRAM mode, the trace memory is dedicated for trace storage and `trRamStart??` registers should not be settable (usually both not implemented and return 0). `trRamLimitLow` register may be either hardcoded (to reflect physical SRAM size) or writable (allowing trimming RAM size allowing faster wrap-around or sharing same memory with some other components in the system). The `trRamLimitHigh` register should not be implemented as it is not practical to have more than 4GB of dedicated on-chip RAM storage.
 
 Detection of valid ranges of each `trRamStart??` and `trRamLimit??` registers should be performed by writing 0 and 0xFFFFFFFF.
 After setting 0, the lowest possible value must be set. After setting 0xFFFFFFFF the highest possible value must be set. If the highest value for `trRamStartHigh` or `trRamLimitHigh` is 0, it means the register is NOT implemented.
