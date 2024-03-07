@@ -184,7 +184,7 @@ The Trace Encoder sends trace messages to the PIB Sink. Each message is transmit
 
 === ATB Bridge
 
-The ATB Bridge transmits bytes of RISC-V trace messages as an ATB initiator.
+The ATB Bridge allows sending RISC-V trace to Arm CoreSight infrastructure (instead of RISC-V compliant sink defined in this document) as an ATB initiator. ATB Bridge is not needed for RISC-V only systems.
 
 ATB width is byte aligned (8, 16, 32, 64, 128) which allows transport of trace messages/packets defined as sequence of bytes.
 
@@ -662,7 +662,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 *1:* If TE cannot send data trace messages, the hart is stalled until it can.
 |WARL|0
 |5 |trTeDataDrop|Written to 1 by hardware when the data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RW1C|0
-|6 |trTeDataDropEna|*1:* Allow dropping data trace to avoid instruction trace overflows. Setting this bit will not guarantee that instruction trace overflows will not happen.|WARL|0
+|6 |trTeDataDropEna|*1:* Allow temporary suppression of data trace (at some watermark level) to prevent trace overflow or stall. This way instruction trace will have higher priority.|WARL|0
 |15:7 |--|Reserved for additional data trace control/status bits.|--|0
 |16 |trTeDataNoValue|When set, omit data values from data trace packets.|WARL|SD
 |17 |trTeDataNoAddr|When set, omit data address from data trace packets.|WARL|SD
@@ -1257,7 +1257,7 @@ NOTE: Trace RAM Sink may implement writing trace by writing to `trRamData`, but 
 
 == Trace Funnel
 
-The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages/packets are accepted before it is switching to another input cycle and in what order. But a continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Most fair implementation would be to process just a single message/packet from each input in round-robin fashion.
+The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation-dependent how many incoming messages/packets are accepted before it is switching to another input source and in what order. But a continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Suggested implementation would be to process just a single message/packet from each input in a round-robin fashion.
 
 .*Register: trFunnelControl: Trace Funnel Control Register (trBaseFunnel+0x000)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -1376,8 +1376,8 @@ Since the PIB supports many different modes, it is necessary to follow a particu
 * Trace messages/packets are considered as sequences of bytes and are always transmitted with least significant bits/bytes first.
 * In 16-bit mode (`trPibMode` == 12) the byte transmitted on bits #0-#7 is considered first and most significant bits#8-#15 are transmitting second byte.
 * Idle sequences (no message/packet to be sent) are transmitted between messages.
-** Idle sequence depends on trace protocol and must be defined in a way allowing detection of the start of first byte of message/packet following the idle sequence. 
-** Idle sequences are defined in documents where trace protocols are defined.
+** Idle sequence depends on trace protocol and must allow detection of the start of first byte of message/packet following the idle sequence. 
+** Idle sequences may be different and should be defined by trace protocols.
 
 === PIB Parallel Protocol
 
