@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Feb 29, 2024
-:revnumber: 1.0.0_rc14
+:revdate:  Mar 7, 2024
+:revnumber: 1.0.0_rc15
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -49,6 +49,9 @@ Change is extremely unlikely.
 == Change Log
 
 PDF generated on: {localdatetime}
+
+=== Version 1.0.0_rc15
+* Added I-CNT Full example
 
 === Version 1.0.0_rc14
 * 2024-02-29
@@ -1286,34 +1289,43 @@ Let's consider the following example code:
     0x118:  add ...         ; 32-bit instruction
     0x11C:  c.ebreak        ; 16-bit breakpoint (to stop the code)
 
-and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (most significant bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
+and let's assume (for simplicity) that the I-CNT counter is 4-bit wide (most significant bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
 
-Trace of above code should generate 3 messages with *Resource Full* message:
-
-    IMPORTANT: TODO here
-
-Trace of above code should generate 3 messages with *Sequential Instruction Counter* message:
+Trace with *Resource Full* message:
 
 * <<msg2_ProgTraceSync,ProgTraceSync>> (start of trace)
-** SYNC=3 (Exit from Debug Mode)
-** I-CNT=0 (nothing executed as we are stating)
+** SYNC=3 (Exit from Debug Mode), I-CNT=0 (nothing executed as we are starting)
+** F-ADDR=0x80 (encoding starting address 0x100)
+* <<msg2_ResourceFull,ResourceFull>> (I-CNT overflown to 8 after processing address 0x10C)
+** RCODE=0 (I-CNT counter is full), *RDATA[0]=0x8* (I-CNT value overflown value)
+* <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (from address 0x100 till end of trace at 0x11C)
+** EVCODE=0 (Entry into Debug Mode), CDF=1 (HIST field present after I-CNT)
+** *I-CNT=6* (see note below), HIST=0x2 (one not taken direct conditional branch)
+
+Trace with *SYNC=Sequential Instruction Counter*:
+
+* <<msg2_ProgTraceSync,ProgTraceSync>> (start of trace)
+** SYNC=3 (Exit from Debug Mode), I-CNT=0 (nothing executed as we are starting)
 ** F-ADDR=0x80 (encoding starting address 0x100)
 * <<msg2_IndirectBranchHistSync,IndirectBranchHistSync>> (I-CNT overflown to 8 after processing address 0x10C)
-** SYNC=4 (Sequential Instruction Counter)
-** *I-CNT=8* (see note below)
-** HIST=0x2 (one not taken direct conditional branch)
+** SYNC=4 (Sequential Instruction Counter), *I-CNT=8* (see note below), HIST=0x2 (one not taken branch)
 ** F-ADDR=0x88 (encoding address 0x110)
 * <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (from address 0x110 till end of trace at 0x11C)
-** EVCODE=0 (Entry into Debug Mode)
-** CDF=1 (HIST field present after I-CNT)
-** *I-CNT=6* (see note below)
-** HIST=0x1 (no branches)
+** EVCODE=0 (Entry into Debug Mode), CDF=1 (HIST field present after I-CNT)
+** *I-CNT=6* (see note below), HIST=0x1 (no branches)
 
-Overflown *I-CNT=8* field decodes instructions from instruction at an addresses 0x100 to instruction at address 0x10C (16 bytes long address range).
+*Notes (for both above examples)*
 
-The *I-CNT=6* field decodes instructions from addresses 0x110 to 0x118 (12 bytes long address range). Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.  
-
-NOTE: This method should be rather easy to implement as each encoder must implement 'periodic sync' (and may implement triggers as well). These will generate synchronizing messages at any moment. The only difference between these would be different values of the SYNC field. It means a lot of already present (and required) logic can be reused.
+====
+* Overflown *I-CNT=8* (or *RDATA[0]=0x8*) field decodes instructions from instruction at an addresses 0x100 to instruction at address 0x10C (16 bytes long address range).
+* The *I-CNT=6* field decodes instructions from addresses 0x110 to 0x118 (12 bytes long address range). 
+* In both cases total I-CNT is 6+8=14, what corresponds to all addresses from 0x100 till 0x11C
+** Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.
+* Using *ResourceFull* generates smaller, more compressed trace.
+** In real life examples it will allow generation of repeated history patterns and even better trace compression.
+* Using *SYNC=Sequential Instruction Counter* generates bigger trace (as F-ADDR is reported in the middle).
+** It may be easier to implement as each encoder must implement 'periodic sync' (and may implement triggers as well). These would need to generate synchronizing messages at any moment. The only difference would be a different values of the SYNC field. It means a lot of already present (and required) logic can be reused.
+====
 
 === Synchronizing Messages
 
@@ -1329,7 +1341,6 @@ Trace requires different types of synchronization on different abstraction level
 * *Instruction trace synchronization*: allows the trace decoder to synchronize onto an ongoing instruction trace stream. This is done via synchronizing messages, which are described in this chapter in more detail.
 * *Message alignment synchronization*: allows the trace decoder to detect the trace message boundaries (i.e. start and end of a trace message) within a trace stream. This kind of synchronization is not described in this chapter. It can be done via idle cycles, and is described in the <<PIB Idle Cycles Explained,PIB Idle Cycles Explained>> chapter in more detail.
 ====
-
 
 [#SYNC Field Values]
 .SYNC Field Values
