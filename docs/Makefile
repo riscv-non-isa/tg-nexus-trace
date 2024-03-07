@@ -44,7 +44,7 @@ clean:
 # Generalized rule for building any PDF
 %.pdf: %.adoc
 	@echo "Building $* PDF"
-	@if command -v docker &> /dev/null ; then \
+	@if command -v docker >/dev/null 2>&1 ; then \
 		echo "Docker is available, building inside Docker container..."; \
 		$(DOCKER_RUN) /bin/sh -c "$(ASCIIDOCTOR_PDF) $(OPTIONS) $(REQUIRES) --out-file=$*.pdf $*.adoc"; \
 	else \
