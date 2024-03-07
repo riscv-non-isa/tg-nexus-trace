@@ -2,7 +2,7 @@
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
 :revdate:  Mar 6, 2024
-:revnumber: 1.0.0_rc14
+:revnumber: 1.0.0_rc15
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,8 +50,13 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
+=== Version 1.0.0_rc15
+** Glossary moved and small spotted details fixed.
+** This below was provided for Ved to verify (missed) RAM Sink chapter.
+
 === Version 1.0.0_rc14
 * 2024-03-06
+** Global replace of 31-14 to 31:14 in ALL fields.
 ** Many updates from ARC review notes.
 ** Changed 'R' into 'RO' (read-only) - this is separated commit. 
 * 2024-02-26
@@ -83,8 +88,7 @@ Nino Vidovic (Segger) => Reviews
 
 == Introduction
 
-This document presents a standardized control interface for RISC-V trace infrastructure (such as trace encoders, trace funnels, trace sinks, ...) for the _Efficient Trace for RISC-V
-Version 2.0_Efficient Trace for RISC-V_ Specification and for the _RISC-V N-Trace (Nexus-based Trace) Specification Version 1.0.0_. Standardized control interface allows trace control software development tools to be used interchangeably with any RISC-V device implementing processor and/or data trace.
+This document presents a standardized control interface for RISC-V trace infrastructure (such as trace encoders, trace funnels, trace sinks, ...) for the _Efficient Trace for RISC-V Version 2.0 Specification_ and for the _RISC-V N-Trace (Nexus-based Trace) Specification Version 1.0.0_. Standardized control interface allows trace control software development tools to be used interchangeably with any RISC-V device implementing processor and/or data trace.
 
 Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates the trace data from multiple sources and sends the data to a single destination.
 
@@ -92,11 +96,37 @@ This specification does not define the hardware interconnection between the hart
 
 This specification allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support branch trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
 
+=== Glossary
+
+*Trace Encoder (TE for short)* - Hardware module that accepts execution information from a hart and generates a stream of trace messages/packets.
+
+*Trace Message/Packet* - Depending on protocol different names can be used, but it means the same. It is considered as a continuous sequence of (usually bytes) describing program and/or data flow and other events.
+
+*Trace Funnel* - Hardware module that combines trace streams from multiple trace sources (Trace Encoders and/or other Trace Funnels) into a single output stream of trace messages/packets.
+
+*Trace Sink* - Hardware module that accepts a stream of trace messages/packets and records them into the memory or forwards them onward in some format.
+
+*Trace Decoder* - Software program that takes a recorded trace (from a Trace Sink) and produces a readable execution history.
+
+*RO* - Denotes read-only bit/field - it does not mean it will return the same value each time when read.
+
+*RW* - Denotes read-write bit/field - value being read may not be the same as what was written as some fields may change their values because of other reasons.
+
+*RW1C* - Denotes bit/field, which can be read but you must write 1 to clear it (writing 0 will be ignored). It is used for sticky status bits to assure that these are cleared by deliberate action (write 1). 
+
+*WARL* - Denotes Write any, read legal bit/field/register. If a non-legal value is written, the written value is converted to a value that is supported. That value should deterministically depend on the illegal written value and the architectural state of the trace sub-system. 
+
+*SD* - Reset value of a field/register is system dependent - these fields should always have the same values at trace component reset. In many cases this may be the only value supported.
+
+*ATB* - Advanced Trace Bus, a protocol described in ARM document _AMBA ATB Protocol Specification_. This is one of alternative methods to send the trace (in addition to native Trace Sinks defined in this specification).
+
+*PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
+
 == Trace Control and Trace Protocols
 
 This specification defines many registers, but not all trace protocols/encoders must support all bits/fields/options. However it is important to define some small subset which is REQUIRED.
 
-This document includes a chapter <<Minimal Implementation>> which describes the smallest possible set of registers/fields, but each message protocol supported by this standard must clarify the exact meaning of supported registers/fields and bits as some of them define.
+This document includes a chapter <<Minimal Implementation,Minimal Implementation>> which describes the smallest possible set of registers/fields, but each message protocol supported by this standard must clarify the exact meaning of supported registers/fields and bits as some of them define.
 
 There are two standard trace protocols which will utilize this RISC-V Trace Control Interface:
 
@@ -115,32 +145,6 @@ NOTE: It is suggested to start from one of documents referenced above as these a
 == Trace System Overview
 
 This section briefly describes features of the Trace Encoder and other trace components as background for understanding some of the control interface register fields.
-
-=== Glossary
-
-*Trace Encoder (TE for short)* - Hardware module that accepts execution information from a hart and generates a stream of trace messages/packets.
-
-*Trace Message/Packet* - Depending on protocol different names can be used, but it means the same. It is considered as a continuous sequence of (usually bytes) describing program and/or data flow.
-
-*Trace Funnel* - Hardware module that combines trace streams from multiple Trace Encoders and/or other Trace Funnels into a single output stream of trace messages/packets.
-
-*Trace Sink* - Hardware module that accepts a stream of trace messages/packets and records them in memory or forwards them onward in some format.
-
-*Trace Decoder* - Software program that takes a recorded trace (from Trace Sink) and produces readable execution history.
-
-*RO* - Denotes read-only bit/field - it does not mean it will return the same value each time when read.
-
-*RW* - Denotes read-write bit/field - value being read may not be the same as what was written as some fields may change their values because of other reasons.
-
-*RW1C* - Denotes bit/field, which can be read but you must write 1 to clear it (writing 0 will be ignored). It is used for sticky status bits to assure that these are cleared by deliberate action (write 1). 
-
-*WARL* - Denotes Write any, read legal bit/field/register. If a non-legal value is written, the written value is converted to a value that is supported. That value should deterministically depend on the illegal written value and the architectural state of the trace sub-system. 
-
-*SD* - Reset value of a field/register is system dependent - these fields should always have the same values at trace component reset. In many cases this may be the only value supported.
-
-*ATB* - Advanced Trace Bus, a protocol described in ARM document _AMBA ATB Protocol Specification_. This is one of alternative methods to send the trace (in addition to native Trace Sinks defined in this specification).
-
-*PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
 
 === Trace Encoder
 
@@ -650,7 +654,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeDataImplemented|Read as 1 if data trace is implemented.|RO|SD
-|1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tool or controlled by triggers. When trTeDataTracing=1, data trace  may be subject to additional filtering in some implementations.|WARL|SD
+|1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tool or controlled by triggers. When `trTeDataTracing`=1, data trace  may be subject to additional filtering in some implementations.|WARL|SD
 |2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL|0
 |3 |trTeDataStallOrOverflow |Written to 1 by hardware when an overflow message is generated or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RW1C|0
 |4 |trTeDataStallEna |
@@ -832,7 +836,7 @@ It is implementation-dependent what happens when debug triggers or external trig
 
 === Trace Encoder Filter Registers
 
-All registers with offsets 0x400 .. 0x7FC are reserved for additional trace encoder filter options (context, addresses, modes, etc.).
+All registers with offsets 0x400 .. 0x7FC are designated for additional trace encoder filter options (context, addresses, modes, etc.).
 
 Trace encoder filters are an optional feature that can be used to control the generated trace in various ways.
 
