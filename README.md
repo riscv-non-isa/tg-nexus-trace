@@ -1,6 +1,14 @@
 # TG RISC-V Nexus Trace
 ## Curent Status
 
+* 2024/03/06 - more clarification changes
+  * More changes from ARC review.
+  * Removed build of individual PDFs (problem with names - easier than fixing).
+  * Passed Control PDF (1.0.0_rc14) to ARC (for missed review of 'RAM Sink' chapter).
+
+* 2024/02/29
+  * Generated Connectors PDF (1.0.0_rc20) and passed to ARC as 'final ARC fixes'.
+
 * 2024/02/28 - more clarification changes
 
   * N-Trace almost done (only synchronization messages clarifications is TODO).
