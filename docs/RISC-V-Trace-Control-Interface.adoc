@@ -884,7 +884,7 @@ When set, start matching from exception cause codes specified by `trTeFilterMatc
 stop matching upon return from the 1st matching exception.
 |WARL|0
 |3     |trTeFilterMatchInterrupt | 
-When set, start matching from a trap with itypes codes specified by 
+When set, start matching from either an interrupt or exception as specified by  
 `trTeFilterMatchValueInterrupt` field for filter #__i__, and stop matching upon return from the 1st matching trap.
 |WARL|0
 |4     |trTeFilterMatchComp1 | 
@@ -1034,14 +1034,14 @@ Selects the match condition used to assert the overall comparator output +
 |14   |trTeCompPNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
-primary match (requires `trTeCompPInput` to be 0). This is also
-known as a watchpoint.
+primary match. This is also known as a watchpoint.
+Requires `trTeCompPInput` to be 0, and has no effect otherwise.
 |WARL|SD
 |15   |trTeCompSNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
-secondary match (requires `trTeCompSInput` to be 0). This is also
-known as a watchpoint.
+secondary match. This is also known as a watchpoint.
+Requires `trTeCompSInput` to be 0, and has no effect otherwise.
 |WARL|SD
 |31:16 |--|Reserved|--|0
 |===
