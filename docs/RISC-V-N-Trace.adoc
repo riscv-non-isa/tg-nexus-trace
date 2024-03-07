@@ -600,7 +600,7 @@ NOTE: Messages marked as *Reserved* or *Vendor Defined* should be ignored by dec
 However decoders should provide an option to display/dump them and/or generate a warning as such a message may be seen when trace capture is corrupted.
 *Vendor Defined* messages can be used for prototyping, debugging, validation and maintenance purposes.
 
-Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/master/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all N-Trace messages in machine-readable format. Here is small snipped from this file as an example:
+Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/main/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all N-Trace messages in machine-readable format. Here is small snipped from this file as an example:
 
 [source,c]
 ----
@@ -1256,11 +1256,11 @@ Above we analyzed some I-CNT values. Let's consider other I-CNT values.
 
 * *I-CNT=5* is also correct (which means that exception/interrupt happened before the retirement of an instruction at an address 0x10A).
 
-* *I-CNT=0* is also possible. It should be generated when an interrupt was pending before we started the code (and trace) and instruction at address 0x100 was not executed/retired. Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault (prefetch abort) or is illegal. 
+* *I-CNT=0* is also possible. It should be generated when an interrupt was pending before we started the code (and trace) and instruction at address 0x100 was not executed/retired. Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault (prefetch fault) or is illegal. 
 
 * *I-CNT=4 or 6 or 9* are *INCORRECT values* as it would mean that only half of corresponding 32-bit instruction was executed.
 
-IMPORTANT: Decoders must report such incorrect I-CNT values and immediately abort decoding as it means that either an encoder is not conforming to this specification or a trace was captured incorrectly. Decoding may resume at the next <<Synchronizing Messages,synchronizing message>>, but it is not mandatory for all decoders to do so.
+IMPORTANT: Decoders must report such incorrect I-CNT values and immediately abandon the decoding as it means that either an encoder is not conforming to this specification or a trace was captured incorrectly. Decoding may resume at the next <<Synchronizing Messages,synchronizing message>>, but it is not mandatory for all decoders to do so.
 
 ==== Example of I-CNT Handling in HTM mode
 
@@ -1806,7 +1806,7 @@ To reconstruct the control flow of the program from N-Trace messages do the foll
 =====
 * Phrase *inferable unconditional jumps (all types)* include indirect unconditional jumps, which may be inferable.
 * Extra fields like <<field_SYNC,SYNC>>/<<field_B-TYPE,B-TYPE>> only provide extra details, but are NOT essential for a decoder to reconstruct the PC flow.
-* See https://github.com/riscv-non-isa/tg-nexus-trace/tree/master/refcode/c[N-Trace Reference Code] for simple but fully functional implementation.
+* See https://github.com/riscv-non-isa/tg-nexus-trace/tree/main/refcode/c[N-Trace Reference Code] for simple but fully functional implementation.
 =====
 
 === Decoding trace from multiple harts

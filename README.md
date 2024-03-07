@@ -1,10 +1,12 @@
 # TG RISC-V Nexus Trace
-## Curent Status
+## Current Status
 
 * 2024/03/07
+  * Added CONTRIBUTING.md file (RVI policy)
+  * Used 'fatal error' in 4 places (to follow Friendly Terminology)
+  * Renamed main branch to be 'main'
   * More clarification changes
-  * Renamed main branch from 'master' to 'main'
-
+  
 * 2024/03/06 - more clarification changes
   * More changes from ARC review.
   * Removed build of individual PDFs (problem with names - easier than fixing).

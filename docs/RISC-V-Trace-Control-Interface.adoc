@@ -527,7 +527,7 @@ Trace software should handle versions as follows (let's assume hypothetical vers
 * 2.4 => Generate a warning but continue using 2.3 features.
 * 2.15 => Generate an "experimental version" warning but continue using 2.3 features.
 * 1.x => Generate a warning and continue or reject as an obsolete (referring to last debugger supporting this version).
-* 3.x => Abort with an error that this future version is not compatible with existing software and possibly redirect to the tool update page.
+* 3.x => Generate a fatal error that this future version is not compatible with existing software and possibly redirect to the tool update page.
 
 Displayed messages should report component name, component base address and current and supported version numbers. It is suggested to display the full hexadecimal value of `tr??Impl` register as it may aid in debugging of possibly incorrect/incompatible component configuration.
 ====
@@ -1577,7 +1577,7 @@ Reset and Discovery should be performed as follows:
 IMPORTANT: When performing a write which is setting `tr??Active` = 1, no other bits should be changed. 
 
 * Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
-** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as legacy version 0 or abort with an error.
+** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as legacy version 0 or generate fatal error with an error.
 * Read `tr??Impl` and compare `tr??ComType` field with expected value.
 * Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` = 1) by mistake.
 * Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
