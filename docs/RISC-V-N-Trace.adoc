@@ -323,7 +323,7 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|-
 
 IMPORTANT: N-Trace encoder does not require *cause* and *tval* ingress port signals (valid for exceptions and interrupts only) as these are not reported in N-Trace messages. N-Trace is only providing the address of an exception/interrupt handler.
 
-NOTE: As almost every ingress port cycle is updating I-CNT it may overflow. See <<I-CNT Field Full, I-CNT Field Full>> for more details.
+NOTE: As almost every ingress port cycle is updating I-CNT it may overflow. See <<I-CNT Details, I-CNT Details>> chapter.
 
 NOTE: If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port must report *itype*=5 (Taken branch) for all direct unconditional jumps (which are normally reported as *itype* = 0 or 15). 
 
@@ -932,7 +932,7 @@ It assures no information is lost as the decoder may reconstruct bigger I-CNT an
 |Cfg |SRC              |Standard Message Source (<<field_SRC,SRC>>) field.
 [[field_RCODE]]
 |4   |RCODE            |Standard Resource Code field (defines a meaning of RDATA fields). +
-*0:* I-CNT counter has reached max value and is reported in the RDATA[0] field. See <<I-CNT Field Full,I-CNT Field Full>> chapter for more details. +
+*0:* I-CNT counter has reached max value and is reported in the RDATA[0] field. See <<I-CNT Details,I-CNT Details>> chapter. +
 *1:* HIST field is full and is reported in the RDATA[0] field.  See <<HIST Field Full,HIST Field Full>> chapter for more details. +
 *2*: *Extension:* HIST field is full and is repeated. RDATA[0] field holds HIST value and RDATA[1] field holds HREPEAT (History Repeat) value. This optional extension can be enabled via the <<trTeInstEnRepeatedHistory,trTeInstEnRepeatedHistory>> control bit. +
 *3..7:* Reserved for future encodings. +
@@ -1198,16 +1198,25 @@ See <<Repeated History Optimization,Repeated History Optimization>> chapter for 
 
 Field I-CNT (present in most messages) is counting the number of halfwords for the instruction units reported as retired.
 
-Here are rules how encoder must calculate I-CNT field:
+I-CNT counter is reset to 0 in one of these two situations (as defined by IEEE-5001 Nexus Standard):
 
-* Every retired instruction MUST increment I-CNT by 1 (for 16-bit instruction) or by 2 (for 32-bit instruction). Specifically:
-** If an instruction is explicitly changing the PC (as jump or return), that instruction itself MUST update the I-CNT.
-** An exception or interrupt before retirement of an instruction CANNOT update the I-CNT.
-** An exception or interrupt after retirement of an instruction MUST update the I-CNT.
-** In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
-* Reset of I-CNT is described in the <<I-CNT Resets,I-CNT Resets>> chapter below.
+* When a trace starts or is restarted (for any reason).
+* After I-CNT field is sent in a message.
 
-==== I-CNT Handling in BTM mode
+Every retired instruction MUST increment I-CNT by 1 (for 16-bit instruction) or by 2 (for 32-bit instruction). Specifically:
+
+* If an instruction is explicitly changing the PC (as jump or return), that instruction itself MUST update the I-CNT.
+* An exception or interrupt before retirement of an instruction CANNOT update the I-CNT.
+* An exception or interrupt after retirement of an instruction MUST update the I-CNT.
+
+NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
+
+When I-CNT counter is full (reaches it's maximum value) it may be reported in one of two ways:
+
+* The <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0 should be generated.
+* Optionally I-CNT counter full may be reported using a <<Synchronizing Messages,synchronizing message>> with *SYNC=4 (Sequential Instruction Counter)*.
+
+==== Example of I-CNT Handling in BTM mode
 
 As an illustration, let's consider the following piece of pseudo-code (... does not matter):
 
@@ -1253,7 +1262,7 @@ Above we analyzed some I-CNT values. Let's consider other I-CNT values.
 
 IMPORTANT: Decoders must report such incorrect I-CNT values and immediately abort decoding as it means that either an encoder is not conforming to this specification or a trace was captured incorrectly. Decoding may resume at the next <<Synchronizing Messages,synchronizing message>>, but it is not mandatory for all decoders to do so.
 
-==== I-CNT Handling in HTM mode
+==== Example of I-CNT Handling in HTM mode
 
 When the encoder is operating in <<mode_HTM,HTM>> mode, I-CNT should be incremented at every retired instruction. However direct conditional branches (from code piece above ...) will NOT generate any trace packets, but each of them will add a bit to the HIST field.
 
@@ -1263,23 +1272,9 @@ Example <<ICNT_code,code>> (used to illustrate BTM) from may generate messages w
 * I-CNT=9, HIST=0b1_01 (most significant bit=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x100..0x10D> (I-CNT=7) and <0x300..0x303> (I-CNT=2) ranges.
 * I-CNT=10, HIST-0b1_00 (most significant bit=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=10 describes a code in <0x100..0x113> range.
 
-==== I-CNT Resets
+==== Examples of I-CNT Field Full Generation
 
-I-CNT is reset in one of these two situations (as defined by IEEE-5001 Nexus Standard):
-
-* After I-CNT field is sent in a message.
-* When a trace starts or is restarted (for any reason).
-
-==== I-CNT Field Full
-
-When I-CNT field is full it may be reported in one of two ways:
-
-* In BTM mode (or when the HIST buffer is empty) the <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0 should be generated.
-** This message will be generated only when we have a long instruction block or when we have an infinite loop with unconditional direct jump[s].
-* In HTM mode and when the HIST buffer is not empty, I-CNT counter full may be reported using a <<Synchronizing Messages,synchronizing message>> with *SYNC=4 (Sequential Instruction Counter)*.
-** First choice (*ResourceFull*) is optional - second choice (*SYNC=4*) can be always generated.
-
-To illustrate *Sequential Instruction Counter* generation let's consider the following example code:
+Let's consider the following example code:
 
     0x100:  c.add ...       ; 16-bit instruction
     0x102:  b... 0x200      ; 32-bit instruction (direct conditional branch)
@@ -1293,7 +1288,11 @@ To illustrate *Sequential Instruction Counter* generation let's consider the fol
 
 and let's assume (just for simplicity) that the I-CNT counter is 4-bit wide (most significant bit being an overflow flag) and that direct conditional branch at an address 0x102 is not-taken (so code will run from address 0x100 till breakpoint at address 0x11C).
 
-Trace of above code should generate 3 messages:
+Trace of above code should generate 3 messages with *Resource Full* message:
+
+    IMPORTANT: TODO here
+
+Trace of above code should generate 3 messages with *Sequential Instruction Counter* message:
 
 * <<msg2_ProgTraceSync,ProgTraceSync>> (start of trace)
 ** SYNC=3 (Exit from Debug Mode)
@@ -1310,13 +1309,11 @@ Trace of above code should generate 3 messages:
 ** *I-CNT=6* (see note below)
 ** HIST=0x1 (no branches)
 
-[IMPORTANT]
-==== 
-* Overflown *I-CNT=8* decodes instructions from instruction at an addresses 0x100 to instruction at address 0x10C (16 bytes long address range).
-* *I-CNT=6* decodes instructions from addresses 0x110 to 0x118 (12 bytes long address range). Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.  
-====
+Overflown *I-CNT=8* field decodes instructions from instruction at an addresses 0x100 to instruction at address 0x10C (16 bytes long address range).
 
-This method should be rather easy to implement as each encoder must implement 'periodic sync' (and may implement triggers as well). These will generate synchronizing messages at any moment. The only difference between these would be different values of the SYNC field. It means a lot of already present (and required) logic can be reused.
+The *I-CNT=6* field decodes instructions from addresses 0x110 to 0x118 (12 bytes long address range). Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.  
+
+NOTE: This method should be rather easy to implement as each encoder must implement 'periodic sync' (and may implement triggers as well). These will generate synchronizing messages at any moment. The only difference between these would be different values of the SYNC field. It means a lot of already present (and required) logic can be reused.
 
 === Synchronizing Messages
 
@@ -1343,7 +1340,7 @@ Trace requires different types of synchronization on different abstraction level
 |1| Exit from Reset | No | Core was reset without stopping (by watchdog for example). Address should be a reset vector, but HIST and I-CNT should provide the PC of the last instruction before reset.
 |2| Periodic Synchronization | Yes | Just periodic instruction trace synchronization (to allow decoding the trace from the middle or when circular RAM buffer was wrapped around overwriting part of earlier trace). The interval for periodic instruction trace synchronization gets configured via <<trTeInstSyncMode,trTeInstSyncMode>> and <<trTeInstSyncMax,trTeInstSyncMax>>.
 |3| Exit from Debug Mode | Yes | Very first synchronizing message after exit from debug mode. If trace is disabled (at exit from debug more) no messages should be generated.
-|4| Sequential Instruction Counter | No | Generated when I-CNT counter is full. See <<I-CNT Field Full,I-CNT Field Full>> chapter for details.
+|4| Sequential Instruction Counter | No | Generated when I-CNT counter is full. See <<I-CNT Details,I-CNT Details>> chapter.
 |5| Trace Enable | No | Generated when trace is re-enabled after a gap caused by trace being disabled (e.g. due to trace filters). This must not be used for exit from debug mode (in which case SYNC=3 must be used).
 |6| Trace Event | No | Serves as a marker when debug watchpoint with action=4 triggered. See *RISC-V Debug Specification* for watchpoint setting details.
 |7| Restart from FIFO overrun | Yes |First synchronization after a gap caused by an internal FIFO overun. Some trace messages before this synchronization message were lost.
@@ -1353,7 +1350,7 @@ Trace requires different types of synchronization on different abstraction level
 |14..15| Reserved |-| For vendor defined codes.
 |====
 
-Decoders should report synchronization codes reported in messages (including reserved codes) as it provides extra explanation for a program flow change. Periodic synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
+Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason of the program flow change. Periodic synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
 
 [IMPORTANT]
 ====
