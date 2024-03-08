@@ -1238,42 +1238,55 @@ As an illustration, let's consider the following piece of pseudo-code (... does 
     0x300:  add ...         ; 32-bit instruction
     0x304:  c.ebreak        ; 16-bit breakpoint (to stop the code)
 
-NOTE: Syntax of address ranges: In the description below a range specified as <0x100..0x105> means that addresses 0x100 and 0x105 are both included in the address range.
+NOTE: In the description below a range specified as <0x100..0x105> means that addresses 0x100 and 0x105 are both included in the address range.
 
-Let's assume we start a trace from address 0x100 (<<msg_ProgTraceSync,ProgTraceSync>> with *I-CNT=0* and F-ADDR encoding address = 0x100 should be generated) and let's assume that we executed and collected a trace for above program (in <<mode_BTM,BTM>> mode) three times:
+Let's assume we start a trace from address 0x100. The <<msg_ProgTraceSync,ProgTraceSync>> message with *I-CNT=0* and F-ADDR=0x80 (encoding an address 0x100) should be generated.
 
-* First time a direct conditional branch at address 0x102 is taken.
-** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x105> (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
-** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *c.ebreak* instruction
-* Second time a direct conditional branch at address 0x102 is not-taken and a direct conditional branch at address 0x10A is taken.
-** A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10D> (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
-** Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing range <0x300..0x303> till *c.ebreak* instruction.
-* The third time both direct conditional branches are not-taken.
-** In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated.It is describing a range <0x100..0x113> till *c.ebreak* instructions.
+Let's analyze a collected trace of above program (in <<mode_BTM,BTM>> mode) executed three times (each time with different flow).
 
-NOTE: Decoder must look at each instruction in the code block to know its size. It cannot calculate *current PC+I-CNT*2* as it is UNKNOWN what is the size of the last instruction retired in that block - it may be (compressed) 16-bit or 32-bit (not-compressed) direct conditional branch. Without knowing an instruction size offset of that direct conditional branch cannot be determined.
+. First direct conditional branch at address 0x102 is taken.
+* A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x105> (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
+* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *c.ebreak* instruction
+. First direct conditional branch at address 0x102 is not-taken and second direct conditional branch at address 0x10A is taken.
+* A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10D> (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
+* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing a range <0x300..0x303> till *c.ebreak* instruction.
+. Both direct conditional branches (at 0x102 and 0x10A) are not-taken.
+* In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated. It is describing a range <0x100..0x113> (as 0x14=10*2) till *c.ebreak* instructions.
+
+IMPORTANT: Decoder must analyze each and every instruction in each code block being processed to know its size. It cannot skip to the end of the block by calculating *PC+I-CNT*2* as it is UNKNOWN what is the size of the last instruction retired in that block. It may be (compressed) 16-bit or 32-bit (not-compressed) direct conditional branch. Without knowing an instruction size, the offset encoded in that direct conditional branch cannot be determined and next PC (after a branch) cannot be calculated.
 
 Above we analyzed some I-CNT values. Let's consider other I-CNT values.
 
-* *I-CNT=1* is the correct value. The only valid reason to generate a message with I-CNT=1 would be an exception (or interrupt) AFTER an instruction at address 0x100. In this case an encoder should generate an <<msg_IndirectBranch,IndirectBranch>> or <<msg_IndirectBranchSync,IndirectBranchSync>> message with I-CNT=1, B-TYPE=1 (exception) and U-ADDR/F-ADDR field encoding an address of an exception/interrupt handler.
+* *I-CNT=1* is a correct value.
+** The only valid reason to generate a message with I-CNT=1 would be an exception (or interrupt) at an instruction at address 0x102. 
+** In this case an encoder should generate an <<msg_IndirectBranch,IndirectBranch>> or <<msg_IndirectBranchSync,IndirectBranchSync>> message with I-CNT=1, B-TYPE=1 (exception) and U-ADDR/F-ADDR field encoding an address of an exception/interrupt handler.
 
-* *I-CNT=5* is also correct (which means that exception/interrupt happened before the retirement of an instruction at an address 0x10A).
+* *I-CNT=5* is also correct.
+** It means that exception/interrupt happened before an instruction at an address 0x10A (after an instruction at 0x106).
 
-* *I-CNT=0* is also possible. It should be generated when an interrupt was pending before we started the code (and trace) and instruction at address 0x100 was not executed/retired. Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault (prefetch fault) or is illegal. 
+* *I-CNT=0* is also possible.
+** It should be generated when an interrupt was pending before we started the code (and trace) and instruction at address 0x100 was not executed/retired.
+** Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault (prefetch fault) or is illegal. 
 
-* *I-CNT=4 or 6 or 9* are *INCORRECT values* as it would mean that only half of corresponding 32-bit instruction was executed.
-
-IMPORTANT: Decoders must report such incorrect I-CNT values and immediately abandon the decoding as it means that either an encoder is not conforming to this specification or a trace was captured incorrectly. Decoding may resume at the next <<Synchronizing Messages,synchronizing message>>, but it is not mandatory for all decoders to do so.
+[IMPORTANT]
+====
+* Values of *I-CNT=4 or 6 or 9* are *INCORRECT* as it would mean that only half of corresponding 32-bit instruction was executed/retired.
+* Decoders must report such incorrect I-CNT values and immediately abandon the decoding as it means that either an encoder is not conforming to this specification or a trace was captured incorrectly.
+* Decoding may resume at the next <<Synchronizing Messages,synchronizing message>>, but it is not mandatory for all decoders to do so.
+====
 
 ==== Example of I-CNT Handling in HTM mode
 
-When the encoder is operating in <<mode_HTM,HTM>> mode, I-CNT should be incremented at every retired instruction. However direct conditional branches (from code piece above ...) will NOT generate any trace packets, but each of them will add a bit to the HIST field.
+When the encoder is operating in <<mode_HTM,HTM>> mode, I-CNT should be incremented at every retired instruction the same way as for BTM mode. However direct conditional branches (from code piece above ...) will NOT generate any trace packets, but each of them will add a bit to the HIST field.
 
-Example <<ICNT_code,code>> (used to illustrate BTM) from may generate messages with the following fields (exact types of messages depend on code not visible in that example):
+Example <<ICNT_code,code>> (used to illustrate BTM trace) may generate messages with the following fields (for all three runs):
 
-* I-CNT=4, HIST=0b1_1 (most significant bit=1 is stop bit, bit pattern '1' means that first direct conditional branch was taken). Encoder should continue from address 0x200 (as the first direct conditional branch encountered was reported as taken) and I-CNT=3 describes a code in <0x100..0x105> (I-CNT=3) and <0x200..0x201> (I-CNT=1) ranges.
-* I-CNT=9, HIST=0b1_01 (most significant bit=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken). Encoder should continue from address 0x300 (as the second direct conditional branch encountered was reported as taken)  and I-CNT=2 describes a code in <0x100..0x10D> (I-CNT=7) and <0x300..0x303> (I-CNT=2) ranges.
-* I-CNT=10, HIST-0b1_00 (most significant bit=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken). Encoder should continue from address 0x10E  and I-CNT=10 describes a code in <0x100..0x113> range.
+. First direct conditional branch at address 0x102 is taken.
+* *I-CNT=4, HIST=0x3* (0b1_1). Most significant bit=1 is stop bit, bit pattern '1' means that first direct conditional branch was taken. Encoder should continue till an address 0x200 (as the first direct conditional branch encountered was reported as taken) as I-CNT=3 describes a <0x100..0x105> range. Remaining I-CNT=1 describes a <0x200..0x201> range.
+. First direct conditional branch at address 0x102 is not-taken and second direct conditional branch at address 0x10A is taken.
+* *I-CNT=9, HIST=0x5* (0b1_01). Most significant bit=1 is stop bit, bit pattern '01' means that first direct conditional branch was not-taken and second direct conditional branch was taken. Encoder should continue till an address 0x300 (as the second direct conditional branch encountered was reported as taken) as I-CNT=7 describes a <0x100..0x10D> range. Remaining I-CNT=2 describes a <0x300..0x303> range.
+. Both direct conditional branches (at 0x102 and 0x10A) are not-taken.
+* *I-CNT=10, HIST-0x4* (0b1_00). Most significant bit=1 is stop bit, bit pattern '00' means that two direct conditional branches were not-taken. Encoder should continue till an address 0x114 as I-CNT=10 describes a code in a <0x100..0x113> range.
 
 ==== Examples of I-CNT Field Full Generation
 
