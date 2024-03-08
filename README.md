@@ -1,7 +1,26 @@
 # TG RISC-V Nexus Trace
-## Current Status
+
+## Status of each PDF
+
+Updating PDFs after ARC review (see below for links into google docs with detailed comments/discussion for each item)
+
+* **N-Trace PDF**: Almost ready' (only one, small item to be addresses). **Version 1.0.0_rc20 should be generated on 2024/03/08**.
+* **Controls PDF**: Waiting for RAM Sink review (was missed in original pass). Otherwise close to be ready.
+* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29).
+
+## Detailed Status (end of each day)
+
+* TODO (to not forget):
+  * **TODO:** Find a way to add nice header/footer (Debug PDF has these).
+  * **TODO:** Fix annoying page breaks (manual insert of 'page-break').
+  * **TODO:** Close ARC issues (pointing to appropriate DOC with detailed comments/discussions).
+
+* 2024/03/08
+  * **TODO:** Finalize updates to N-Trace PDF.
 
 * 2024/03/07
+  * Added "Synchronizing Messages Examples' images.
+  * Updated I-CNT BTM handling and examples.
   * Added CONTRIBUTING.md file (RVI policy)
   * Used 'fatal error' in 4 places (to follow Friendly Terminology)
   * Renamed main branch to be 'main'
