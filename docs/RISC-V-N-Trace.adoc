@@ -51,7 +51,10 @@ Change is extremely unlikely.
 PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc15
-* Added I-CNT Full example
+* Added examples of synchronizing messages (images).
+* Moved Timestamp chapter above Corner Cases.
+* Clarified I-CNT FUll in BTM mode.
+* Added I-CNT Full example.
 
 === Version 1.0.0_rc14
 * 2024-02-29
@@ -1383,27 +1386,6 @@ Decoders should report synchronization SYNC field values from messages (includin
 * All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may report full/absolute timestamp.
 ====
 
-=== Corner Cases and Sequences
-
-Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report non-inferable unconditional flow changes).
-
-However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases. 
-
-[#Corner Cases]
-.Corner Cases
-[cols="25%,75%",options="header",]
-|====
-|Sequence of events|Messages Generated
-|Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
-|Other back to back jumps or branches|Same as above (depending on the size of a second instruction)
-|Back to back exceptions|Second message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception) and <<field_I-CNT,I-CNT>>=0 (nothing executed in between).
-|Exception at interrupt destination|Same as above.
-|Pending interrupt at debug mode exit|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
-|Exception at first instruction traced|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by a message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception).
-|Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
-|Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
-|====
-
 === Timestamp Reporting
 
 Timestamp recording must be enabled by <<trTsEnable,trTsEnable>> trace control bit.
@@ -1430,6 +1412,55 @@ If the above is not possible, timestamps should be at least reported in a consis
 
 It is needed to assure that time reported at exceptions/interrupt handlers will be a moment when exception or interrupt was observed.
 ====
+
+=== Corner Cases and Sequences
+
+Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report non-inferable unconditional flow changes).
+
+However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases. 
+
+[#Corner Cases]
+.Corner Cases
+[cols="25%,75%",options="header",]
+|====
+|Sequence of events|Messages Generated
+|Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
+|Other back to back jumps or branches|Same as above (depending on the size of a second instruction)
+|Back to back exceptions|Second message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception) and <<field_I-CNT,I-CNT>>=0 (nothing executed in between).
+|Exception at interrupt destination|Same as above.
+|Pending interrupt at debug mode exit|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
+|Exception at first instruction traced|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by a message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception).
+|Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
+|Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
+|====
+
+=== Examples of Synchronizing Messages
+
+This chapter provides examples of several sequences of events and clarifies what types of <<Synchronizing Messages,synchronizing message>> should be generated in each case.
+
+*Case1: Enable/disable debug while tracing:*
+
+image:./images/case1_enable_disable_debug_while_tracing.PNG[image]
+
+*Case2: Enable trace while in debug:*
+
+image:./images/case2_enable_trace_while_in_debug.PNG[image]
+
+*Case3: Disable trace while in debug:*
+
+image:./images/case3_disable_trace_while_in_debug.PNG[image]
+
+*Case4: Sync trigger event:*
+
+image:./images/case4_sync_trigger_event.PNG[image]
+
+*Case5: Enable/disable while in debug:*
+
+image:./images/case5_enable_disable_while_in_debug.PNG[image]
+
+*Case6: Periodic:*
+
+image:./images/case6_periodic.PNG[image]
 
 == Optimization Extensions
 
