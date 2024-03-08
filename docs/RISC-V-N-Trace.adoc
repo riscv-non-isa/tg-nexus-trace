@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Mar 7, 2024
-:revnumber: 1.0.0_rc15
+:revdate:  Mar 8, 2024
+:revnumber: 1.0.0_rc20
 :revremark: Stable state (during Architecture Committee review)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,35 +50,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc15
-* Added examples of synchronizing messages (images).
-* Moved Timestamp chapter above Corner Cases.
-* Clarified I-CNT FUll in BTM mode.
-* Added I-CNT Full example.
-
-=== Version 1.0.0_rc14
-* 2024-02-29
-** Fix formatting/typo spotted in PDF.
-* 2024-02-28
-** Renamed I-CNT/FILE Overflow to I-CNT/HIST Full.
-** Other overflow/overrun/full related changes.
-** Added link to reference decoder.
-** More ARC review (only 8 left!).
-** More ARC review notes. Especially:
-** Improved introduction
-** Combined last 3 chapters
-* 2024-02-24
-** Removed links to other specifications and cleanup 'Related Specifications' chapter.
-** Fixed PDF column widths and small small fixes.
-** Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)
-* 2024-02-23
-** Made more changes (all on clarification level)
-* 2024-02-22
-** Made more changes (all on clarification level)
-** TODO: Clarify synchronizations
-* 2023-11-28
-** Made obvious changes from PR#19
-* The pre-public review version (older history removed)
+=== Version 1.0.0_rc20
+* 2024-03-08
+** ARC reviews taken into account.
 
 [Preface]
 == Copyright and license information
@@ -456,9 +430,20 @@ The following 4 example sequences are all valid:
 * ... < `11` DDDDDD> < `1*3` > < `00` TTTTTT> ... => Three (odd) idle bits (second message starts at another trace clock edge).
 * ... < `11` DDDDDD> < `1*8` > < `00` TTTTTT> ... => 8 idle bits (idle sequence can be considered as byte 0xFF).
 
-NOTE: Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
+Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all packets will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
 
-NOTE: The trace probe needs to be able to synchronize with the trace stream and to detect where the trace message boundaries are. This procedure is sometimes referred to as "message alignment synchronization" or "alignment-sync". N-Trace does not need a dedicated alignment-sync sequence, but instead idle sequences can be used for alignment-sync with PIB. This means that some trace probes can only perform alignment-sync on a PIB trace stream, if the stream does contain idle sequences at some point (i.e. if not all trace messages arrive back-to-back).
+[NOTE]
+====
+The trace probe needs to be able to synchronize with the trace stream and to detect where the trace message boundaries are. This procedure is sometimes referred to as "message alignment synchronization" or "alignment-sync".
+
+For 8-bit or 16-bit trace idle cycles are not required (to detect an alignment) as MSEO bits are in well defined positions and trace probes will know where is a start of a message.
+
+For 1-bit, 2-bit and 4-bit trace modes PIB must generate at least one idle byte to allow trace probes to detect which bit is first MSEO bit of a message.
+How it is done is not defined in this specification. Here are two possible implementations:
+
+* Generate at least one idle byte periodically in a trace stream anywhere between messages (PIB is aware about message boundaries as end of message has MSEO=11 bits). 
+* Always add an extra idle byte before sending synchronizing messages. It will guarantee that boundaries of every synchronizing message is always detectable and decoding may start from it.
+====
 
 === N-Trace Message Example
 
@@ -1330,7 +1315,7 @@ Trace with *SYNC=Sequential Instruction Counter* (BTM mode only):
 ** F-ADDR=0x89 (encoding address 0x112)
 * <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (describes <0x112..0x11C> range)
 ** EVCODE=0 (Entry into Debug Mode), CDF=0 (only I-CNT field follows)
-** *I-CNT=5* (see note below), HIST=0x1 (no branches)
+** *I-CNT=5* (see note below)
 
 *Notes (for both trace options)*
 
