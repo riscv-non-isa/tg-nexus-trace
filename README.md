@@ -4,9 +4,9 @@
 
 Updating PDFs after ARC review (see below for links into google docs with detailed comments/discussion for each item)
 
-* **N-Trace PDF**: Version 1.0.0_rc20 provided to ARC (2024/03/08). Inside of [./pdf](./pdf) directory.
+* **N-Trace PDF**: Version 1.0.0_rc20 provided to ARC (2024/03/08). Inside of [./pdfs](./pdfs) directory.
 * **Controls PDF**: Waiting for RAM Sink review (was missed in original pass). Otherwise close to be ready.
-* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29). Inside of [./pdf](./pdf) directory.
+* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29). Inside of [./pdfs](./pdfs) directory.
 
 ## Detailed Status (end of each day)
 
