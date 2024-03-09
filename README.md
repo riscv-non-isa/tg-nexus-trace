@@ -4,19 +4,22 @@
 
 Updating PDFs after ARC review (see below for links into google docs with detailed comments/discussion for each item)
 
-* **N-Trace PDF**: Almost ready' (only one, small item to be addresses). **Version 1.0.0_rc20 should be generated on 2024/03/08**.
+* **N-Trace PDF**: Version 1.0.0_rc20 provided to ARC (2024/03/08). Inside of [./pdf](./pdf) directory.
 * **Controls PDF**: Waiting for RAM Sink review (was missed in original pass). Otherwise close to be ready.
-* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29).
+* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29). Inside of [./pdf](./pdf) directory.
 
 ## Detailed Status (end of each day)
 
 * TODO (to not forget):
+  * **TODO:** Finalize updates to Control PDF (generate 1.0.0_rc20 PDF).
+  * **TODO:** Close ARC issues for Control PDF (with links to all needed details).
   * **TODO:** Find a way to add nice header/footer (Debug PDF has these).
   * **TODO:** Fix annoying page breaks (manual insert of 'page-break').
-  * **TODO:** Close ARC issues (pointing to appropriate DOC with detailed comments/discussions).
+  * **TODO:** Make release and pass back to ARC.
 
 * 2024/03/08
-  * **TODO:** Finalize updates to N-Trace PDF.
+  * Finalized updates to N-Trace PDF (1.0.0_rc20 PDF generated).
+  * Close ARC issues for N-Trace PDF (with links to all needed details).
 
 * 2024/03/07
   * Added "Synchronizing Messages Examples' images.
