@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Mar 8, 2024
-:revnumber: 1.0.0_rc20
-:revremark: Stable state (during Architecture Committee review)
+:revdate:  Mar 20, 2024
+:revnumber: 1.0.0_rc21
+:revremark: Stable state (second ARC round of comments)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -50,9 +50,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc20
-* 2024-03-08
-** ARC reviews taken into account.
+=== Version 1.0.0_rc21
+* 2024-03-20
+** Isuses #45-#48 addresses (few topis to be agreed).
 
 [Preface]
 == Copyright and license information
@@ -191,12 +191,12 @@ NOTE: Placement of the Trace Encoder and Trace Control Layer are implementation 
 
 == Trace Ingress Port
 
-N-Trace is using the same ingress port as specified in <<E-Trace_Specification,E-Trace Specification>> (chapter *4 Instruction Trace Interface*).
+N-Trace uses the same ingress port as specified in <<E-Trace_Specification,E-Trace Specification>> (chapter *4 Instruction Trace Interface*).
 
 * As this specification does not define the data trace yet, sub-chapters *4.3 Data Trace Interface requirements* and *4.4 Data Trace Interface* are not applicable.
 * It is an ambition to extract single, shared *RISC-V Trace Ingress Port* specifications (combining this chapter with relevant E-Trace chapter). 
 
-Table below provides a detailed mapping of of causes for terminating an instruction block to the corresponding *itype* encoding - it could be used during development of ingress port logic inside of a hart. Please be aware that not only instructions, but also arguments matter (for example jalr rd,rs1 may generate 5  different, distinct *itype* values).
+The table below provides a detailed mapping of causes for terminating an instruction block to the corresponding *itype* encoding. It could be used during development of ingress port logic inside of a hart. For some instructions operands matter - for example *jalr rd,rs1* instruction may generate 5  different, distinct *itype* values.
 
 [#Generating itype for different instructions]
 .Generating itype for different instructions
@@ -207,9 +207,10 @@ Table below provides a detailed mapping of of causes for terminating an instruct
 |Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
 |Conditional branch|Non-taken                               |4 = Non-taken branch
 ||Taken                                   |5 = Taken branch
-|ebreak, ecall, c.ebreak|ecall is reported after retirement |1 = Exception
+|ebreak, ecall, c.ebreak|An exception trap that occurred following the final retired instruction in the block, but these do not retire|1 = Exception
 |mret, sret|                                          |3 = Exception or interrupt return
-|other instruction|not in listed in this table|0 = No special type
+|other instructions|All other instructions that are not listed in this table
+|0 = No special type
 3+|*Values of itype (4-bit) needed for <<Implicit Return Optimization,Implicit Return Optimization>>*
 |jal rd         |rd = `link`                                |9 = Inferable call
 |               |rd != `link`                               |15 = Other inferable jump
@@ -218,7 +219,7 @@ Table below provides a detailed mapping of of causes for terminating an instruct
 |               |rd = `link` and rs1 = `link` and rd = rs1  |8 = Uninferable call
 |               |rd != `link` and rs1 = `link`              |13 = Return
 |               |rd != `link` and rs1 != `link`             |14 = Other uninferable jump
-|c.jal          |Implicit x1                                |9 = Inferable call
+|c.jal          |Expands to `jal x1, offset`                |9 = Inferable call
 |c.jalr rs1     |rs1 = x5                                   |12 = Coroutine swap
 |               |rs1 != x5                                  |8 = Uninferable call
 |c.jr rs1       |rs1 = `link`                               |13 = Return
@@ -266,21 +267,21 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 
 *For <<mode_HTM,HTM>> mode:* +
   Update <<field_I-CNT,I-CNT>> field. +
-  Add 0 as least significant bit to HIST field. See <<HIST Field Full, HIST Field Full>> for handling of overflow.
+  Add 0 as least significant bit to <<field_HIST,HIST>> field.
 |5|Taken branch|*For <<mode_BTM,BTM>> mode:* +
   Update <<field_I-CNT,I-CNT>> field. +
   Generate <<msg_DirectBranch,DirectBranch>> message.
 
 *For <<mode_HTM,HTM>> mode:* +
 Update <<field_I-CNT,I-CNT>> field. +
-Add 1 as least significant bit to HIST field. See <<HIST Field Full, HIST Field Full>> for handling of overflow.
+Add 1 as least significant bit to <<field_HIST,HIST>> field.
 |6|Uninferable jump|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
 |7|Reserved|-
 |======================================================================================================
 
-When ingress port is implemented as 4-bit, the general uninferable jump *itype=6* should not be generated and one of the following values should be generated instead. Encoder must handle call stack action as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
+When the *itype* input of ingress port is 4-bit wide, the general uninferable jump *itype=6* should not be generated and one of the following values should be generated instead. Encoder must handle call stack action as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter (if enabled).
 
 [#Handling of 4-bit itype values]
 .Handling of 4-bit itype values
@@ -289,23 +290,29 @@ When ingress port is implemented as 4-bit, the general uninferable jump *itype=6
 |#|itype|Encoder Action|Stack Action
 |8|Uninferable call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
 |9|Inferrable call|Only update <<field_I-CNT,I-CNT>> field.|Push
-|10|Reseved||-
-|11|Reseved||-
+|10|Reserved||-
+|11|Reserved||-
 |12|Co-routine swap|Update <<field_I-CNT,I-CNT>> field. +
-If Pop returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|Pop,Push
+If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|Pop,Push
 |13|Return|Update <<field_I-CNT,I-CNT>> field. +
-If Pop returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.
+If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.
 |Pop
 |14|Other uninferable jump|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|-
 |15|Other inferable jump|Only update <<field_I-CNT,I-CNT>> field.|-
 |======================================================================================================
 
-IMPORTANT: N-Trace encoder does not require *cause* and *tval* ingress port signals (valid for exceptions and interrupts only) as these are not reported in N-Trace messages. N-Trace is only providing the address of an exception/interrupt handler.
+If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port is required to report *itype*=5 (Taken branch) for all direct unconditional jumps, which are normally reported as *itype* = 0 or 15. 
 
-NOTE: As almost every ingress port cycle is updating I-CNT it may overflow. See <<I-CNT Details, I-CNT Details>> chapter.
+IMPORTANT: The N-Trace encoder does not require *cause* and *tval* ingress port
+signals, which are valid only for exceptions and interrupts, as these
+details are not reported in N-Trace messages. Instead, N-Trace solely
+provides the address of the exception or interrupt handler
 
-NOTE: If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port must report *itype*=5 (Taken branch) for all direct unconditional jumps (which are normally reported as *itype* = 0 or 15). 
+
+NOTE: Since almost every ingress port cycle updates I-CNT, there is a possibility
+of overflow. For more information, see <<I-CNT Details, I-CNT Details>> chapter regarding
+I-CNT management and overflow handling.
 
 == N-Trace Transmission Protocol
 
@@ -354,7 +361,7 @@ Custom messages and fields may carry different payloads and may be larger than 6
 * Idle bytes (between messages or used as padding) are indicated by *MSEO[1:0]=11* and *MDO[5:0]=111111* (entire byte is *0xFF*).
 * Value of *MSEO[1:0]=10* is reserved for future extensions.
 
-Table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
+The table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
 
 [#MSEO Transitions]
 .Transitions of MSEO Bits 
@@ -482,10 +489,9 @@ NOTE: The table below does not provide names of Trace Encoder control registers 
 |trTeInstTracing |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |trTeEmpty |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTeInstMode]]
-|trTeInstMode |*Required*|One or more of the following values: +
+|trTeInstMode |*Required*|One or more of the following values must be supported: +
 *3:* <<mode_BTM,BTM>> (Branch Trace Messaging) mode +
-*6:* <<mode_HTM,HTM>> (History Branch Messaging) mode +
-must be allowed.
+*6:* <<mode_HTM,HTM>> (History Trace Messaging) mode
 [[trTeContext]]
 |trTeContext|Optional|Controls generation of <<msg2_Ownership,Ownership>> messages.
 |trTeInstTrigEnable |Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
@@ -502,9 +508,9 @@ must be allowed.
 |trTeVerMinor |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |trTeCompType |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTeProtocolMajor]]
-|trTeProtocolMajor|*Required*|*Must be 1* to encode this version (1.0) of N-Trace protocol. *Value different than 1 is considered a non-compatible version and must be rejected by the trace tool.*
+|trTeProtocolMajor|*Required*|*Must be 1* to encode this version (1.0) of N-Trace protocol. Value different than 1 is considered a non-compatible version and must be rejected by the trace tool if it is only compliant with version 1.0 of the N-trace protocol.
 [[trTeProtocolMinor]]
-|trTeProtocolMinor|*Required*|*Must be 0* to encode this version (1.0) of N-Trace protocol. *Different values are considered as down-compatible extensions as should be accepted by trace tool.* Any future non-compatible feature should be specifically enabled (by new control bits), so older tools (which never set these new bits) should work with it.
+|trTeProtocolMinor|*Required*|*Must be 0* to encode this version (1.0) of N-Trace protocol. When trTeProtocolMajor is 1, values other than 0 are considered down-compatible extension and should be accepted by the trace tool. Any future non-compatible feature should be specifically enabled (by new control bits), so older tools (which never set these new bits) should work with it.
 |trTeInstNoAddrDiff|Not applicable|Must be hard-coded as *0*.
 |trTeInstNoTrapAddr|Not applicable|Must be hard-coded as *0*.
 [[trTeInstEnSequentialJump]]
@@ -527,42 +533,51 @@ must be allowed.
 |trTeSrcBits|Optional|Controls generation of <<field_SRC,SRC>> field.
 |trTeInstFilters|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |trTeDataImplemented|Not applicable|*Must be 0* as IEEE-5001 Nexus Standard data trace messages are not part of version 1.0 of N-Trace specification.
-|*Other* trTeData...|Not applicable|As IEEE-5001 Nexus Standard defines data trace messages, future versions of N-Trace may allow these (as an optional extension).
+|*Other* trTeData...|Not applicable|*Must be 0* as IEEE-5001 Nexus Standard defines data trace messages, future versions of N-Trace may allow these (as an optional extension).
 |*All* trTeTrig...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeFilter...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |*All* trTeComp...|Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTsEnable]]
-|trTsEnable|Optional| Part of (potentially shared Timestamp Unit) controls generation of <<field_TSTAMP,TSTAMP>> field. See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification for details of the Timestamp Unit.
+|trTsEnable|Optional| Part of potentially shared Timestamp Unit controls generation of <<field_TSTAMP,TSTAMP>> field. See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification for details of the Timestamp Unit.
 |======================================================================================================
 
 == Main N-Trace Trace Modes
 
-IEEE-5001 Nexus Standard defines two main modes of tracing program flow:
+RISC-V N-Trace defines two instruction trace modes:
 
 [[mode_BTM]]
-*Branch Trace Messaging using Traditional Messages* - every taken direct conditional branch is generating at least two byte message, but repeated branches may be counted and reported as a single message with a count (instead of many identical messages). In this document this mode will be called *BTM (short for Branch Trace Messaging)*
+* *Branch Trace Messaging (BTM)* - each taken direct conditional branch generates a minimum two-byte message. However, repeated branches can be aggregated and reported as a single message with a count, rather than numerous identical messages. 
 
 [[mode_HTM]]
-*Branch Trace Messaging using Branch History Messages* - every direct conditional branch (taken or not-taken) adds a single bit to the history buffer. It is much more efficient. In this document this mode will be called **HTM (short for History Trace Messaging)**
+* *History Trace Messaging (HTM))* - every direct conditional branch, whether taken or not-taken, contributes a single bit to the history buffer, significantly enhancing the trace efficiency.
 
 The encoder is required to implement at least one of these modes. Both may be supported, but is not required.
+
+[NOTE]
+====
+Above modes correspond to the following IEEE-5001 Nexus Standard instruction trace modes:
+
+* *Branch Trace Messaging using Traditional Messages*
+
+* *Branch Trace Messaging using Branch History Messages*
+====
 
 IMPORTANT: The IEEE-5001 Nexus Standard defines different conformance levels. These levels are not directly applicable to N-Trace as Nexus levels always include debug levels. Different N-Trace options are provided in <<N-Trace Specific Trace Controls,N-Trace Specific Trace Controls>> chapter.
 
 == N-Trace Messages (Overview)
 
-IMPORTANT: Names `Indirect Branch ...` used by IEEE-5001 Nexus Standard may be confusing as RISC-V ISA only allows direct conditional (and always relative) branches. Also RISC-V ISA is differentiating jumps (unconditional flow changes) and branches (conditional flow changes), while in Nexus terminology any flow change (including exceptions/interrupts) are always named as branches. This specification is using term 'branch' and 'jump' as defined in RISC-V ISA. 
+IMPORTANT: The terminology `Indirect Branch` as used by the IEEE-5001 Nexus Standard may lead to confusion, given that the RISC-V ISA exclusively permits direct conditional branches, which are always relative. Furthermore, the RISC-V ISA makes a distinction between 'jump' (unconditional flow change) and 'branch' (conditional flow change), a differentiation not observed in Nexus terminology, where any flow change, including exceptions and interrupts, is uniformly referred to as a 'branch'. This specification employs the terms 'branch' and 'jump' as defined by RISC-V ISA.
 
 // [#Fields in Messages]
 === Fields in Messages
 
-Table below shows all types of messages that can be generated. A single row defines all fields in particular message type (shared fields are always present in the same order).
+The table presented below enumerates all message types that can be generated, with each row comprehensively defining the fields associated with a particular message type. Fields that are present in different messages are consistently ordered.
 
-Terms used as attributes of field:
+Message field attributes are described using the following terminology:
 
-* *[n]* fixed-length *n*-bit wide field
-* *[Var]* variable-length, at least 1-bit wide, field
-* *[Cfg]* configurable field (existence/size depends on the encoder configuration option)
+* *[n]*: A fixed-length field that is *n* bits wide.
+* *[Var]*: A variable-length, non empty (at least 1-bit wide), field.
+* *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
 
 .Fields in Messages
 [cols="26%,9%,7%,7%,9%,17%,8%,10%,7%",options="header",]
@@ -580,7 +595,7 @@ Terms used as attributes of field:
 |[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes
 |[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Cfg|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     |
 |[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Cfg|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Cfg*
-|<<msg_other,Vendor Defined>>|56..62|Cfg 6+| Vendor defined message (dedicated *TCODE* range)
+|<<msg_other,Vendor Defined>>|56..62|Cfg 6+| *TCODE* range designated for use by Vendor Defined messages
 |<<msg_other,Reserved>>|other|Cfg 6+| Reserved for future extensions of N-Trace specification
 |===========================================================================================
 
@@ -636,7 +651,7 @@ Table below provides details for fields which are used in more than one message 
 [[field_TCODE]]
 | TCODE      | 6             | Transfer Code | Message header that identifies the number and/or size of fields to be transferred, and how to interpret each of the fields following it.
 [[field_SRC]]
-| SRC        | *Cfg* | Source of Message Transmission | Width of SRC field is defined by <<trTeSrcBits,trTeSrcBits>> control field and it may be enabled/disabled by <<trTeInhibitSrc,trTeInhibitSrc>> control bit. This optional field is used to identify the source of the message transmission. In configurations that comprise only a single hart, this field need not be transmitted. For devices that comprise multiple harts, this field must be transmitted (if enabled) as part of the message to identify the source of the message transmission. Within a given device, the SRC field bit size should be the same size across all trace encoders associated with same trace stream.
+| SRC        | *Cfg* | Source of Message Transmission | Width of SRC field is defined by <<trTeSrcBits,trTeSrcBits>> control field and it may be enabled/disabled by <<trTeInhibitSrc,trTeInhibitSrc>> control bit. This optional field is used to identify the source of the message transmission. In configurations that comprise only a single hart, this field need not be transmitted. For devices that comprise multiple harts, this field must be transmitted (if enabled) as part of the message to identify the source of the message transmission. The transmitted SRC field size should be the same for all enabled trace encoders sharing a trace stream.
 [[field_SYNC]]
 | SYNC       | 4             |Reason for Synchronization| Encodings and details are provided in <<Synchronizing Messages,Synchronizing Messages>> chapter.
 
@@ -649,9 +664,10 @@ NOTE: The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> fi
                                 *3:* *Extension:*: Interrupt +
                                 NOTE: Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
 [[field_I-CNT]]
-| I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is a number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
+| I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is the number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
 [[field_F-ADDR]]
-| F-ADDR      | *Var* | Full Target Address | Full PC address with least significant bit (which is always 0 for RISC-V) is skipped.
+| F-ADDR      | *Var* | Full Target Address | Full PC without the least significant bit.
+The least significant bit is not reported as it is always 0.
 See <<Address Compression,Address Compression>> chapter for more details.
 
  NOTE: The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
@@ -661,7 +677,7 @@ See <<Address Compression,Address Compression>> chapter for more details.
 
 The U-ADDR field is always sent together with the <<field_B-TYPE,B-TYPE>> field.
 [[field_HIST]]
-| HIST       | *Var* | Direct Branch History map |  Most significant bit = 1 is 'stop-bit', least significant bit denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
+| HIST       | *Var* | Direct Branch History map |  Most significant bit (always 1) serves as a 'stop-bit', the least significant bit denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
 [[field_TSTAMP]]
 | TSTAMP     | *Var* | Timestamp (optional) | It must be enabled by <<trTsEnable,trTsEnable>> control bit. See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details.
 |======================================================================================================
@@ -676,9 +692,9 @@ IEEE-5001 Nexus Standard does not define limits for variable-length fields, but 
 [[NTRACE_MAX_SRC]]
 |SRC|NTRACE_MAX_SRC|12|Determined by size of Trace Control register field. Enough for 4096 (4K) trace sources.
 [[NTRACE_MAX_ICNT]]
-|I-CNT|NTRACE_MAX_ICNT|22|Usually a smaller value will be sufficient. Most significant bit serves as overflow marker and I-CNT full must be generated when it is set.
+|I-CNT|NTRACE_MAX_ICNT|22|Usually a smaller value will be sufficient. An overflow bit may be used for efficient I-CNT full detection.
 [[NTRACE_MAX_ADDR]]
-|F-ADDR, U-ADDR|NTRACE_MAX_ADDR|63|Least significant bit is always 0 for RISC-V addresses so 63 bits only.
+|F-ADDR, U-ADDR|NTRACE_MAX_ADDR|63|Only 63 bits suffice as the least significant bit of an instruction address is always 0 and does not need to be reported.
 [[NTRACE_MAX_HIST]]
 |HIST|NTRACE_MAX_HIST|32|It includes stop-bit. This size is optimal for not wasting any bits in very often used <<msg_ResourceFull,ResourceFull>> messages.
 [[NTRACE_MAX_TSTAMP]]
@@ -1202,12 +1218,14 @@ Every retired instruction MUST increment I-CNT by 1 (for 16-bit instruction) or 
 
 NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
 
-When I-CNT counter is full (reaches it's maximum value) it may be reported in one of two ways:
+When I-CNT counter is full (reaches it's maximum value or overflow bit is set) it may be reported in one of two ways:
 
 * The <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0 should be generated.
 * Optionally I-CNT counter full may be reported using a <<Synchronizing Messages,synchronizing message>> with *SYNC=4 (Sequential Instruction Counter)*.
 ** This method may be only used in <<mode_BTM,BTM>> mode.
 ** Reporting HIST overflow requires to use <<msg_ResourceFull,ResourceFull>> message (as corresponding SYNC code is not defined) so I-CNT overflows should be reported in the same way.
+
+NOTE: Overflow bit allows efficient handling of cases, when single ingress port cycle reports bigger I-CNT (several instructions retired). Reporting maximum value (exactly) is not required and smaller or bigger value may be reported instead.
 
 ==== Example of I-CNT Handling in BTM mode
 
