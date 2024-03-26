@@ -701,7 +701,10 @@ IEEE-5001 Nexus Standard does not define limits for variable-length fields, but 
 |HIST|NTRACE_MAX_HIST|32|It includes stop-bit. This size is optimal for not wasting any bits in very often used <<msg_ResourceFull,ResourceFull>> messages.
 [[NTRACE_MAX_TSTAMP]]
 |TSTAMP|NTRACE_MAX_TSTAMP|64|It is certainly big enough. It corresponds to architecture defined timer and cycle count registers.
-|HREPEAT|NTRACE_MAX_HREPEAT|18|Assure some trace is generated for long loops.
+[[NTRACE_MAX_HREPEAT]]
+|HREPEAT|NTRACE_MAX_HREPEAT|18|Assure some trace is periodically generated for very long loops.
+[[NTRACE_MAX_BCNT]]
+|B-CNT|NTRACE_MAX_BCNT|18|Assure some trace is periodically generated for very long loops.
 |======================================================================================================
 
 == N-Trace Messages (Details)
@@ -726,6 +729,18 @@ IMPORTANT: The IEEE-5001 Nexus Standard presents tables with *TCODE* (which is s
 This message furnishes the requisite context (privileged mode and Context ID, as assigned by the operating system or hypervisor), enabling the decoder to correlate program flow with distinct code
 segments associated with various programs. Activation of this feature requires explicit enabling of the <<trTeContext,trTeContext>> control bit. Reporting of this information occurs under one of the
 following three conditions:
+
+* Upon the retirement of an instruction that writes to the scontext/hcontext CSR.
+2.	Following any trace synchronizing message, specifically any
+message that includes the SYNC field. Importantly: 
+	Should hcontext be implemented, the protocol requires two
+consecutive messages: the first presenting hcontext information
+and the second scontext information. This sequence is critical
+for enabling the decoder to precisely identify the code
+associated with a specific process.
+3.	In the event of a trap or trap return that results in a change in
+privilege mode.
+
 
 * When an instruction which is changing privilege mode or *scontext/hcontext* CSR write instruction retired (as reported via 'priv' and 'context' field on an ingress port).
 * As the next message following any trace <<Synchronizing Messages,synchronizing message>> (any message that includes the <<field_SYNC,SYNC>> field).
@@ -867,7 +882,7 @@ An error message must be generated in the event of an internal messages FIFO ove
 
 *Explanations and Notes*
 
-Error Message must be sent immediately prior to a <<Synchronizing Messages,synchronizing message>> as soon as space is available in the Trace Encoder output queue. It is suggested to have a timestamp at the moment when the first trace messages got dropped, but it is not required.
+Error Message must be sent immediately prior to a <<Synchronizing Messages,synchronizing message>> as soon as space is available in the Trace Encoder output queue. It is recommended that the timestamp reported in the message corresponds to the moment when the first trace message was dropped; however, this is not a requirement.
 
 [NOTE]
 ====
@@ -875,8 +890,11 @@ This message *is required* as otherwise decoder (despite the fact that restart a
 
 * Trace is turned off by trigger (or from any other reason).
 * Message reporting 'trace off' event is lost (due to lack of space for it).
+** Here Error Message should be generated (as soon as there is a room)
 * Trace is never restarted.
-* Trace is stopped (this will not generate any trace as trace is turned off)
+* Trace is stopped (this will not generate any trace as trace is turned off).
+
+In above case, Error Message will be the last message in trace stream.
 ====
 
 [[msg2_ProgTraceSync]]
@@ -947,7 +965,7 @@ However, it further includes details on the reason for synchronization via the S
 This message is generated in the same conditions as <<msg2_IndirectBranch,IndirectBranch>> message, but additionally provides a reason for synchronization (SYNC field) and full PC (F-ADDR field).
 
 [[msg2_ResourceFull]]
-=== Resource Full Message
+=== ResourceFull Message
 
 This message is emitted when either the HIST register is full or the I-CNT counter became full for a given encoder implementation.
 This mechanism ensures that no information is lost, as it enables the decoder to reconstruct larger I-CNT and HIST fields by concatenating or adding the emitted values.
@@ -1048,7 +1066,7 @@ Number of times the previous branch message (without a <<field_SYNC,SYNC>> field
 
 *Explanations and Notes* 
 
-This message is reported when an identical branch message is encountered (just to save trace bandwidth). Trace decoder should just repeat handling of previous branch message B-CNT times. 
+This message is reported when an identical (direct or indirect) branch message is encountered (just to save trace bandwidth). Trace decoder should just repeat handling of previous branch message B-CNT times.
 
 [[msg2_ProgTraceCorrelation]]
 === ProgTraceCorrelation Message
@@ -1094,14 +1112,14 @@ This chapter describes in detail how key fields (I-CNT, HIST, U-ADDR/F-ADDR and 
 
 === Address Compression
 
-Address transmissions is compliant with the IEEE-5001 Nexus Standard (most significant bit 0-s skipped) with optional extension allowing to skip identical most significant bits (following Sv39/Sv48/Sv57 address generation rules). See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter below for clarifications.
+Address transmissions is compliant with the IEEE-5001 Nexus Standard (most significant bit 0-s skipped) with optional extension allowing to skip identical most significant bits. See <<Virtual Addresses Optimization, Virtual Addresses Optimization>> chapter below for clarifications.
 
 Rules when generating addresses:
 
 * Only execution addresses (as seen by the hart) are reported. When virtual memory system is enabled these are virtual addresses.
 * The <<field_F-ADDR,F-ADDR>> field is the full address associated with the trace event, provides a starting point for reconstructing relative addresses.
 * The <<field_U-ADDR,U-ADDR>> field is a compressed address that is relative to the previous trace message with an address field. It is generated by XORing the address with the previous message.
-* To decode the full address from the relative address (U-ADDR) can be XORed with the previously decoded full address.
+** To decode the full address from the relative address (U-ADDR) can be XORed with the previously decoded full address.
 * Address fields are sent beginning with bit 1 since all execution addresses are on a 2-byte boundaries (the least significant bit is always 0 and never sent).
 
 Example:
@@ -1126,12 +1144,23 @@ This optimization must be enabled by <<trTeInstExtendAddrMSB,trTeInstExtendAddrM
 
 NOTE: Normally (without above bit enabled or implemented) addresses with many most significant bits=1 will be send as long messages (as variable size fields skip most significant bit=0 only). The following address *0xFFFF_FFFF_8000_31F4* (real address from Linux kernel) will be encoded as *F-ADDR=0x7FFF_FFFF_C000_18FA* (least significant 0-bit skipped). Such 63-bit variable field value will require 11 bytes to be sent (as we have 6 MDO bits in each byte).
 
+NOTE: Normally (without the above bit enabled or implemented), addresses with many
+most significant bits set to 1 will be sent as long messages (as variable size
+fields skip only the most significant bit set to 0). The following address,
+*0xFFFF_FFFF_8000_31F4* (a real address from the Linux kernel), will be encoded
+as F-ADDR=*0x7FFF_FFFF_C000_18FA* (with the least significant 0-bit skipped).
+Such a 63-bit variable field value will require 11 bytes to be sent (as we
+have 6 MDO bits in each byte).
+
 The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set:
 
-* If F-ADDR/U-ADDR field is sent then last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending of XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
-* This method does NOT require trace decoder to know what is a size of virtual address or if an address is physical or virtual. Decoder must look at most significant bit of last MDO in F-ADDR/U-ADDR field and either extend or not.
-* Simple implementations may not implement an enable bit and always send full address.  
-** Benefits of using it on 32-bit cores is small, so it may not be implemented.  
+* The encoder may skip any number of most significant identical bits in the U-ADDR/F-ADDR fields. However, it must ensure that if any bits are skipped, then the number of transmitted bits is an multiple of the MDO size. Additionally, the most significant transmitted bit must have the same value as the skipped bits.
+
+* If F-ADDR/U-ADDR field is received by decoder, then the last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending on XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
+
+* This method does NOT require a trace decoder to know what a size of virtual address is or if an address is physical or virtual. The decoder must look at the most significant bit of the last MDO in F-ADDR/U-ADDR field and either extend or not.
+
+* Simple implementations may not implement an enable bit and always send full address. Benefits of using it on 32-bit cores is small, so it may not be implemented.
 
 This way of encodign allows an encoder to efficiently send:
 
@@ -1201,11 +1230,11 @@ Trace encoder must implement a most significant bit detection (skipping identica
    #10:  000101_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
                        F-ADDR field=0x5FFF_FFFF_FFFF_FFFF, Encoded address=0xBFFF_FFFF_FFFF_FFFE
 
-NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any Sv39/Sv48/Sv57 modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
+NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any RISC-V virtual memory modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
 
 === HIST Field Generation
 
-When the encoder is operating in <<mode_HTM,HTM>> mode direct conditional branches do NOT generate any messages. Each conditional branch (taken or not-taken direct) adding a single bit to the internal HIST register/accumulator.If a direct conditional branch is taken, bit=1 is added at the least significant position. If a direct conditional branch is not-taken, bit=0 is added at the least significant position. HIST field accumulator may be implemented as left-shift register. 
+When the encoder is operating in <<mode_HTM,HTM>> mode direct conditional branches do NOT generate any messages. Each conditional branch (taken or not-taken direct) adding a single bit to the internal HIST register/accumulator. If a direct conditional branch is taken, bit=1 is added at the least significant position. If a direct conditional branch is not-taken, bit=0 is added at the least significant position. HIST field accumulator may be implemented as left-shift register. 
 
 Most significant bit value 1 in the HIST field is used as a stop-bit. It allows the HIST field to be transmitted as a variable-length field efficiently (as most significant 0-bits are not transmitted).
 
@@ -1229,19 +1258,18 @@ If this is happening, a <<msg2_ResourceFull,ResourceFull>> with the HIST field (
 NOTE: Trace decoders do not have to be aware about the actual size of the HIST field implemented by the encoder, however in order to allow efficient implementation of trace encoders (and also allowing HIST pattern detection) this N-Trace specification limits HIST field size to max 32-bits. Longer HIST fields would not provide much of a gain and would make repeated HIST field detection more costly (in terms of hardware resources).
 
 When a HIST buffer is identical in two or more consecutive <<msg2_ResourceFull,ResourceFull>> messages, it can be detected and reported using the HIST + HREPEAT (History Repeat Counter) instead of many identical messages.
-
 See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details.
 
 === I-CNT Details
 
-Field I-CNT (present in most messages) is counting the number of halfwords for the instruction units reported as retired.
+The I-CNT field, present in most messages, transmits the value of the I-CNT counter, which counts the number of halfwords used to encode retired instructions.
 
-I-CNT counter is reset to 0 in one of these two situations (as defined by IEEE-5001 Nexus Standard):
+The I-CNT counter in the trace encoder is reset to 0, in accordance with the IEEE-5001 Nexus Standard, under one of the following two conditions
 
-* When a trace starts or is restarted (for any reason).
-* After I-CNT field is sent in a message.
+* When tracing starts or is restarted for any reason.
+* After the I-CNT counter value has been transmitted in a message.
 
-Every retired instruction MUST increment I-CNT by 1 (for 16-bit instruction) or by 2 (for 32-bit instruction). Specifically:
+Every retired instruction MUST increment I-CNT counter by 1 (for 16-bit instruction) or by 2 (for 32-bit instruction). Specifically:
 
 * If an instruction is explicitly changing the PC (as jump or return), that instruction itself MUST update the I-CNT.
 * An exception or interrupt before retirement of an instruction CANNOT update the I-CNT.
@@ -1249,12 +1277,10 @@ Every retired instruction MUST increment I-CNT by 1 (for 16-bit instruction) or 
 
 NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
 
-When I-CNT counter is full (reaches it's maximum value or overflow bit is set) it may be reported in one of two ways:
+When I-CNT counter is full (reaches it's maximum value or overflow bit is set) it can be reported in one of two ways:
 
-* The <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0 should be generated.
-* Optionally I-CNT counter full may be reported using a <<Synchronizing Messages,synchronizing message>> with *SYNC=4 (Sequential Instruction Counter)*.
-** This method may be only used in <<mode_BTM,BTM>> mode.
-** Reporting HIST overflow requires to use <<msg_ResourceFull,ResourceFull>> message (as corresponding SYNC code is not defined) so I-CNT overflows should be reported in the same way.
+* By using a <<msg_ResourceFull,ResourceFull>> message with <<field_RCODE,RCODE>>=0. This method is applicable to both BTM and HTM.
+* Optionally, by using a <<Synchronizing Messages,synchronizing message>> with *SYNC=4 (Sequential Instruction Counter)*. It may be only used in <<mode_BTM,BTM>> mode.
 
 NOTE: Overflow bit allows efficient handling of cases, when single ingress port cycle reports bigger I-CNT (several instructions retired). Reporting maximum value (exactly) is not required and smaller or bigger value may be reported instead.
 
@@ -1631,15 +1657,21 @@ Nonetheless, the guidelines provided herein are applicable to any instruction si
 
 *Main Rules*
 
-. Instructions which are not control transfer instructions and direct unconditional jumps generate no trace.
-** These are called inferable instructions, where the next PC can be known from static analysis of binary code.
-. Only direct conditional branches, indirect unconditional flow transfer instructions and exceptions/interrupts generate trace.
-** These are called non-inferable instructions, where the next PC cannot be known from static analysis of binary code.
+. *Inferable Instructions*: This category includes instructions that do not perform control transfers or
+are direct jumps. The subsequent program counter (PC) for these instructions can be determined through static analysis of the binary code. Because these instructions exhibit a predictable
+execution flow, they are termed "inferable," and no trace is generated for them.
+
+. *Non-Inferable Instructions*: This category comprises conditional branches and indirect jumps. Due to the unpredictability of the next PC as determined through
+static analysis alone, non-inferable instructions require trace generation.
+
+. *Interrupts and Exceptions*: Control flow changes caused by interrupts and exceptions necessitate
+trace generation. These events alter the flow in an unpredictable manner, similar to non-inferable
+instructions, thereby requiring their occurrences to be traced.
 
 *Detailed Rules*
 
-. If tracing is started (after it was disabled), a <<msg_ProgTraceSync,ProgTraceSync>> message is generated.
-** This message includes the reason for a start (<<field_SYNC,SYNC>> field) and full address (<<field_F-ADDR,F-ADDR>> field).
+. If tracing is started (or restarted after it was disabled), a <<msg_ProgTraceSync,ProgTraceSync>> message is generated.
+** This message specifies the reason for the start in the <<field_SYNC,SYNC>> field and includes full address in the <<field_F-ADDR,F-ADDR>> field.
 . A retired 16-bit instruction increments the <<field_I-CNT,I-CNT>> counter by 1, while a retired 32-bit instruction increments it by 2.
 . The following types of instructions allow trace decoders to know the next PC (encoder should not generate any trace for them).
 ** Instruction which is not control transfer instructions => PC is at the next instruction (+2 or +4).
@@ -1647,7 +1679,7 @@ Nonetheless, the guidelines provided herein are applicable to any instruction si
 ** Not taken direct conditional branch (in BTM mode) => PC is next instruction (+2 or +4).
 . Indirect, unconditional jump instruction is handled as:
 ** In BTM mode, an <<msg2_IndirectBranch,IndirectBranch>> message is generated.
-** In HTM mode. an <<msg2_IndirectBranchHist,IndirectBranchHist>> message is generated. Should the <<field_HIST,HIST>> field be empty, an <<msg2_IndirectBranch,IndirectBranch>> message may optionally be generated instead.
+** In HTM mode, an <<msg2_IndirectBranchHist,IndirectBranchHist>> message is generated. Should the <<field_HIST,HIST>> field be empty, an <<msg2_IndirectBranch,IndirectBranch>> message may optionally be generated instead.
 . Direct, conditional branch instruction is handled as:
 ** In BTM mode, a <<msg_DirectBranch,DirectBranch>> message is generated, but only if the branch is taken.
 ** In HTM mode, the outcome of the branch (1 for taken or 0 for not-taken) is appended as a single bit into the branch history buffer (<<field_HIST,HIST>> register).
@@ -1933,7 +1965,7 @@ SRC field (if enabled) may change the otherwise optimal layout of <<Fields in Me
 
 *Validation Considerations*
 
-Resource Full message with I-CNT full is rare and may not be experienced in normal code. Simplest way to generate is to have an infinite loop and (rare) interrupt handler. This loop should increment a register or memory location - this value should correspond to total accumulated I-CNT.
+ResourceFull message with I-CNT full is rare and may not be experienced in normal code. Simplest way to generate is to have an infinite loop and (rare) interrupt handler. This loop should increment a register or memory location - this value should correspond to total accumulated I-CNT.
 
 *Potential Future Enhancements*
 
