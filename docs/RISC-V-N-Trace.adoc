@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Mar 26, 2024
-:revnumber: 1.0.0_rc22
+:revdate:  Mar 27, 2024
+:revnumber: 1.0.0_rc23
 :revremark: Stable state (second ARC round of comments)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,9 +50,11 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc22
+=== Version 1.0.0_rc23
+* 2024-03-27
+** Providing remaining updates.
 * 2024-03-26
-** Most isuses #from 49-#52 addresses (few topis to be finalized/agreed).
+** Most issues #from 49-#52 addresses (few topis to be finalized/agreed).
 * 2024-03-20
 ** Isuses #45-#48 addresses (few topis to be agreed).
 
@@ -727,25 +729,17 @@ IMPORTANT: The IEEE-5001 Nexus Standard presents tables with *TCODE* (which is s
 === Ownership Message
 
 This message furnishes the requisite context (privileged mode and Context ID, as assigned by the operating system or hypervisor), enabling the decoder to correlate program flow with distinct code
-segments associated with various programs. Activation of this feature requires explicit enabling of the <<trTeContext,trTeContext>> control bit. Reporting of this information occurs under one of the
-following three conditions:
+segments associated with various programs. Activation of this feature requires explicit enabling of the <<trTeContext,trTeContext>> control bit.
 
-* Upon the retirement of an instruction that writes to the scontext/hcontext CSR.
-2.	Following any trace synchronizing message, specifically any
-message that includes the SYNC field. Importantly: 
-	Should hcontext be implemented, the protocol requires two
-consecutive messages: the first presenting hcontext information
-and the second scontext information. This sequence is critical
-for enabling the decoder to precisely identify the code
+Reporting of this information occurs under one of the following three conditions:
+
+* Upon the retirement of an instruction that writes to the *scontext/hcontext* CSR (as reported via 'priv' and 'context' field on an ingress port).
+* In the event of a trap or trap return that results in a change in privilege mode (including *ECALL* and *EBREAK* instructions).
+* Following any trace <<Synchronizing Messages,synchronizing message>> that includes the <<field_SYNC,SYNC>> field.
+
+IMPORTANT: Should *hcontext* be implemented, the protocol requires two consecutive messages: the first presenting *hcontext* information
+and the second *scontext* information. This sequence is important for enabling the decoder to identify the code
 associated with a specific process.
-3.	In the event of a trap or trap return that results in a change in
-privilege mode.
-
-
-* When an instruction which is changing privilege mode or *scontext/hcontext* CSR write instruction retired (as reported via 'priv' and 'context' field on an ingress port).
-* As the next message following any trace <<Synchronizing Messages,synchronizing message>> (any message that includes the <<field_SYNC,SYNC>> field).
-** If *hcontext* is implemented two messages must follow (first providing *hcontext* and second providing *scontext*). It is necessary so the decoder will be able to locate the code for a specific process. 
-* At entry and returns to/from exceptions and interrupts when a privilege mode is changed.
 
 [#Fields_Ownership]
 .Ownership Message Fields
@@ -1446,6 +1440,44 @@ Decoders should report synchronization SYNC field values from messages (includin
 * All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may report full/absolute timestamp.
 ====
 
+==== Examples of Synchronizing Messages
+
+The following cases are created to help illustrate the type of N-trace <<Synchronizing Messages,synchronizing message>> generated for different scenarios.
+
+*Events which may occur while a hart is running:*
+
+image:./images/example_key.PNG[image]
+
+*Case1: Enable/disable debug while tracing:*
+
+image:./images/case1_enable_disable_debug_while_tracing.PNG[image]
+
+*Case2: Enable trace while in debug:*
+
+image:./images/case2_enable_trace_while_in_debug.PNG[image]
+
+*Case3: Disable trace while in debug:*
+
+image:./images/case3_disable_trace_while_in_debug.PNG[image]
+
+*Case4: Sync trigger event (internal or external):*
+
+image:./images/case4_sync_trigger_event.PNG[image]
+
+*Case5: Enable and disable while in debug:*
+
+image:./images/case5_enable_disable_while_in_debug.PNG[image]
+
+*Case6: Periodic synchronization:*
+
+image:./images/case6_periodic.PNG[image]
+
+*Superscript notes:*
+
+. ProgramTraceSync message may be replaced with DirectBranchSync, IndirectBranchHistSync, IndirectBranchHistSync.
+. ProgramTraceSync message may be generated for a SYNC trigger event, however, HIST information will not be reported. For HTM mode, the IndirectBranchHistSync or IndirectBranchSync message with SYNC=6 (Trace Event) should be used to ensure no trace data is lost.
+. Next available *...Branch...* message upgraded to *...Branch...Sync* counterpart, so SYNC is reported.
+
 === Timestamp Reporting
 
 Timestamp reporting must be enabled by <<trTsEnable,trTsEnable>> trace control bit.
@@ -1492,34 +1524,6 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 |Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
 |Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
 |====
-
-=== Examples of Synchronizing Messages
-
-This chapter provides examples of several sequences of events and clarifies what types of <<Synchronizing Messages,synchronizing message>> should be generated in each case.
-
-*Case1: Enable/disable debug while tracing:*
-
-image:./images/case1_enable_disable_debug_while_tracing.PNG[image]
-
-*Case2: Enable trace while in debug:*
-
-image:./images/case2_enable_trace_while_in_debug.PNG[image]
-
-*Case3: Disable trace while in debug:*
-
-image:./images/case3_disable_trace_while_in_debug.PNG[image]
-
-*Case4: Sync trigger event:*
-
-image:./images/case4_sync_trigger_event.PNG[image]
-
-*Case5: Enable/disable while in debug:*
-
-image:./images/case5_enable_disable_while_in_debug.PNG[image]
-
-*Case6: Periodic:*
-
-image:./images/case6_periodic.PNG[image]
 
 == Optimization Extensions
 
