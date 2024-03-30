@@ -213,7 +213,7 @@ The table below provides a detailed mapping of causes for terminating an instruc
 |Instruction|Condition/Notes|itype Value
 |Interrupted instruction|An interrupt trap occurred following the final retired instruction in the block|2 = Interrupt
 |Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
-|Conditional branch|Non-taken                               |4 = Non-taken branch
+|Conditional branch|Not-taken                               |4 = Not-taken branch
 ||Taken                                   |5 = Taken branch
 |EBREAK, ECALL, C.EBREAK|An exception trap that occurred following the final retired instruction in the block, but these do not retire|1 = Exception
 |MRET, SRET|                                          |3 = Exception or interrupt return
@@ -270,7 +270,7 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=3 or 1. +
 |3|Exception or interrupt return|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
-|4|Non-taken branch|*For <<mode_BTM,BTM>> mode:* +
+|4|Not-taken branch|*For <<mode_BTM,BTM>> mode:* +
   Only update <<field_I-CNT,I-CNT>> field.
 
 *For <<mode_HTM,HTM>> mode:* +
@@ -812,7 +812,7 @@ This message is generated when the taken direct conditional branch has retired.
 Last instruction in the code block (or blocks) with all inferable instructions (described by I-CNT) is a taken, direct conditional branch instruction.
 Next PC is determined by decoding the conditional branch insruction opcode to determine the encoded signed offset and adding it to the address of the conditional branch instruction.
 
-NOTE: Non-taken direct conditional branches or direct unconditional jumps are NOT generating any trace but increase I-CNT (and direct unconditional jumps are changing PC to direct unconditional jump destination address), so PC of last instruction in code block[s] can be found.
+NOTE: Not-taken direct conditional branches or direct unconditional jumps are NOT generating any trace but increase I-CNT (and direct unconditional jumps are changing PC to direct unconditional jump destination address), so PC of last instruction in code block[s] can be found.
 
 [[msg2_IndirectBranch]]
 === IndirectBranch Message
@@ -1395,7 +1395,7 @@ Trace with *Resource Full* message (HTM mode shown):
 ** RCODE=0 (I-CNT counter is full), *RDATA[0]=9* (I-CNT value overflown value)
 * <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (describes entire <0x100..0x11C> range)
 ** EVCODE=0 (Entry into Debug Mode), CDF=1 (I-CNT and HIST fields follow)
-** *I-CNT=5* (see note below), HIST=0x2 (one not taken direct conditional branch)
+** *I-CNT=5* (see note below), HIST=0x2 (one not-taken direct conditional branch)
 
 Trace with *SYNC=Sequential Instruction Counter* (BTM mode only):
 
@@ -1709,7 +1709,7 @@ instructions, thereby requiring their occurrences to be traced.
 . The following types of instructions allow trace decoders to determine the next PC and encoder should not generate any trace for them.
 ** Instruction which is not control transfer instructions should advance PC to the next instruction (increment by 2 or 4).
 ** Direct (inferable) unconditional jump should set next PC to jump destination (PC plus an offset obtained from opcode).
-** Not taken direct conditional branch (in BTM mode) should advance PC to the next instruction (increment by 2 or 4).
+** Not-taken direct conditional branch (in BTM mode) should advance PC to the next instruction (increment by 2 or 4).
 . Indirect, unconditional jump instruction is handled as:
 ** In BTM mode, an <<msg2_IndirectBranch,IndirectBranch>> message is generated.
 ** In HTM mode, an <<msg2_IndirectBranchHist,IndirectBranchHist>> message is generated. Should the <<field_HIST,HIST>> field be empty, an <<msg2_IndirectBranch,IndirectBranch>> message may optionally be generated instead.
@@ -1753,7 +1753,7 @@ Such an approach will NOT require changes/adaptation in trace decoders. To illus
 
 It can be traced as follows (exact type of messages do not matter):
 
-* Single message (if branch was not taken)
+* Single message (if branch was not-taken)
 ** *I-CNT=5*     => Instruction XYZ did not change the flow and code in range <0x100..0x10A) got executed
 * Two messages (if branch was taken)
 ** *I-CNT=4*, *F-ADDR=0x100* (denote address 0x200)  => Code in range <0x100..0x108) got executed and next PC after instruction XYZ is 0x200
@@ -1770,7 +1770,7 @@ Code below is a simplified part of actual C-code used by the reference encoder (
 * NTraceEncoderInit(void) - initialize state of encoder
 * NTraceEncoderHandleRetired(uint64_t `addr`, uint32_t `flags`) - handle single retired instruction
 ** `addr` - address of retired instruction
-** `info` - information about instruction (type, size, taken/non-taken)
+** `info` - information about instruction (type, size, taken/not-taken)
 
 [source,c]
 ----
@@ -1888,7 +1888,7 @@ void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
             if (InfoIsBranchTaken(info))
                 encoNextEmit = NEXUS_TCODE_DirectBranch;    // Emit destination address (next retired)
             else
-                ;   // Not taken branch is considered as linear instruction
+                ;   // Not-taken branch is considered as linear instruction
         }
     }
     else
