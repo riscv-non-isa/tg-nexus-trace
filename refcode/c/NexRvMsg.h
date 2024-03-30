@@ -31,14 +31,14 @@
 //                          name   def (marker | value)
 //#define NEXM_BEG(n, t)      {#n,    0x100 | (t)                 }
 #define NEXM_BEG(n, t)      {#n,    0x100 | (NEXUS_TCODE_##n)   },
-#define NEXM_SRC()
+#define NEXM_SRC(opt)
 //#define   NEXM_FLD(n, s)    {#n,    0x200 | (s)                 }
 #define   NEXM_FLD(n, s)    {#n,    0x200 | (NEXUS_FLDSIZE_##n) },
 #define   NEXM_VAR(n)       {#n,    0x400                       },
 #define   NEXM_ADR(n)       {#n,    0xC00                       },
 #define NEXM_END()          {NULL,  1                           },
 
-#define NEXM_VAR_CFG(n, reg, fld) // TODO: Conditional field ...
+#define NEXM_VAR_CFG(n, opt) // TODO: Conditional field ...
 
 // Definition of Nexus Messages (subset applicable to RISC-V PC trace)
 static struct NEXM_MSGDEF_STRU {
@@ -48,20 +48,27 @@ static struct NEXM_MSGDEF_STRU {
 
 #endif  // NEXM_EXTERNAL
 
+  // Naming:
+  //    NEXM=Nexus Message, BEG/END=Beginning/End of definition.
+  //    SRC=Message source (system-field). Name of an option given.
+  //    FLD/VAR=Fixed/variable size field.
+  //    ADR=Special case of variable field (without least significant bit). 
+  //    CFG=Configurable, Name of an option given.
+
   NEXM_BEG(Ownership, 2)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_VAR(PROCESS)
     NEXM_VAR(TSTAMP)
   NEXM_END()
 
   NEXM_BEG(DirectBranch, 3)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_VAR(ICNT)
     NEXM_VAR(TSTAMP)
   NEXM_END()
 
   NEXM_BEG(IndirectBranch, 4)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(BTYPE, 2)
     NEXM_VAR(ICNT)
     NEXM_ADR(UADDR)
@@ -69,14 +76,14 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(Error, 8)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(ETYPE, 4)
     NEXM_VAR(PAD)
     NEXM_VAR(TSTAMP)
   NEXM_END()
 
   NEXM_BEG(ProgTraceSync, 9)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(SYNC, 4)
     NEXM_VAR(ICNT)
     NEXM_ADR(FADDR)
@@ -84,7 +91,7 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(DirectBranchSync, 11)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(SYNC, 4)
     NEXM_VAR(ICNT)
     NEXM_ADR(FADDR)
@@ -92,7 +99,7 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(IndirectBranchSync, 12)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(SYNC, 4)
     NEXM_FLD(BTYPE, 2)
     NEXM_VAR(ICNT)
@@ -101,15 +108,15 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(ResourceFull, 27)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(RCODE, 4)
     NEXM_VAR(RDATA)
-    NEXM_VAR_CFG(HREPEAT, trTeInstFeatures, trTeInstEnRepeatedHistory)  // Configurable
+    NEXM_VAR_CFG(HREPEAT, EnaRepeatedHistory) // Configurable
     NEXM_VAR(TSTAMP)
   NEXM_END()
 
   NEXM_BEG(IndirectBranchHist, 28)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(BTYPE, 2)
     NEXM_VAR(ICNT)
     NEXM_ADR(UADDR)
@@ -118,7 +125,7 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(IndirectBranchHistSync, 29)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(SYNC, 4)
     NEXM_FLD(BTYPE, 2)
     NEXM_VAR(ICNT)
@@ -128,13 +135,13 @@ static struct NEXM_MSGDEF_STRU {
   NEXM_END()
 
   NEXM_BEG(RepeatBranch, 30)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_VAR(BCNT)
     NEXM_VAR(TSTAMP)
   NEXM_END()
 
   NEXM_BEG(ProgTraceCorrelation, 33)
-    NEXM_SRC()
+    NEXM_SRC(SrcBits)                         // Configurable
     NEXM_FLD(EVCODE, 4)
     NEXM_FLD(CDF, 2)
     NEXM_VAR(ICNT)
