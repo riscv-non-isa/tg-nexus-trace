@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Mar 27, 2024
-:revnumber: 1.0.0_rc23
+:revdate:  Mar 30, 2024
+:revnumber: 1.0.0_rc24
 :revremark: Stable state (second ARC round of comments)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,7 +50,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc23
+=== Version 1.0.0_rc24
+* 2024-03-30
+** All except 'itype' (meeting with Ved)
 * 2024-03-27
 ** Providing remaining updates.
 * 2024-03-26
@@ -200,7 +202,7 @@ N-Trace uses the same ingress port as specified in <<E-Trace_Specification,E-Tra
 * As this specification does not define the data trace yet, sub-chapters *4.3 Data Trace Interface requirements* and *4.4 Data Trace Interface* are not applicable.
 * It is an ambition to extract single, shared *RISC-V Trace Ingress Port* specifications (combining this chapter with relevant E-Trace chapter). 
 
-The table below provides a detailed mapping of causes for terminating an instruction block to the corresponding *itype* encoding. It could be used during development of ingress port logic inside of a hart. For some instructions operands matter - for example *jalr rd,rs1* instruction may generate 5  different, distinct *itype* values.
+The table below provides a detailed mapping of causes for terminating an instruction block to the corresponding *itype* encoding. It could be used during development of ingress port logic inside of a hart. For some instructions operands matter - for example *JALR rd,rs1* instruction may generate 5  different, distinct *itype* values.
 
 [#Generating itype for different instructions]
 .Generating itype for different instructions
@@ -211,42 +213,42 @@ The table below provides a detailed mapping of causes for terminating an instruc
 |Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
 |Conditional branch|Non-taken                               |4 = Non-taken branch
 ||Taken                                   |5 = Taken branch
-|ebreak, ecall, c.ebreak|An exception trap that occurred following the final retired instruction in the block, but these do not retire|1 = Exception
-|mret, sret|                                          |3 = Exception or interrupt return
+|EBREAK, ECALL, C.EBREAK|An exception trap that occurred following the final retired instruction in the block, but these do not retire|1 = Exception
+|MRET, SRET|                                          |3 = Exception or interrupt return
 |other instructions|All other instructions that are not listed in this table
 |0 = No special type
 3+|*Values of itype (4-bit) needed for <<Implicit Return Optimization,Implicit Return Optimization>>*
-|jal rd         |rd = `link`                                |9 = Inferable call
+|JAL rd         |rd = `link`                                |9 = Inferable call
 |               |rd != `link`                               |15 = Other inferable jump
-|jalr rd, rs1   |rd = `link` and rs1 != `link`              |8 = Uninferable call
+|JALR rd, rs1   |rd = `link` and rs1 != `link`              |8 = Uninferable call
 |               |rd = `link` and rs1 = `link` and rd != rs1 |12 = Coroutine swap
 |               |rd = `link` and rs1 = `link` and rd = rs1  |8 = Uninferable call
 |               |rd != `link` and rs1 = `link`              |13 = Return
 |               |rd != `link` and rs1 != `link`             |14 = Other uninferable jump
-|c.jal          |Expands to `jal x1, offset`                |9 = Inferable call
-|c.jalr rs1     |rs1 = x5                                   |12 = Coroutine swap
+|C.JAL          |Expands to `JAL x1, offset`                |9 = Inferable call
+|C.JALR rs1     |rs1 = x5                                   |12 = Coroutine swap
 |               |rs1 != x5                                  |8 = Uninferable call
-|c.jr rs1       |rs1 = `link`                               |13 = Return
+|C.JR rs1       |rs1 = `link`                               |13 = Return
 |               |rs1 != `link`                              |14 = Other uninferable jump
-|c.j            |No registers, only offset                  |15 = Other inferable jump
-|cm.jt          |Defined by Zcmt extension                  |15 = Other inferable jump
-|cm.jalt        |Defined by Zcmt extension                  |9 = Inferable call
-|cm.popret*     |Defined by Zcmp extension                  |13 = Return
+|C.J            |No registers, only offset                  |15 = Other inferable jump
+|CM.JT          |Defined by Zcmt extension                  |15 = Other inferable jump
+|CM.JALT        |Defined by Zcmt extension                  |9 = Inferable call
+|CM.POPRET*     |Defined by Zcmp extension                  |13 = Return
 3+|*Values of itype (3-bit) without <<Implicit Return Optimization,Implicit Return Optimization>>*
-|jal rd         |                                           |0 = No special type
-|jalr           |                                           |6 = Uninferable jump
-|c.j or c.jal   |                                           |0 = No special type
-|cm.jt          |Defined by Zcmt extension                  |0 = No special type
-|cm.jalt        |Defined by Zcmt extension                  |0 = No special type
-|cm.popret*     |Defined by Zcmp extension                  |6 = Uninferable jump
+|JAL rd         |                                           |0 = No special type
+|JALR           |                                           |6 = Uninferable jump
+|C.J or C.JAL   |                                           |0 = No special type
+|CM.JT          |Defined by Zcmt extension                  |0 = No special type
+|CM.JALT        |Defined by Zcmt extension                  |0 = No special type
+|CM.POPRET*     |Defined by Zcmp extension                  |6 = Uninferable jump
 |======================================================================================================
 
 [NOTE]
 ====
-* Branches (*itype*=4, 5) are conditional direct branches. In RISC-V ISA all jumps, calls, returns are always unconditional.
 * Symbol `link` means register *x1* or *x5* as specified in *The RISC-V Instruction Set Manual, Volume I: Unprivileged ISA* document.
+* Branches (*itype*=4, 5) are conditional direct branches. In RISC-V ISA all jumps, calls, returns are always unconditional.
 * 4-bit *itype* (codes 8..15) are only necessary when <<Implicit Return Optimization,Implicit Return Optimization>> is implemented.
-* Zcmt instructions (cm.jt and cm.jalt) are considered as inferable jumps as jump tables are assumed to be static and known to the decoder.
+* Zcmt instructions (CM.JT and CM.JALT) are considered as inferable jumps as jump tables are assumed to be static and known to the decoder.
 ====
 
 Table below defines how N-Trace encoder should handle different 3-bit *itype* values on trace ingress port.
@@ -738,8 +740,9 @@ Reporting of this information occurs under one of the following three conditions
 * Following any trace <<Synchronizing Messages,synchronizing message>> that includes the <<field_SYNC,SYNC>> field.
 
 IMPORTANT: Should *hcontext* be implemented, the protocol requires two consecutive messages: the first presenting *hcontext* information
-and the second *scontext* information. This sequence is important for enabling the decoder to identify the code
-associated with a specific process.
+and the second *scontext* information. This sequence is important for enabling the decoder to identify the code associated with a specific process. 
+
+NOTE: If tracing multiple OS-es, main decoder may route messages to an OS-specific decoder after seeing *hcontext* and the *scontext* (which follows) will be decoded by decoder determined by *hcontext*.
 
 [#Fields_Ownership]
 .Ownership Message Fields
@@ -1152,7 +1155,7 @@ The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExt
 
 * If F-ADDR/U-ADDR field is received by decoder, then the last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending on XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
 
-* This method does NOT require a trace decoder to know what a size of virtual address is or if an address is physical or virtual. The decoder must look at the most significant bit of the last MDO in F-ADDR/U-ADDR field and either extend or not.
+* This method does NOT require a trace decoder to know what a virtual memory system mode is or if an address is physical or virtual. The decoder must look at the most significant bit of the last MDO in F-ADDR/U-ADDR field and either extend or not.
 
 * Simple implementations may not implement an enable bit and always send full address. Benefits of using it on 32-bit cores is small, so it may not be implemented.
 
@@ -1228,9 +1231,19 @@ NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any RISC-V virtu
 
 === HIST Field Generation
 
-When the encoder is operating in <<mode_HTM,HTM>> mode direct conditional branches do NOT generate any messages. Each conditional branch (taken or not-taken direct) adding a single bit to the internal HIST register/accumulator. If a direct conditional branch is taken, bit=1 is added at the least significant position. If a direct conditional branch is not-taken, bit=0 is added at the least significant position. HIST field accumulator may be implemented as left-shift register. 
+When operating in HTM mode, the encoder does not generate messages for conditional branches. 
+Instead, it maintains a HIST register or accumulator to record the outcomes of these branches, whether taken or not-taken. 
+Each conditional branch contributes a single bit to the HIST register, as follows:
 
-Most significant bit value 1 in the HIST field is used as a stop-bit. It allows the HIST field to be transmitted as a variable-length field efficiently (as most significant 0-bits are not transmitted).
+* A bit with a value of 1 is appended at the least significant position for a
+taken conditional branch.
+* A bit with a value of 0 is appended at the least significant position for a
+not-taken conditional branch.
+
+The HIST register may be implemented as a left-shift register. Initially, when
+the HIST register is empty, bit 0 of the register is set to 1, with all other
+bits set to 0. Subsequent conditional branches cause the register to shift left,
+recording each taken or not-taken outcome in bit 0. 
 
 Examples:
 
@@ -1239,20 +1252,29 @@ Examples:
  Binary(MSB-LSB): 10000=0x10 (four direct conditional branches, all four not-taken)
  Binary(MSB-LSB):     1=0x1  (no direct conditional branches at all)
 
-The HIST field is reset (to 1, which is just a stop-bit with no bits encoding direct conditional branches) each time it is transmitted (including when any <<Synchronizing Messages,synchronizing message>> is transmitted).
+After transmission of the HIST field, the register is reset to its initial, empty state.
 
-As least significant bit encodes the last direct conditional branch, decoders must interpret the HIST field starting from most significant bit (the one after stop-bit = 1). This is the bit which is describing the first encountered (taken or not-taken) direct conditional branch.
+Decoders must initiate the interpretation of the HIST field starting from the
+second most significant bit. The most significant bit, designated as the
+stop-bit, is invariably set to 1. This second most significant bit—immediately
+following the stop-bit—encodes the outcome of the first conditional branch
+captured in the HIST register. Conversely, the least significant bit represents
+the outcome of the last conditional branch prior to the transmission of the HIST
+register.
 
 ==== HIST Field Full
 
-The HIST field is usually implemented as a shift register (initialized to 1 at reset). This register is shifted left and 0 or 1 is added to it. When the most significant bit of this register becomes 1, it means that the stop-bit reached the end of the HIST register and HIST field must be sent before next bit can be added.
+The transition of the most significant bit in the HIST register from 0 to 1 indicates the register is full. At this point, the
+entire register, including the most significant bit — which serves as the stop-bit — is transmitted 
+using a <<msg2_ResourceFull,ResourceFull>> message with the <<field_RCODE,RCODE>> field set to either 1 or 2.
 
-If this is happening, a <<msg2_ResourceFull,ResourceFull>> with the HIST field (<<field_RCODE,RCODE>>=1 or 2) must be generated.
+When a HIST register is full and its value is the same as that of the HIST
+field transmitted in previous <<msg2_ResourceFull,ResourceFull>> message, then the encoder may
+increment an internal *HREPEAT* counter (history repeat counter) instead of
+generating a ResourceFull message if the Repeated History Optimization is
+enabled. See <<Repeated History Optimization,Repeated History Optimization>> chapter for further details.
 
 NOTE: Trace decoders do not have to be aware about the actual size of the HIST field implemented by the encoder, however in order to allow efficient implementation of trace encoders (and also allowing HIST pattern detection) this N-Trace specification limits HIST field size to max 32-bits. Longer HIST fields would not provide much of a gain and would make repeated HIST field detection more costly (in terms of hardware resources).
-
-When a HIST buffer is identical in two or more consecutive <<msg2_ResourceFull,ResourceFull>> messages, it can be detected and reported using the HIST + HREPEAT (History Repeat Counter) instead of many identical messages.
-See <<Repeated History Optimization,Repeated History Optimization>> chapter for more details.
 
 === I-CNT Details
 
@@ -1266,8 +1288,7 @@ The I-CNT counter in the trace encoder is reset to 0, in accordance with the IEE
 Every retired instruction MUST increment I-CNT counter by 1 (for 16-bit instruction) or by 2 (for 32-bit instruction). Specifically:
 
 * If an instruction is explicitly changing the PC (as jump or return), that instruction itself MUST update the I-CNT.
-* An exception or interrupt before retirement of an instruction CANNOT update the I-CNT.
-* An exception or interrupt after retirement of an instruction MUST update the I-CNT.
+* Instructions that either raise exceptions or are interrupted prior to retirement do not increment the I-CNT counter.
 
 NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
 
@@ -1305,12 +1326,12 @@ Let's analyze a collected trace of above program (in <<mode_BTM,BTM>> mode) exec
 
 . First direct conditional branch at address 0x102 is taken.
 * A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x105> (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
-* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *c.ebreak* instruction
+* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *C.EBREAK* instruction
 . First direct conditional branch at address 0x102 is not-taken and second direct conditional branch at address 0x10A is taken.
 * A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10D> (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
-* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing a range <0x300..0x303> till *c.ebreak* instruction.
+* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing a range <0x300..0x303> till *C.EBREAK* instruction.
 . Both direct conditional branches (at 0x102 and 0x10A) are not-taken.
-* In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated. It is describing a range <0x100..0x113> (as 0x14=10*2) till *c.ebreak* instructions.
+* In this case only <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=10* should be generated. It is describing a range <0x100..0x113> (as 0x14=10*2) till *C.EBREAK* instructions.
 
 IMPORTANT: Decoder must analyze each and every instruction in each code block being processed to know its size. It cannot skip to the end of the block by calculating *PC+I-CNT*2* as it is UNKNOWN what is the size of the last instruction retired in that block. It may be (compressed) 16-bit or 32-bit (not-compressed) direct conditional branch. Without knowing an instruction size, the offset encoded in that direct conditional branch cannot be determined and next PC (after a branch) cannot be calculated.
 
@@ -1392,7 +1413,7 @@ Trace with *SYNC=Sequential Instruction Counter* (BTM mode only):
 * Overflown *I-CNT=9* (or *RDATA[0]=9*) field describes <0x100..0x112> range (18 bytes long).
 * The *I-CNT=5* field describes <0x112..0x11C> range (12 bytes long). 
 * In both cases total I-CNT is 9+5=14, what describes the entire <0x100..0x11C> range.
-** Debug Mode is entered before c.ebreak instruction (as it never retires), so c.ebreak is NOT included in I-CNT.
+** Debug Mode is entered before C.EBREAK instruction (as it never retires), so C.EBREAK is NOT included in I-CNT.
 * Using *ResourceFull* generates smaller, more compressed trace.
 ** In real life examples it will allow generation of repeated history patterns and even better trace compression.
 * Using *SYNC=Sequential Instruction Counter* generates bigger trace (as potentially long F-ADDR field is reported).
@@ -1432,7 +1453,10 @@ Trace requires different types of synchronization on different abstraction level
 |14..15| Reserved |-| For vendor defined codes.
 |====
 
-Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason of the program flow change. Periodic synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
+Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason of the program flow change. Periodic Synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
+
+NOTE: Periodic Synchronization (SYNC=2) messages may be delayed if anyother SYNC message (for example Sequential Instruction Counter, SYNC=4) needs to be sent in the same moment. In such a case, Periodic Synchronization may be even skipped as decoding may start from any Synchronizing Message. 
+
 
 [IMPORTANT]
 ====
@@ -1542,11 +1566,11 @@ load and the indirect unconditional jump must be traced as concecutive instructi
 
 Some jump targets that are supplied via:
 
-* an *lui* or *c.lui* (a register which contains a constant), or
-* an *auipc* (a register which contains a constant offset from the PC).
+* an *LUI* or *C.LUI* (a register which contains a constant), or
+* an *AUIPC* (a register which contains a constant offset from the PC).
 
 Such indirect unconditional jump targets are classified as sequentially inferable if the pair of instructions are retired
-consecutively (i.e. the *auipc*, *lui* or *c.lui* immediately precedes the indirect unconditional jump). When decoder is processing instructions (always forward) it must encounter the *auipc*, *lui* or *c.lui* immediately directly before *jr* and then calculate target address of a jump. I-CNT in that message must span over both (consecutive) instuction.
+consecutively (i.e. the *AUIPC*, *LUI* or *C.LUI* immediately precedes the indirect unconditional jump). When decoder is processing instructions (always forward) it must encounter the *AUIPC*, *LUI* or *C.LUI* immediately directly before *JR* and then calculate target address of a jump. I-CNT in that message must span over both (consecutive) instuction.
 
 NOTE: The restriction
 that the instructions must be retired consecutively is necessary in order to minimize the additional
@@ -1677,10 +1701,10 @@ instructions, thereby requiring their occurrences to be traced.
 . If tracing is started (or restarted after it was disabled), a <<msg_ProgTraceSync,ProgTraceSync>> message is generated.
 ** This message specifies the reason for the start in the <<field_SYNC,SYNC>> field and includes full address in the <<field_F-ADDR,F-ADDR>> field.
 . A retired 16-bit instruction increments the <<field_I-CNT,I-CNT>> counter by 1, while a retired 32-bit instruction increments it by 2.
-. The following types of instructions allow trace decoders to know the next PC (encoder should not generate any trace for them).
-** Instruction which is not control transfer instructions => PC is at the next instruction (+2 or +4).
-** Direct (inferable...) unconditional jump => PC is unconditional jump destination (known from PC and opcode as all unconditional jumps are PC relative).
-** Not taken direct conditional branch (in BTM mode) => PC is next instruction (+2 or +4).
+. The following types of instructions allow trace decoders to determine the next PC and encoder should not generate any trace for them.
+** Instruction which is not control transfer instructions should advance PC to the next instruction (increment by 2 or 4).
+** Direct (inferable) unconditional jump should set next PC to jump destination (PC plus an offset obtained from opcode).
+** Not taken direct conditional branch (in BTM mode) should advance PC to the next instruction (increment by 2 or 4).
 . Indirect, unconditional jump instruction is handled as:
 ** In BTM mode, an <<msg2_IndirectBranch,IndirectBranch>> message is generated.
 ** In HTM mode, an <<msg2_IndirectBranchHist,IndirectBranchHist>> message is generated. Should the <<field_HIST,HIST>> field be empty, an <<msg2_IndirectBranch,IndirectBranch>> message may optionally be generated instead.
@@ -1697,8 +1721,7 @@ instructions, thereby requiring their occurrences to be traced.
 
 These rules are augmenting the above rules if the corresponding configuration setting is set.
 
-. Call and return instructions maintain call stack and if return is matching a call, no trace is generated.
-** This optional feature is described in detail in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter.
+. Call and return instructions may optionally be handled as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter and may generate no trace.
 . By default, the target of an indirect unconditional jump is always considered an uninferable PC discontinuity. However, if the register that specifies the jump target was loaded with a constant
 then it can be considered inferable under some circumstances. 
 ** Such instruction sequences may be detected and in such a case no trace is generated.
@@ -1916,17 +1939,20 @@ NOTE: In order to provide partial decoding of big trace, messages with <<field_F
 
 To reconstruct the control flow of the program from N-Trace messages do the following:
 
-* Handle <<field_HIST,HIST>> field (if available and not empty)
-** Analyze code from the current PC through inferable unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* field).
+* Copy *HIST* and *I-CNT* fields (if available) to corresponding registers. 
+* Handle <<field_HIST,HIST>> register (while not empty):
+** Analyze code from the current PC through inferable unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* register).
+** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on a size of particular instruction).
 ** At the end (after the least significant bit from *HIST* is processed), the PC will be of the instruction executed after the last conditional branch (either taken or not-taken).
-* Handle <<field_I-CNT,I-CNT>> field (if available and not 0x0)
-** Analyze code from current PC through inferable unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken
-** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on a size of particular instruction)
-** It will reach either non-inferable unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
-* At the last step the <<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>> field (if available) should be applied. This will be the next PC where analysis of the next trace message should start.
+* Handle <<field_I-CNT,I-CNT>> register (while greater than 0x0):
+** Analyze code from current PC through inferable unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken.
+** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on a size of particular instruction).
+* It will reach either non-inferable unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
+** In BTM mode, direct conditional branch may be reached as last instruction. Next PC should be a destination address of that taken brach.
+* At the last step the <<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>> field (if available) should be applied.
 ** This is either a destination address of indirect unconditional jump or an address of an exception/interrupt handler.
-* Handle the <<field_B-CNT,B-CNT>> or <<field_RCODE,RCODE>> fields by processing data from previous trace message.
-
+** This will be the next PC where analysis of the next trace message should start.
+* Handle the <<field_B-CNT,B-CNT>> or <<field_RCODE,RCODE>> fields by repeating processing of the fields from previous trace message.
 
 [NOTE]
 =====
