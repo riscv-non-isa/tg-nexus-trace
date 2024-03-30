@@ -17,6 +17,9 @@ Updating PDFs after ARC review (see below for links into google docs with detail
   * **TODO:** Fix annoying page breaks (manual insert of 'page-break').
   * **TODO:** Make release and pass back to ARC.
 
+* 2024/03/30
+  * Control PDF 1.0.0_rc30. Frozen (ARC confirmed by email).
+
 * 2024/03/08
   * Finalized updates to N-Trace PDF (1.0.0_rc20 PDF generated).
   * Close ARC issues for N-Trace PDF (with links to all needed details).
