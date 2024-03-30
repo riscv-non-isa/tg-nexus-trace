@@ -557,7 +557,7 @@ RISC-V N-Trace defines two instruction trace modes:
 * *Branch Trace Messaging (BTM)* - each taken direct conditional branch generates a minimum two-byte message. However, repeated branches can be aggregated and reported as a single message with a count, rather than numerous identical messages. 
 
 [[mode_HTM]]
-* *History Trace Messaging (HTM))* - every direct conditional branch, whether taken or not-taken, contributes a single bit to the history buffer, significantly enhancing the trace efficiency.
+* *History Trace Messaging (HTM)* - every direct conditional branch, whether taken or not-taken, contributes a single bit to the history buffer, significantly enhancing the trace efficiency.
 
 The encoder is required to implement at least one of these modes. Both may be supported, but is not required.
 
@@ -619,30 +619,36 @@ Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/main/
 [source,c]
 ----
   // Naming:
-  //    NEXM=Nexus Message, BEG/END=Beginning/End of definition,
-  //    FLD/VAR=fixed/variable size field
-  //    ADR=special case of variable field (without least significant bit) 
-  NEXM_BEG(IndirectBranchSync, 12),
-    NEXM_FLD(SYNC, 4),  
-    NEXM_FLD(BTYPE, 2),
-    NEXM_VAR(ICNT),
-    NEXM_ADR(FADDR),
-    NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  //    NEXM=Nexus Message, BEG/END=Beginning/End of definition.
+  //    SRC=Message source (system-field). Name of an option given.
+  //    FLD/VAR=Fixed/variable size field.
+  //    ADR=Special case of variable field (without least significant bit). 
+  //    CFG=Configurable, Name of an option given.
+  NEXM_BEG(IndirectBranchSync, 12)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(SYNC, 4)
+    NEXM_FLD(BTYPE, 2)
+    NEXM_VAR(ICNT)
+    NEXM_ADR(FADDR)
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
 
-  NEXM_BEG(ResourceFull, 27),
-    NEXM_FLD(RCODE, 4),
-    NEXM_VAR(RDATA),
-    NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  NEXM_BEG(ResourceFull, 27)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(RCODE, 4)
+    NEXM_VAR(RDATA)
+    NEXM_VAR_CFG(HREPEAT, EnaRepeatedHistory) // Configurable
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
 
-  NEXM_BEG(IndirectBranchHist, 28),
-    NEXM_FLD(BTYPE, 2),
-    NEXM_VAR(ICNT),
-    NEXM_ADR(UADDR),
-    NEXM_VAR(HIST),
-    NEXM_VAR(TSTAMP),
-  NEXM_END(),
+  NEXM_BEG(IndirectBranchHist, 28)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(BTYPE, 2)
+    NEXM_VAR(ICNT)
+    NEXM_ADR(UADDR)
+    NEXM_VAR(HIST)
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
 ----
 
 NOTE: Reference code is using plain C-style identifiers, so the field name as *B-TYPE* will become *BTYPE*.
@@ -668,8 +674,8 @@ NOTE: The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> fi
 | B-TYPE      | 2             | Branch Type | Reason for indirect flow change: +
                                 *0:* Indirect control flow change (jump, call or return). +
                                 *1:* Exception or interrupt (if the encoder is not capable of reporting 2 and 3). +
-                                *2:* *Extension:*: Exception +
-                                *3:* *Extension:*: Interrupt +
+                                *2:* *Extension:* Exception +
+                                *3:* *Extension:* Interrupt +
                                 NOTE: Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
 [[field_I-CNT]]
 | I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is the number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
@@ -812,7 +818,8 @@ This message is generated when the taken direct conditional branch has retired.
 Last instruction in the code block (or blocks) with all inferable instructions (described by I-CNT) is a taken, direct conditional branch instruction.
 Next PC is determined by decoding the conditional branch insruction opcode to determine the encoded signed offset and adding it to the address of the conditional branch instruction.
 
-NOTE: Not-taken direct conditional branches or direct unconditional jumps are NOT generating any trace but increase I-CNT (and direct unconditional jumps are changing PC to direct unconditional jump destination address), so PC of last instruction in code block[s] can be found.
+NOTE: Not-taken direct conditional branches and direct unconditional jumps increment I-CNT but do not generate any trace.
+Direct unconditional jumps change the PC to the destination address of such jumps. The I-CNT enables determination of the PC of the last instruction in the code block(s).
 
 [[msg2_IndirectBranch]]
 === IndirectBranch Message
@@ -822,7 +829,7 @@ It is applicable to <<mode_BTM,BTM>> mode only.
 This message is generated under two conditions:
 
 * An instruction that causes an indirect unconditional control flow change has retired.
-* An interrupt or exception is delivered.
+* A trap due to an interrupt or exception is delivered.
 
 [#Fields_IndirectBranch]
 .Indirect Branch Message Fields
@@ -913,8 +920,6 @@ In above case, Error Message will be the last message in trace stream.
 |======================================================================================================
 
 *Explanations and Notes*
-
-This message is generated at start/restart of trace. I-CNT field must be 0 in such a case. However, for some values of SYNC (like `External Trace Trigger`), I-CNT field may not be 0 and may be used to identify the exact PC location when that particular trigger/event happened. Field F-ADDR provides a full PC address when trigger happened.
 
 This message is produced at the start or restart of trace. In such instances, the I-CNT field is required to be set to 0. However, under certain conditions
 associated with the SYNC parameter (e.g., `External Trace Trigger``), the I-CNT field may not be zero.
