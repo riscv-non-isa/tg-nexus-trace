@@ -2,7 +2,7 @@
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
 :revdate:  Mar 30, 2024
-:revnumber: 1.0.0_rc24
+:revnumber: 1.0.0_rc25
 :revremark: Stable state (second ARC round of comments)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -50,8 +50,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc24
+=== Version 1.0.0_rc25
 * 2024-03-30
+** More Periodic Sync clarifications.
 ** All except 'itype' (meeting with Ved)
 * 2024-03-27
 ** Providing remaining updates.
@@ -75,8 +76,9 @@ Key contributors to RISC-V N-Trace (Nexus-based Trace) specification in alphabet
 Bruce Ableidinger (SiFive) => Initial SiFive donation, reviews +
 Robert Chyla (IAR, SiFive, MIPS) => Most topics, editing, publishing +
 Ernie Edgar (SiFive) => Initial SiFive donation, reviews +
-Jay Gamoneda (NXP) => Reviews, updating after ARC review +
+Jay Gamoneda (NXP) => Reviews, contributing, editing +
 Markus Goehrle (Lauterbach) => Reviews, updates +
+Ved Shanbhogue (Rivos) => Detailed Architecture Review Committee notes +
 Nino Vidovic (Segger) => Reviews
 
 == Introduction to N-Trace
@@ -1494,13 +1496,16 @@ image:./images/case5_enable_disable_while_in_debug.PNG[image]
 
 *Case6: Periodic synchronization:*
 
+* First possibility provides choice of messages generated at exact periodic synchronization event `P`.
+* Second scenario provides choice of messages which may be generated delayed after the periodic event `P`.
+
 image:./images/case6_periodic.PNG[image]
 
 *Superscript notes:*
 
 . ProgramTraceSync message may be replaced with DirectBranchSync, IndirectBranchHistSync, IndirectBranchHistSync.
 . ProgramTraceSync message may be generated for a SYNC trigger event, however, HIST information will not be reported. For HTM mode, the IndirectBranchHistSync or IndirectBranchSync message with SYNC=6 (Trace Event) should be used to ensure no trace data is lost.
-. Next available *...Branch...* message upgraded to *...Branch...Sync* counterpart, so SYNC is reported.
+. Next available *...Branch...* message upgraded to *...Branch...Sync* counterpart, so SYNC code is reported.
 
 === Timestamp Reporting
 
