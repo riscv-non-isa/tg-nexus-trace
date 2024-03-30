@@ -11,14 +11,14 @@ Updating PDFs after ARC review (see below for links into google docs with detail
 ## Detailed Status (end of each day)
 
 * TODO (to not forget):
-  * **TODO:** Finalize updates to Control PDF (generate 1.0.0_rc20 PDF).
-  * **TODO:** Close ARC issues for Control PDF (with links to all needed details).
+  * **TODO:** Close ARC issues for second N-Trace PDF.
   * **TODO:** Find a way to add nice header/footer (Debug PDF has these).
   * **TODO:** Fix annoying page breaks (manual insert of 'page-break').
   * **TODO:** Make release and pass back to ARC.
 
 * 2024/03/30
-  * Control PDF 1.0.0_rc30. Frozen (ARC confirmed by email).
+  * Connectors PDF 1.0.0_rc30. Just changed to Frozen (ARC confirmed by email).
+  * Control PDF    1.0.0_rc20. Detailed ARC notes done.
 
 * 2024/03/08
   * Finalized updates to N-Trace PDF (1.0.0_rc20 PDF generated).
