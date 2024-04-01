@@ -2,8 +2,8 @@
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
 :revdate:  Mar 30, 2024
-:revnumber: 1.0.0_rc25
-:revremark: Stable state (second ARC round of comments)
+:revnumber: 1.0.0_rc26
+:revremark: Stable state (first step of 'itype' unification)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -50,16 +50,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc25
-* 2024-03-30
-** More Periodic Sync clarifications.
-** All except 'itype' (meeting with Ved)
-* 2024-03-27
-** Providing remaining updates.
-* 2024-03-26
-** Most issues #from 49-#52 addresses (few topis to be finalized/agreed).
-* 2024-03-20
-** Isuses #45-#48 addresses (few topis to be agreed).
+=== Version 1.0.0_rc26
+* 2024-04-01
+** First step of 'itype' unification (inferable/uninferable changed to direct/indirect)
+** Next step will include further clarifications of 6/10/11/14/15 names and conditions.
 
 [Preface]
 == Copyright and license information
@@ -213,45 +207,47 @@ The table below provides a detailed mapping of causes for terminating an instruc
 |Instruction|Condition/Notes|itype Value
 |Interrupted instruction|An interrupt trap occurred following the final retired instruction in the block|2 = Interrupt
 |Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
-|Conditional branch|Not-taken                               |4 = Not-taken branch
-||Taken                                   |5 = Taken branch
 |EBREAK, ECALL, C.EBREAK|An exception trap that occurred following the final retired instruction in the block due to these instructions. These instructions do not retire.
 |1 = Exception
-|MRET, SRET|                                          |3 = Exception or interrupt return
+|MRET, SRET| Return from an exception of interrupt handler  |3 = Trap return
+|Conditional branch|Not-taken                               |4 = Not-taken branch
+||Taken                                   |5 = Taken branch
 |other instructions|All other instructions that are not listed in this table
 |0 = No special type
-3+|*Values of itype (4-bit) needed for <<Implicit Return Optimization,Implicit Return Optimization>>*
-|JAL rd         |rd = `link`                                |9 = Inferable call
-|               |rd != `link`                               |15 = Other inferable jump
-|JALR rd, rs1   |rd = `link` and rs1 != `link`              |8 = Uninferable call
-|               |rd = `link` and rs1 = `link` and rd != rs1 |12 = Coroutine swap
-|               |rd = `link` and rs1 = `link` and rd = rs1  |8 = Uninferable call
-|               |rd != `link` and rs1 = `link`              |13 = Return
-|               |rd != `link` and rs1 != `link`             |14 = Other uninferable jump
-|C.JAL          |Expands to `JAL x1, offset`                |9 = Inferable call
-|C.JALR rs1     |rs1 = x5                                   |12 = Coroutine swap
-|               |rs1 != x5                                  |8 = Uninferable call
+3+|*Values of itype (4-bit) needed for <<Implicit Return Optimization,Implicit Return Optimization>>*. Symbol <<link,link>> means *x1* or *x5*.
+|JAL rd         |rd = `link`                                |9 = Direct call
+|               |rd != `link`                               |15 = Other direct jump
+|JALR rd, rs1   |rd = `link` and rs1 != `link`              |8 = Indirect call
+|               |rd = `link` and rs1 = `link` and rd != rs1 |12 = Co-routine swap
+|               |rd = `link` and rs1 = `link` and rd = rs1  |8 = Indirect call
+|               |rd != `link` and rs1 = `link`              |13 = Function return
+|               |rd != `link` and rs1 != `link`             |14 = Other indirect jump
+|C.JAL          |Expands to `JAL x1, offset`                |9 = Direct call
+|C.JALR rs1     |rs1 = x5                                   |12 = Co-routine swap
+|               |rs1 != x5                                  |8 = Indirect call
 |C.JR rs1       |rs1 = `link`                               |13 = Return
-|               |rs1 != `link`                              |14 = Other uninferable jump
-|C.J            |No registers, only offset                  |15 = Other inferable jump
-|CM.JT          |Defined by Zcmt extension                  |15 = Other inferable jump
-|CM.JALT        |Defined by Zcmt extension                  |9 = Inferable call
-|CM.POPRET*     |Defined by Zcmp extension                  |13 = Return
+|               |rs1 != `link`                              |14 = Other indirect jump
+|C.J            |No registers, only offset                  |15 = Other direct jump
+|CM.JT          |Defined by <<Zcmt,Zcmt>> extension                  |15 = Other direct jump
+|CM.JALT        |Defined by <<Zcmt,Zcmt>> extension                  |9 = Direct call
+|CM.POPRET*     |Defined by **Zcmp** extension                  |13 = Return
 3+|*Values of itype (3-bit) without <<Implicit Return Optimization,Implicit Return Optimization>>*
-|JAL rd         |                                           |0 = No special type
-|JALR           |                                           |6 = Uninferable jump
-|C.J or C.JAL   |                                           |0 = No special type
-|CM.JT          |Defined by Zcmt extension                  |0 = No special type
-|CM.JALT        |Defined by Zcmt extension                  |0 = No special type
-|CM.POPRET*     |Defined by Zcmp extension                  |6 = Uninferable jump
+|JAL rd         |Direct jump/call                           |0 = No special type
+|JALR           |Indirect jump/call                         |6 = Indirect jump
+|C.J or C.JAL   |C extension has direct jump/calls only     |0 = No special type
+|CM.JT          |Defined by <<Zcmt,Zcmt>> extension         |0 = No special type
+|CM.JALT        |Defined by <<Zcmt,Zcmt>> extension         |0 = No special type
+|CM.POPRET*     |Defined by **Zcmp** extension              |6 = Indirect jump
 |======================================================================================================
 
 [NOTE]
 ====
+[[link]]
 * Symbol `link` means register *x1* or *x5* as specified in *The RISC-V Instruction Set Manual, Volume I: Unprivileged ISA* document.
 * Branches (*itype*=4, 5) are conditional direct branches. In RISC-V ISA all jumps, calls, returns are always unconditional.
 * 4-bit *itype* (codes 8..15) are only necessary when <<Implicit Return Optimization,Implicit Return Optimization>> is implemented.
-* Zcmt instructions (CM.JT and CM.JALT) are considered as inferable jumps as jump tables are assumed to be static and known to the decoder.
+[[Zcmt]]
+* Jump instructions (CM.JT and CM.JALT) defined by ratified *Zcmt* extension are handled as direct (inferable) jumps as jump tables are assumed to be static and known to the decoder.
 ====
 
 Table below defines how N-Trace encoder should handle different 3-bit *itype* values on trace ingress port.
@@ -261,14 +257,14 @@ Table below defines how N-Trace encoder should handle different 3-bit *itype* va
 [cols="5%,20%,75%",options="header",]
 |======================================================================================================
 |#|itype|Encoder Action
-|0|None below|Only update <<field_I-CNT,I-CNT>> field.
+|0|Not special type|Only update <<field_I-CNT,I-CNT>> field.
 |1|Exception|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=2 or 1. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
 |2|Interrupt|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=3 or 1. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
-|3|Exception or interrupt return|Update <<field_I-CNT,I-CNT>> field. +
+|3|Trap return|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
 |4|Not-taken branch|*For <<mode_BTM,BTM>> mode:* +
@@ -284,21 +280,21 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *For <<mode_HTM,HTM>> mode:* +
 Update <<field_I-CNT,I-CNT>> field. +
 Add 1 as least significant bit to <<field_HIST,HIST>> field.
-|6|Uninferable jump|Update <<field_I-CNT,I-CNT>> field. +
+|6|Indirect jump|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 *IMPORTANT:* An address emitted is known at the next valid ingress port cycle.
 |7|Reserved|-
 |======================================================================================================
 
-When the *itype* input of ingress port is 4-bit wide, the general uninferable jump *itype=6* should not be generated and one of the following values should be generated instead. Encoder must handle call stack action as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter (if enabled).
+When the *itype* input of ingress port is 4-bit wide, the general Indirect jump *itype=6* should not be generated and one of the following values should be generated instead. Encoder must handle call stack action as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter (if enabled).
 
 [#Handling of 4-bit itype values]
 .Handling of 4-bit itype values
 [cols="5%,20%,63%,12%",options="header",]
 |======================================================================================================
 |#|itype|Encoder Action|Stack Action
-|8|Uninferable call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
-|9|Inferrable call|Only update <<field_I-CNT,I-CNT>> field.|Push
+|8|Indirect call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
+|9|Direct call|Only update <<field_I-CNT,I-CNT>> field.|Push
 |10|Reserved||-
 |11|Reserved||-
 |12|Co-routine swap|Update <<field_I-CNT,I-CNT>> field. +
@@ -306,9 +302,9 @@ If Pop does not returns the same address as PC at next valid ingress port cycle,
 |13|Return|Update <<field_I-CNT,I-CNT>> field. +
 If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.
 |Pop
-|14|Other uninferable jump|Update <<field_I-CNT,I-CNT>> field. +
+|14|Other indirect jump|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|-
-|15|Other inferable jump|Only update <<field_I-CNT,I-CNT>> field.|-
+|15|Other direct jump|Only update <<field_I-CNT,I-CNT>> field.|-
 |======================================================================================================
 
 If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port is required to report *itype*=5 (Taken branch) for all direct unconditional jumps, which are normally reported as *itype* = 0 or 15. 
@@ -624,10 +620,10 @@ Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/main/
   //    SRC=Message source (system-field). Name of an option given.
   //    FLD/VAR=Fixed/variable size field.
   //    ADR=Special case of variable field (without least significant bit). 
-  //    CFG=Configurable, Name of an option given.
+  //    CFG=Configurable, Name of an option given. 
   NEXM_BEG(IndirectBranchSync, 12)
     NEXM_SRC(SrcBits)                         // Configurable
-    NEXM_FLD(SYNC, 4)
+    NEXM_FLD(SYNC, 4)  
     NEXM_FLD(BTYPE, 2)
     NEXM_VAR(ICNT)
     NEXM_ADR(FADDR)
@@ -1541,7 +1537,7 @@ It is necessary to assure that the time reported at exceptions/interrupt handler
 
 === Corner Cases and Sequences
 
-Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report non-inferable unconditional flow changes).
+Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report uninferable unconditional flow changes).
 
 However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases. 
 
@@ -1700,11 +1696,11 @@ Nonetheless, the guidelines provided herein are applicable to any instruction si
 are direct jumps. The subsequent program counter (PC) for these instructions can be determined through static analysis of the binary code. Because these instructions exhibit a predictable
 execution flow, they are termed "inferable," and no trace is generated for them.
 
-. *Non-Inferable Instructions*: This category comprises conditional branches and indirect jumps. Due to the unpredictability of the next PC as determined through
-static analysis alone, non-inferable instructions require trace generation.
+. *Uninferable Instructions*: This category comprises conditional branches and indirect jumps, including return and indirect calls. Due to the unpredictability of the next PC as determined through
+static analysis alone, uninferable instructions require trace.
 
 . *Interrupts and Exceptions*: Control flow changes caused by interrupts and exceptions necessitate
-trace generation. These events alter the flow in an unpredictable manner, similar to non-inferable
+trace generation. These events alter the flow in an unpredictable manner, similar to uninferable
 instructions, thereby requiring their occurrences to be traced.
 
 *Detailed Rules*
@@ -1952,13 +1948,13 @@ To reconstruct the control flow of the program from N-Trace messages do the foll
 
 * Copy *HIST* and *I-CNT* fields (if available) to corresponding registers. 
 * Handle <<field_HIST,HIST>> register (while not empty):
-** Analyze code from the current PC through inferable unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* register).
+** Analyze code from the current PC through direct (inferable) unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* register).
 ** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on a size of particular instruction).
 ** At the end (after the least significant bit from *HIST* is processed), the PC will be of the instruction executed after the last conditional branch (either taken or not-taken).
 * Handle <<field_I-CNT,I-CNT>> register (while greater than 0x0):
-** Analyze code from current PC through inferable unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken.
+** Analyze code from current PC through direct (inferable) unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken.
 ** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on a size of particular instruction).
-* It will reach either non-inferable unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
+* It will reach either indirect, unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
 ** In BTM mode, direct conditional branch may be reached as last instruction. Next PC should be a destination address of that taken brach.
 * At the last step the <<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>> field (if available) should be applied.
 ** This is either a destination address of indirect unconditional jump or an address of an exception/interrupt handler.
