@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  Mar 30, 2024
+:revdate:  Apr 01, 2024
 :revnumber: 1.0.0_rc26
-:revremark: Stable state (first step of 'itype' unification)
+:revremark: Stable state (before SYNC clarifications)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -52,10 +52,8 @@ PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc26
 * 2024-04-01
-** First step of 'itype' unification (inferable/uninferable changed to direct/indirect)
-** Renamed '6' to  **Indirect jump (with and without linkage)**.
-** Visual aspects of table[s] fixed.
-** Next step will include split of some 14/15 into 10/11 names and fix conditions.
+** 'itype' clarifications done.
+** TODO: SYNC clarification (email exchange with Ved).
 
 [Preface]
 == Copyright and license information
@@ -212,35 +210,37 @@ The table below provides a detailed mapping of causes for terminating an instruc
 |EBREAK, ECALL, C.EBREAK|An exception trap that occurred following the final retired instruction in the block due to these instructions. These instructions do not retire.
 |1 = Exception
 |Interrupted instruction|An interrupt trap occurred following the final retired instruction in the block|2 = Interrupt
-|MRET, SRET| Return from an exception of interrupt handler. |3 = Trap return
-|<<itype_branch,Conditional branch>>|Not-taken                               |4 = Not-taken branch
-|<<itype_branch,Conditional branch>>|Taken                                   |5 = Taken branch
+|MRET, SRET| Return from an exception or interrupt handler. |3 = Trap return
+|<<itype_branch,Conditional branch>>|Not-taken direct, conditional branch.|4 = Not-taken branch
+|<<itype_branch,Conditional branch>>|Taken direct, conditional branch.|5 = Taken branch
 |Any other instruction|All other instructions that are not directly listed in this table.
 |0 = No special type
 3+|*Values of itype (<<itype_3_4,3-bit>>) (without <<Implicit Return Optimization,Implicit Return Optimization>>*)
 |JAL rd         |Any direct jump/call.                      |0 = No special type
-|JALR           |Any indirect jump/call.                    |6 = Indirect jump (with or without linkage)
+|JALR rd, rs    |Any indirect jump/call.                    |6 = Indirect jump (with or without linkage)
 |C.J or C.JAL   |C extension has direct jump/calls only.    |0 = No special type
 |CM.JT          |Defined by <<zcmt,Zcmt>> extension.        |0 = No special type
 |CM.JALT        |Defined by <<zcmt,Zcmt>> extension.        |0 = No special type
 |CM.POPRET*     |Defined by **Zcmp** extension.             |6 = Indirect jump (with or without linkage)
 3+|*Values of itype (<<itype_3_4,4-bit>>) (needed for <<Implicit Return Optimization,Implicit Return Optimization>>*). <<link,link>> means *x1* or *x5*.
 |JAL rd         |rd = `link`                                |9 = Direct call
-|               |rd != `link`                               |15 = Other direct jump
-|JALR rd, rs1   |rd = `link` and rs1 != `link`              |8 = Indirect call
-|               |rd = `link` and rs1 = `link` and rd != rs1 |12 = Co-routine swap
-|               |rd = `link` and rs1 = `link` and rd = rs1  |8 = Indirect call
-|               |rd != `link` and rs1 = `link`              |13 = Function return
-|               |rd != `link` and rs1 != `link`             |14 = Other indirect jump
+|               |rd = *x0*                                  |11 = Direct jump (without linkage)
+|               |rd != `link` and rd != *x0*                |15 = Other direct jump (with linkage)
+|JALR rd, rs    |rd = `link` and rs != `link`               |8 = Indirect call
+|               |rd = `link` and rs = `link` and rd = rs    |8 = Indirect call
+|               |rd = `link` and rs = `link` and rd != rs   |12 = Co-routine swap
+|               |rd != `link` and rs = `link`               |13 = Function return
+|               |rd = *x0* and rs != `link`                 |10 = Indirect jump (without linkage)
+|               |rd != `link` and rd != *x0* and rs != `link` |14 = Other indirect jump (with linkage)
 |C.JAL          |Expands to `JAL x1, offset`                |9 = Direct call
-|C.JALR rs1     |rs1 = x5                                   |12 = Co-routine swap
-|               |rs1 != x5                                  |8 = Indirect call
-|C.JR rs1       |rs1 = `link`                               |13 = Return
-|               |rs1 != `link`                              |14 = Other indirect jump
-|C.J            |No registers, only offset.                 |15 = Other direct jump
-|CM.JT          |Defined by <<zcmt,Zcmt>> extension.        |15 = Other direct jump
+|C.JALR rs      |rs = *x5*                                  |12 = Co-routine swap
+|               |rs != *x5*                                 |8 = Indirect call
+|C.JR rs        |rs = `link`                                |13 = Function return
+|               |rs != `link`                               |10 = Indirect jump (without linkage)
+|C.J            |Expands to `JAL x0, offset`                |11 = Direct jump (without linkage)
+|CM.JT          |Defined by <<zcmt,Zcmt>> extension.        |11 = Direct jump (without linkage)
 |CM.JALT        |Defined by <<zcmt,Zcmt>> extension.        |9 = Direct call
-|CM.POPRET*     |Defined by **Zcmp** extension.             |13 = Return
+|CM.POPRET*     |Defined by **Zcmp** extension.             |13 = Function return
 |======================================================================================================
 
 [[itype_branch]]
@@ -300,17 +300,25 @@ When the *itype* input of ingress port is 4-bit wide, the Indirect jump (with or
 |#|itype|Encoder Action|Stack Action
 |8|Indirect call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
 |9|Direct call|Only update <<field_I-CNT,I-CNT>> field.|Push
-|10|Reserved||-
-|11|Reserved||-
+|10|Indirect jump (without linkage)|Update <<field_I-CNT,I-CNT>> field. +
+Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
+<<same_handling,Same handing>> as *itype=14*|-
+|11|Direct jump (without linkage)|Only update <<field_I-CNT,I-CNT>> field. +
+<<same_handling,Same handing>> as *itype=15*|-
 |12|Co-routine swap|Update <<field_I-CNT,I-CNT>> field. +
 If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|Pop,Push
 |13|Return|Update <<field_I-CNT,I-CNT>> field. +
 If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.
 |Pop
-|14|Other indirect jump|Update <<field_I-CNT,I-CNT>> field. +
-Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|-
-|15|Other direct jump|Only update <<field_I-CNT,I-CNT>> field.|-
+|14|Other indirect jump (with linkage)|Update <<field_I-CNT,I-CNT>> field. +
+Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
+<<same_handling,Same handing>> as *itype=10*|-
+|15|Other direct jump (with linkage)|Only update <<field_I-CNT,I-CNT>> field. +
+<<same_handling,Same handing>> as *itype=11*|-
 |======================================================================================================
+
+[[same_handling]]
+IMPORTANT: N-Trace messages do not differentiate instructions classified as *... jump (with linkage)* and *... jump (without linkage)*, so both N-Trace ingress ports and N-Trace encoders implementations may ignore differences between *with/without linkage* values.
 
 If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress port is required to report *itype*=5 (Taken branch) for all direct unconditional jumps, which are normally reported as *itype* = 0 or 15. 
 
@@ -318,7 +326,6 @@ IMPORTANT: The N-Trace encoder does not require *cause* and *tval* ingress port
 signals, which are valid only for exceptions and interrupts, as these
 details are not reported in N-Trace messages. Instead, N-Trace solely
 provides the address of the exception or interrupt handler
-
 
 NOTE: Since almost every ingress port cycle updates I-CNT, there is a possibility
 of overflow. For more information, see <<I-CNT Details, I-CNT Details>> chapter regarding
