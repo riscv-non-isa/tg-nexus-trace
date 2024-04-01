@@ -2,72 +2,28 @@
 
 ## Status of each PDF
 
-Updating PDFs after ARC review (see below for links into google docs with detailed comments/discussion for each item)
+**2024/03/31 status:**
 
-* **N-Trace PDF**: Version 1.0.0_rc20 provided to ARC (2024/03/08). Inside of [./pdfs](./pdfs) directory.
-* **Controls PDF**: Waiting for RAM Sink review (was missed in original pass). Otherwise close to be ready.
-* **Connectors PDF**: Version 1.0.0_rc20 provided to ARC (2024/02/29). Inside of [./pdfs](./pdfs) directory.
+* **N-Trace PDF**: Version 1.0.0_rc25 ('itype' unification still TODO). Inside of [./pdfs](./pdfs) directory.
+* **Controls PDF**: Version 1.0.0_rc20. Detailed ARC notes DONE. Inside of [./pdfs](./pdfs) directory.
+* **Connectors PDF**: Version 1.0.0_rc30. Frozen. Inside of [./pdfs](./pdfs) directory.
 
-## Detailed Status (end of each day)
+**TODO (before official Freeze):**
 
-* TODO (to not forget):
-  * **TODO:** Close ARC issues for second N-Trace PDF.
-  * **TODO:** Find a way to add nice header/footer (Debug PDF has these).
-  * **TODO:** Fix annoying page breaks (manual insert of 'page-break').
-  * **TODO:** Make release and pass back to ARC.
+* TODO: Find a way to add nice header/footer at each page (Debug PDF has these).
+* TODO: Fix annoying page breaks (manual insert of 'page-break').
+* TODO: Make sure all PDFs.
+* TODO: Make release with all documents 'Frozen' and pass back to ARC for official OK-stamp.
+* TODO: Make Public Review announcement (all PDFs Frozen).
 
-* 2024/03/30
-  * Connectors PDF 1.0.0_rc30. Just changed to Frozen (ARC confirmed by email).
-  * Control PDF    1.0.0_rc20. Detailed ARC notes done.
+**TODO (after ratification approval):**
 
-* 2024/03/08
-  * Finalized updates to N-Trace PDF (1.0.0_rc20 PDF generated).
-  * Close ARC issues for N-Trace PDF (with links to all needed details).
+* TODO: Change status to Ratified.
+* TODO: Change date.
+* TODO: Remove _rc and make version 1.0.0.
+* TODO: Make official release.
+* TODO: Place all 3 PDFs into 'public' place (and update/add links).
 
-* 2024/03/07
-  * Added "Synchronizing Messages Examples' images.
-  * Updated I-CNT BTM handling and examples.
-  * Added CONTRIBUTING.md file (RVI policy)
-  * Used 'fatal error' in 4 places (to follow Friendly Terminology)
-  * Renamed main branch to be 'main'
-  * More clarification changes
-  
-* 2024/03/06 - more clarification changes
-  * More changes from ARC review.
-  * Removed build of individual PDFs (problem with names - easier than fixing).
-  * Passed Control PDF (1.0.0_rc14) to ARC (for missed review of 'RAM Sink' chapter).
-
-* 2024/02/29
-  * Generated Connectors PDF (1.0.0_rc20) and passed to ARC as 'final ARC fixes'.
-
-* 2024/02/28 - more clarification changes
-
-  * N-Trace almost done (only synchronization messages clarifications is TODO).
-
-* 2024/02/26 - more clarification changes
-
-  * Made all 3 PDFs same date and version (2024-02-26 and 1.0.0_rc13)  .
-  * Fixed generation of Trace Control PDF (broken yesterday).
-  * Fixed PDF column widths and several small fixes.
-  * Links to other specifications replaced by names.
-  * All PDFs (1.0.0_rc13) are here: [Build artifacts](https://github.com/riscv-non-isa/tg-nexus-trace/actions/runs/8056565103)
-
-* 2024/02/23 - more clarification changes
-
-* 2024/02/22 - clarification changes (before doing synchronization cleanup)
-
-* 2023/11/27 - initial review of ARC issues provided as 3 google-doc files (for easier comments):
-  
-  * [Notes to N-Trace PDF](https://docs.google.com/document/d/1h__c0Kc7TQAWMh5bw9cNC9bl_IGqyY_ylPV14uc2xj0)
-  * [Notes to Trace Control PDF](https://docs.google.com/document/d/1u-38MaR0gwWTkSDfgIp7YXk9xNdySPZNIA50UENZQWE)
-  * [Notes to Trace Connectors PDF](https://docs.google.com/document/d/1iNbB7-nTiQQ4vQBzLqxtBDQxT51QeUQMd9MFOe0jsBs)
-
-* Feedback from ARC provided (as set of github issues)
-
-* 1.0.0-rc9 2023/9/10 for ARC Review
-
-  * Updates after emails to TG (detailed PDF with report emailed to TG).
- 
 ## Repository Overview
 
 Working repository of the RISC-V Nexus Trace TG report.  Nexus Trace TG Home page is [here](https://lists.riscv.org/g/tech-nexus).
