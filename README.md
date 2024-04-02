@@ -2,11 +2,14 @@
 
 ## Status of each PDF
 
-**2024/03/31 status:**
+**2024/04/01 status:**
 
-* **N-Trace PDF**: Version 1.0.0_rc25 ('itype' unification still TODO). Inside of [./pdfs](./pdfs) directory.
+* **N-Trace PDF**: Version 1.0.0_rc26 ('itype' unification DONE). Inside of [./pdfs](./pdfs) directory.
+  * Clarification of SYNC generation is still TODO.
 * **Controls PDF**: Version 1.0.0_rc20. Detailed ARC notes DONE. Inside of [./pdfs](./pdfs) directory.
+  * Ready for second round of ARC reviews.
 * **Connectors PDF**: Version 1.0.0_rc30. Frozen. Inside of [./pdfs](./pdfs) directory.
+  * It was accepted by ARC (via email).
 
 **TODO (before official Freeze):**
 
