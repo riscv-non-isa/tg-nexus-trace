@@ -52,6 +52,7 @@ PDF generated on: {localdatetime}
 
 === Version 1.0.0_rc21
 * Addressed Issue #53. 
+* Addressed Issue #54. 
 
 [Preface]
 == Copyright and license information
@@ -1094,7 +1095,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 *1:* This RAM Sink will operate in SMEM mode
 |WARL|SD
 |7:5 |--|Reserved|--|0
-|8 |trRamStopOnWrap |*1:* Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full.|WARL|0
+|8 |trRamStopOnWrap |*1:* Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full. Sink should stop accepting new messages which may result in an overflow or stall condition at an encoder.|WARL|0
 |10:9 |trRamMemFormat |
 *0:* Memory is formatted as plain bytes +
 *1-2:* Reserved for future formats +
@@ -1102,7 +1103,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |WARL|SD
 |11 |--|Reserved|--|0
 |14:12 |trRamAsyncFreq |
-*0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
+*0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
 |WARL|SD
@@ -1196,8 +1197,6 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 
 NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in the trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
 
-Implementations when a trace buffer in system memory will be bigger than 4GB is implemented will be unlikely, so in most cases trace tools would not need to use `trRamWPHigh` and `trRamRPHigh` registers.
-
 Table below shows typical Trace RAM Sink configurations. Implementing other configurations is not suggested as trace tools may not support it without adjustments.
 
 .*Typical Trace RAM Sink Configurations*
@@ -1206,7 +1205,7 @@ Table below shows typical Trace RAM Sink configurations. Implementing other conf
 |*Mode*      |*trRamStart* |*trRamLimit* |*trRamWP* |*trRamRP* |*trRamData*
 |SRAM        |0 |Hard coded to max size (2^M) at reset, but can be possibly trimmed|Required  |Required |Required
 |SMEM Generic |Any (2^N aligned) |Any (`trRamStart` + 2^M - A) - must be set by trace tool |Required  |Not implemented|Not implemented
-|SMEM Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (`trRamStart` + 2^N - A), but can be possibly trimmed |Required  |Not implemented|Not implemented
+|SMEM Fixed   |Fixed (2^N aligned) |Fixed to max size at reset (`trRamStart` + 2^M - A), but can be possibly trimmed |Required  |Not implemented|Not implemented
 |===
 
 NOTE: Value `A` means alignment which depends on memory access width. If we have memory access width of 32-bits, A=4 and value of `trRamLimit` register should be 0x...FC. Some implementations may impose bigger alignment of trace data (to allow more efficient transfer rates) for SMEM mode. For SRAM mode `A` must be 4 as access to trace via `trRamData` is always 32-bits wide.
@@ -1310,7 +1309,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. In this mode input to the sink is not consumed. The calibration pattern is described below.|WARL|0
 |11:10 |--|Reserved|--|0
 |14:12 |trPibAsyncFreq |
-*0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
+*0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
 |WARL|SD
@@ -1453,7 +1452,7 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |7:4 |trAtbBridgeVerMinor |ATB Bridge Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |RO|0xE
 |14:12 |trAtbBridgeAsyncFreq |
-*0:* Alignment synchronization packets disabled (may be the only choice for some protocols) +
+*0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
 |WARL|SD
