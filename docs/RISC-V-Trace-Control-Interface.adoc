@@ -53,6 +53,7 @@ PDF generated on: {localdatetime}
 === Version 1.0.0_rc21
 * Addressed Issue #53. 
 * Addressed Issue #54. 
+* Addressed Issue #55. 
 
 [Preface]
 == Copyright and license information
@@ -508,7 +509,7 @@ Software tools must report the version number as two decimal numbers __major.min
 
 Trace software should handle versions as follows (let's assume hypothetical version 2.3 was defined as current version in moment of release of trace software)
 
-* 0.x => Reject as not supported or generate a warning and handle as legacy version 0.
+* 0.x => Reject as not supported or generate a warning and handle as pre-ratified/initial version 0.
 * 2.3 => Accept silently.
 * 2.2 => Accept silently (and trim features or not allow users to set newer features).
 * 2.4 => Generate a warning but continue using 2.3 features.
@@ -587,7 +588,7 @@ Trace recording/protocol format: +
 [cols="5%,30%,~,8%,8%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means legacy version - see 'Legacy Interface Version' chapter at the end. |RO| 1
+|3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means pre-ratified/initial version - see 'Pre-ratified/Initial Interface Version' chapter at the end. |RO| 1
 |7:4 |trTeVerMinor |Trace Encoder Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |RO|0x1
 |15:12 |--|Reserved for future versions of this standard|--|0
@@ -1428,7 +1429,7 @@ image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
 
 == Trace ATB Bridge
 
-Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace produced by other components. In such systems, it is feasible to route RISC-V trace output to the ATB through an ATB Bridge. This module manages the interface to ATB, generating ATB trace records that encapsulate RISC-V trace produced by the Trace Encoder or Trace Funnel. There is a control register that includes trace on/off control and a field allowing software to set the Trace Source ID to be used on the ATB. This Trace Source ID allows software to extract RISC-V trace from the combined trace. This interface is compatible with AMBA 4 ATB v1.1.
+Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace produced by other components. In such systems, it may be desired to route entire RISC-V trace stream to the ATB through an ATB Bridge. This module manages the interface to ATB, generating ATB trace records that encapsulate RISC-V trace produced by the Trace Encoder[s] and/or Trace Funnel[s]. There is a control register that includes trace on/off control and a field allowing software to set the ID to be used on the ATB bus. This ID allows software to extract entire RISC-V trace from the combined trace. This interface is compatible with AMBA 4 ATB v1.1.
 
 .*Register: trAtbBridgeControl: ATB Bridge Control Register (trAtbBridgeBase+0x000)*
 [cols="5%,30%,~,8%,8%",options="header",]
@@ -1462,7 +1463,7 @@ Details should be defined in definition of each trace protocol.
 
 An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB port.
 
-ATB Bridge may optionally insert alignment synchronization packets (controlled by `trAtbBridgeAsyncFreq`` field) which allow trace decoding software to detect packet boundaries. Not all protocols may require it. 
+ATB Bridge may optionally insert ATB alignment synchronization packets (controlled by `trAtbBridgeAsyncFreq`` field) which allow trace decoding software to detect ATB packet boundaries. Not all protocols may require it. 
 
 == Additional Material
 
@@ -1558,13 +1559,13 @@ Reset and Discovery should be performed as follows:
 
 * Reset the component by setting `tr??Active` = 0.
 * Read-back and wait until `tr??Active` = 0 is read.
-* Save `tr??Control` register as it holds all reset values (it may prevent a trace tool to do read-modify operation later).
+* Optionally save `tr??Control` register as it holds all reset values of all fields. It may be cached/shadowed and trace tool may execute faster write-only (intead a read-modify-write) operations.
 * Release from reset by setting `tr??Active` = 1 and wait for `tr??Active` = 1 to be read (to confirm component is not in reset). 
 
 IMPORTANT: When performing a write which is setting `tr??Active` = 1, no other bits should be changed. 
 
 * Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
-** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as legacy version 0 or generate fatal error with an error.
+** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as pre-ratified/initial version 0 or generate fatal error with an appropriate error message.
 * Read `tr??Impl` and compare `tr??ComType` field with expected value.
 * Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` = 1) by mistake.
 * Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
@@ -1622,16 +1623,16 @@ Decoding trace
 ** There is no guarantee that the last trace packet is completed until the trace is properly flushed and disabled.
 * Decoding of the trace should never affect code being traced.
 
-=== Legacy Interface Version
+=== Pre-ratified/Initial Interface Version
 
-Value of `trTeVerMajor` as 0 means this is the original version of this trace control interface.
+Value of `trTeVerMajor` as 0 means this is the pre-ratified/initial version of this trace control interface.
 
-Initially this specification was kept somewhat compatible, but after the decision to split all components into 4K regions it was very hard to track and list all changes and appropriate chapter was removed.
+Initially this specification was kept highly compatible, but after the decision to split all components into 4K regions it was very hard to track and list all changes and appropriate chapter was removed.
 
 The migration path from 'ver 0' (for both IP providers and tool vendors) should not be hard as the main concepts remain unchanged.
 
-Original donation from SiFive (which describes implementation of legacy version 0) can be found here:
+Original donation from SiFive (which describes implementation of pre-ratified/initial version 0) can be found here:
 https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf[RISC-V-Trace-Control-Interface-Proposed-20200612.pdf]
 
-IMPORTANT: Not all trace tools may support legacy version 0. But all such tools should reject the version 0 with a very clear message.
+IMPORTANT: Not all trace tools may support pre-ratified/initial version 0. But all such tools should reject the version 0 with a very clear message.
 
