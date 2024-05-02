@@ -2,8 +2,8 @@
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
 :revdate:  May 1, 2024
-:revnumber: 1.0.0_rc21
-:revremark: Stable state (Detailed ARC notes DONE)
+:revnumber: 1.0.0_rc22
+:revremark: Stable state (Second set of ARC notes DONE)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -50,10 +50,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc21
-* Addressed Issue #53. 
-* Addressed Issue #54. 
-* Addressed Issue #55. 
+=== Version 1.0.0_rc22
+* All known ARC notes DONE (ready for Freeze state)
 
 [Preface]
 == Copyright and license information
