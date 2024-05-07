@@ -87,15 +87,16 @@ It serves multiple audiences:
 * Debug and trace tools developers.
 * Software programmers utilizing the trace for debugging and performance tuning of RISC-V-based systems.
 
-Together with the *RISC-V Trace Control Interface Specification* and *RISC-V Trace Connectors Specification* provide a complete, end-to-end, trace system for RISC-V based SoC.
+This specification, together with the *RISC-V Trace Control Interface Specification* and *RISC-V Trace Connectors Specification* provide a complete, end-to-end, trace system for RISC-V based SoC.
 
-Trace system is observing execution of a code and transferring trace messages (encoding the code flow and execution timing information in compressed format) for storage in the memory or transmission out of the SoC. Trace decoders will reconstruct original code flow from set of captured trace messages.
+A trace ingress port, which serves as the connection between the RISC-V hart and the trace system, is defined in the ratified *Efficient Trace for RISC-V Specification*.
+This port enables the RISC-V hart to communicate execution information to the trace system.
+The N-Trace encoder is responsible for encoding an execution flow into a stream of trace messages.
+This document describes an appropriate selection of N-Trace messages compatible with the original IEEE-5001 Nexus Standard.
 
-A trace ingress port (connection between the RISC-V hart and trace system) defined in the ratified *Efficient Trace for RISC-V Specification* allows the RISC-V hart to communicate execution information to the trace system. N-Trace encoder is encoding an execution flow into stream of messages. An appropriate selection of N-Trace messages (compatible with the original IEEE-5001 Nexus Standard) is described in this document.
+The primary objective was to define the program flow trace messages. Extensions have been introduced to enable better trace compression. Future versions may include IEEE-5001 Nexus-compatible data and bus trace.
 
-The primary objective was to define the program flow trace messages. Extensions have been allowing for better trace compression. Future versions may include IEEE-5001 Nexus compatible data and bus trace. 
-
-Registers controlling the N-trace decoder are defined by the *RISC-V Trace Control Interface Specification*. The control documentation is shared with E-trace so not all register and register fields are supported by N-trace.
+The registers controlling the N-trace decoder are defined by the *RISC-V Trace Control Interface Specification*. This specification is shared with E-trace, so not all registers and register fields are supported by N-trace.
 
 Trace connectors defined by IEEE-5001 Nexus Standard were debug oriented, so could not be directly applied. Instead, industry standard MIPI-compliant connectors are defined in *RISC-V Trace Connectors Specification*. These connectors are pure extensions of debug-only, MIPI-compliant connectors defined by ratified *RISC-V Debug Specification*.
 
@@ -179,17 +180,17 @@ NOTE: Placement of the Trace Encoder and Trace Control Layer are implementation 
 [cols="25%,75%",options="header",]
 |======================================================================================================
 |Term| Definition
-|Message|N-Trace messages are sequences of bytes. First byte of every message includes the TCODE field, which defines the type of information carried in the message and its format. When messages are transmitted or stored a protocol, described in <<N-Trace Transmission Protocol,N-Trace Transmission Protocol>> chapter, defines the start and the end of each message.
+|Message|N-Trace messages are sequences of bytes. First byte of every message includes the TCODE field, which defines the type of information carried in the message and its format. When messages are transmitted or stored, a protocol, described in <<N-Trace Transmission Protocol,N-Trace Transmission Protocol>> chapter, defines the start and the end of each message.
 
 |Field| A field is a distinct piece of the information contained within a message, and messages may contain one or more fields (in addition to the first TCODE field). Fields can be either of fixed-length or variable-length. Several fields may be packed into single byte and single field may span multiple bytes. Definitions of all fields can be found in <<Fields in Messages,Fields in Messages>> chapter.
 
-|Variable-length Field|Specifying that a field is variable-length (*Var* used as field size definition) means that the message must contain the field, but that the field's size may vary from a minimum of 1 bit. When messages are transmitted or stored, variable-length fields must end on a byte boundary. If necessary, they must zero-fill bit positions beyond the highest order bit of the variable-length data. Because variable-length fields may be of different lengths in messages of the same type, when messages are transmitted or stored a protocol, described in <<N-Trace Transmission Protocol,N-Trace Transmission Protocol>> chapter, defines the end of each variable-length field.
+|Variable-length Field|Specifying that a field is variable-length (*Var* used as field size definition) means that the message must contain the field, but that the field's size may vary from a minimum of 1 bit. When messages are transmitted or stored, variable-length fields must end on a byte boundary. If necessary, they must zero-fill bit positions beyond the highest order bit of the variable-length data. Because variable-length fields may be of different lengths in messages of the same type, when messages are transmitted or stored, a protocol, described in <<N-Trace Transmission Protocol,N-Trace Transmission Protocol>> chapter, defines the end of each variable-length field.
 
 |Configurable Field|Configurable field (*Cfg* used as field size) means that existence and size of this field depends on some configuration setting. See <<N-Trace Specific Trace Controls,N-Trace Specific Trace Controls>> chapter for details.
 |N-Trace| IEEE-5001 Nexus Standard Based Trace for RISC-V (as defined by this specification).
 |E-Trace| Efficient Trace for RISC-V (as defined by <<E-Trace_Specification,E-Trace Specification>>).
-|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used to avoid any confusions with the term 'branch' used by the IEEE-5001 Nexus Standard. The two main sub-categories of unconditional jumps that are relevant for tracing are: direct unconditional jump and indirect unconditional jump.
-|Direct Conditional Branch|On RISC-V ISA all branch instructions are always direct and conditional (and also relative), but these three words are always used together to avoid confusions with the term 'branch' used by the IEEE-5001 Nexus Standard.
+|Unconditional Jump|On RISC-V ISA all jump instructions are always unconditional, but these two words are always used together to avoid any confusions with the term 'branch' used by the IEEE-5001 Nexus Standard. The two main sub-categories of unconditional jumps that are relevant for tracing are: direct unconditional jump and indirect unconditional jump.
+|Direct Conditional Branch|On RISC-V ISA all branch instructions are always direct and conditional (and also relative), but these three words are always used together to avoid confusion with the term 'branch' used by the IEEE-5001 Nexus Standard.
 |======================================================================================================
 
 == Trace Ingress Port
@@ -482,9 +483,9 @@ Table below shows one N-Trace message with several fields. It is an output from 
 |0xFF| 111111|11 | Idle | Most likely idle, but can also be the last byte of the previous message.
 |0x70| 011100|00 | TCODE[6] = 28 - IndirectBranchHist| First byte, all 6 MDO bits have TCODE.
 5+|Here we could have an SRC field (it would shift the start of B-TYPE).
-|0xD0| 110100|00 | BTYPE[2] = 0x0| This is a 2-bit (fixed-length) field. As B-TYPE is a fixed-length field, four most significant bits are part of the next field (I-CNT).
-|0x1D| 000111|01 | ICNT[10] = 0x7D| This is a second byte of the 10-bit (value 0x7D) variable-length I-CNT field. Four least significant bits (0b1101=0xD) are define in previous MDO. Three most significant bits are all 0-s as variable-length field uses all 6 MDO bits.
-|0x1D| 000111|01 | UADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three most significant 0-s).
+|0xD0| 110100|00 | B-TYPE[2] = 0x0| This is a 2-bit (fixed-length) field. As B-TYPE is a fixed-length field, four most significant bits are part of the next field (I-CNT).
+|0x1D| 000111|01 | I-CNT[10] = 0x7D| This is a second byte of the 10-bit (value 0x7D) variable-length I-CNT field. Four least significant bits (0b1101=0xD) are define in previous MDO. Three most significant bits are all 0-s as variable-length field uses all 6 MDO bits.
+|0x1D| 000111|01 | U-ADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three most significant 0-s).
 |0xF8| 111110|00 || Normal transfer of new field (6 least significant bits).
 |0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra most significant 0-s.
 5+|Here optional TSTAMP field could be sent (previous MSEO should became 01 encoding end of HIST field, but not end of the message).
@@ -753,9 +754,9 @@ segments associated with various programs. Activation of this feature requires e
 
 Reporting of this information occurs under one of the following three conditions:
 
-* Upon the retirement of an instruction that writes to the *scontext/hcontext* CSR (as reported via 'priv' and 'context' field on an ingress port).
+* Upon the retirement of an instruction that writes to the *scontext/hcontext* CSR (as reported via `priv` and `context`` field on an ingress port).
 * In the event of a trap or trap return that results in a change in privilege mode (including *ECALL* and *EBREAK* instructions).
-* Following any trace <<Synchronizing Messages,synchronizing message>> that includes the <<field_SYNC,SYNC>> field.
+* Following any trace <<Synchronizing Messages,synchronizing message>>.
 
 IMPORTANT: Should *hcontext* be implemented, the protocol requires two consecutive messages: the first presenting *hcontext* information
 and the second *scontext* information. This sequence is important for enabling the decoder to identify the code associated with a specific process. 
@@ -1176,7 +1177,7 @@ The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExt
 
 * Simple implementations may not implement an enable bit and always send full address. Benefits of using it on 32-bit cores is small, so it may not be implemented.
 
-This way of encodign allows an encoder to efficiently send:
+This way of encoding allows an encoder to efficiently send:
 
 * Any physical address.
 * Any virtual address (in any mode).
@@ -1473,9 +1474,9 @@ Trace requires different types of synchronization on different abstraction level
 Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason of the program flow change. 
 
 * All synchronizing messages fully reset the encoder state, so decoding can be started from this message.
-** Before resetting the encoder state, the trace up to the current location must be emitted (it includes HIST, ICNT, HREPEAT and BCOUNT counters).
+** Before resetting the encoder state, the trace up to the current location must be emitted (it includes HIST, I-CNT, HREPEAT and B-CNT counters).
 * All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may calculate full/absolute timestamps from this message forward.
-* An <<msg_Ownership,Ownership>> messages (if enabled) must be emitted immediatelly after all synchronizing messages.
+* An <<msg_Ownership,Ownership>> messages (if enabled) must be emitted immediately after all synchronizing messages.
 
 Periodic Synchronization are generated to allow easier decoding (not necessarilly from the start of collected trace) and may only be reported when desired by the user (for debugging).
 
@@ -1567,7 +1568,14 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 |Exception at first instruction traced|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by a message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception).
 |Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
 |Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
+|Exception/Interrupt immediately following trap return|
+Usual messages describing instructions up to return from trap (MRET/SRET) instruction. +
+Synchronizing message with an address of trap return with <<field_I-CNT,I-CNT>>=0 (as nothing executed after a trap return). +
+Optionally, an <<msg_Ownership,Ownership>> messages describing privilege level after return from a trap. +
+Synchronizing message with an address of interrupt/exception handler and appropriate SYNC code. +
+Optionally, an <<msg_Ownership,Ownership>> messages describing privilege level of new exception/interrupt handler.
 |====
+
 
 == Optimization Extensions
 
