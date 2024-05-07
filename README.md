@@ -2,18 +2,16 @@
 
 ## Status of each PDF
 
-**2024/05/02 status:**
+**2024/05/07 status:**
 
-* **N-Trace PDF**: Version 1.0.0_rc27. All known ARC notes DONE. Inside of [./pdfs](./pdfs) directory.
-  * All known ARC notes DONE (ready for Frozen state).
-* **Controls PDF**: Version 1.0.0_rc22. All known ARC notes DONE. Inside of [./pdfs](./pdfs) directory.
-  * All known ARC notes DONE (ready for Frozen state).
-* **Connectors PDF**: Version 1.0.0_rc30. Frozen. Inside of [./pdfs](./pdfs) directory.
-  * It was accepted by ARC (via email).
+All 3 PDFs are using updated PDF template with nice header and footer and are located inside of [./pdfs](./pdfs) directory.
+
+* **N-Trace PDF**: Version 1.0.0_rc31. Ready for Freeze.
+* **Controls PDF**: Version 1.0.0_rc31. Ready for Freeze.
+* **Connectors PDF**: Version 1.0.0_rc31. Ready for Freeze.
 
 ## TODO (before official freeze)
 
-* TODO: Find a way to add nice header/footer at each page (Debug PDF has these).
 * TODO: Fix annoying page breaks (manual insert of 'page-break').
 * TODO: Make release with all PDFs 'Frozen', same date/version and pass back to ARC for official OK-stamp.
 * TODO: Make Public Review announcement (all PDFs Frozen).

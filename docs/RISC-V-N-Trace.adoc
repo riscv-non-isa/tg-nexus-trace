@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  May 02, 2024
-:revnumber: 1.0.0_rc27
-:revremark: Stable state (Second set of ARC notes DONE)
+:revdate:  May 07, 2024
+:revnumber: 1.0.0_rc31
+:revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -52,9 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc27
-* 2024-05-02
-** Second set of ARC notes DONE
+=== Version 1.0.0_rc31
+* 2024-05-07
+** Ready for Freeze.
 
 [Preface]
 == Copyright and license information
@@ -599,7 +599,7 @@ Message field attributes are described using the following terminology:
 * *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
 
 .Fields in Messages
-[cols="26%,9%,7%,7%,9%,17%,8%,10%,7%",options="header",]
+[cols="27%,9%,6%,7%,9%,17%,8%,10%,7%",options="header",]
 |===========================================================================================
 | Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]
 |[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     |
@@ -614,7 +614,7 @@ Message field attributes are described using the following terminology:
 |[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes
 |[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Cfg|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     |
 |[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Cfg|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Cfg*
-|<<msg_other,Vendor Defined>>|56..62|Cfg 6+| *TCODE* range designated for use by Vendor Defined messages
+|<<msg_other,Vendor Defined>>|56..62|Cfg 6+| Designated for use by Vendor Defined messages
 |<<msg_other,Reserved>>|other|Cfg 6+| Reserved for future extensions of N-Trace specification
 |===========================================================================================
 
@@ -1137,21 +1137,22 @@ Rules when generating addresses:
 ** To decode the full address from the relative address (U-ADDR) can be XORed with the previously decoded full address.
 * Address fields are sent beginning with bit 1 since all execution addresses are on a 2-byte boundaries (the least significant bit is always 0 and never sent).
 
-Example:
+*Address XOR Calculation Examples*
 
-[#Address XOR Compression]
-.Address XOR Compression Example
-[cols="10%,35%,44%,11%",options="header",]
-|====
-|Address    |U-ADDR XOR calculations        |F-ADDR/U-ADDR field sent            |   New REF Address
-|0x3FC04    |                               |F-ADDR=1_1111_1110_0000_0010=0x1FE02|   0x3FC04
-|0x3F368    | REF =0011_1111_1100_0000_0100 +
-              addr=0011_1111_0011_0110_1000 +
-              XOR =0000_0000_1111_0110_1100 |U-ADDR=111_1011_0110=0x7B6            |   0x3F368
-|0x3E100    | REF =0011_1111_0011_0110_1000 +
-              addr=0011_1110_0001_0000_0000 +
-              XOR =0000_0001_0010_0110_1000 |U-ADDR=1001_0011_0100=0x934           |   0x3E100
-|====
+ ==============================================================================================
+ | Address   | U-ADDR XOR calculations       | F-ADDR/U-ADDR field sent             | New REF |
+ |           |                               |                                      | Address |
+ ==============================================================================================
+ |0x3FC04    |                               | F-ADDR=1_1111_1110_0000_0010=0x1FE02 | 0x3FC04 |
+ ----------------------------------------------------------------------------------------------
+ |0x3F368    | REF =0011_1111_1100_0000_0100 |                                      |         |
+ |           | addr=0011_1111_0011_0110_1000 |                                      |         |
+ |           | XOR =0000_0000_1111_0110_1100 | U-ADDR=111_1011_0110=0x7B6           | 0x3F368 |
+ ----------------------------------------------------------------------------------------------
+ |0x3E100    | REF =0011_1111_0011_0110_1000 |                                      |         |
+ |           | addr=0011_1110_0001_0000_0000 |                                      |         |
+ |           | XOR =0000_0001_0010_0110_1000 | U-ADDR=1001_0011_0100=0x934          | 0x3E100 |
+ ==============================================================================================
 
 === Virtual Addresses Optimization
 
