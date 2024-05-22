@@ -400,7 +400,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 ==== Summary of Trace Encoder Registers
 
 .*Trace Encoder Registers (trTe??, trTs??)*
-[cols="10%,25%,15%,~",options="header",]
+[%autowidth,align="center",float="center",cols="<,<,<,~",options="header"]
 |===
 |*Address Offset* |*Register Name* |*Compliance* |*Description*
 |0x000 |trTeControl |Required |Trace Encoder control register
