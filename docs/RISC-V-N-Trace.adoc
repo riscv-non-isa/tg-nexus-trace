@@ -14,7 +14,7 @@
 :experimental:
 :reproducible:
 :WaveDromEditorApp: wavedrom-cli
-:pdf-theme: ./riscv-pdf-ISA.yml
+:pdf-theme: riscv-pdf-ISA.yml
 :pdf-fontsdir: docs-resources/fonts/
 :imagesoutdir: images
 :icons: font
