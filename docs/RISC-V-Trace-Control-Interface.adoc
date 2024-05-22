@@ -527,7 +527,7 @@ Displayed messages should report component name, component base address and curr
 Many features of the Trace Encoder (TE for short) are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
 
 .*Register: trTeControl: Trace Encoder Control Register (trBaseEncoder+0x000)*
-[cols="7%,30%,~,8%,8%",options="header",]
+[cols="4%,24%,~,6%,6%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeActive |Primary activate/reset bit for the TE. When 0, the TE may have clocks gated off or be powered
@@ -589,7 +589,7 @@ Trace recording/protocol format: +
 NOTE: Writing to this register while trace is enabled may unintentionally change a value of `trTeInstTracing` bit because that bit may dynamically change by triggers.
 
 .*Register: trTeImpl: Trace Encoder Implementation Register (trBaseEncoder+0x004)*
-[cols="7%,30%,~,8%,8%",options="header",]
+[cols="4%,24%,~,6%,6%",options="header",]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means pre-ratified/initial version - see 'Pre-ratified/Initial Interface Version' chapter at the end. |RO| 1
