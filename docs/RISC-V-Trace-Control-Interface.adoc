@@ -10,7 +10,7 @@
 :colophon:
 :appendix-caption: Appendix
 :title-logo-image: image:docs-resources/images/risc-v_logo.svg[pdfwidth=3.25in,align=center]
-:pdf-theme: ./docs/riscv-pdf-ISA.yml
+:pdf-theme: ./riscv-pdf-ISA.yml
 :pdf-fontsdir: ./docs-resources/fonts/
 // Settings:
 :experimental:
