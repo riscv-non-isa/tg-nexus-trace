@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  May 21, 2024
-:revnumber: 1.0.0_rc32
+:revdate:  May 22, 2024
+:revnumber: 1.0.0_rc33
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,10 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc32
-* 2024-05-21
-** All notes from ARC (except reset values) DONE.
-** Only reset values remaining to be changed.
+=== Version 1.0.0_rc33
+* 2024-05-22
+** Visual changes (followign ISA ADOC style)
 
 [Preface]
 == Copyright and license information
@@ -527,7 +526,7 @@ Displayed messages should report component name, component base address and curr
 Many features of the Trace Encoder (TE for short) are optional. In most cases, optional features are enabled using a WARL (write any, read legal) register field. A debugger can determine if an optional feature is present by writing to the register field and reading back the result.
 
 .*Register: trTeControl: Trace Encoder Control Register (trBaseEncoder+0x000)*
-[cols="4%,24%,~,6%,6%",options="header",]
+[cols="5%,24%,~,6%,6%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeActive |Primary activate/reset bit for the TE. When 0, the TE may have clocks gated off or be powered
@@ -589,7 +588,7 @@ Trace recording/protocol format: +
 NOTE: Writing to this register while trace is enabled may unintentionally change a value of `trTeInstTracing` bit because that bit may dynamically change by triggers.
 
 .*Register: trTeImpl: Trace Encoder Implementation Register (trBaseEncoder+0x004)*
-[cols="4%,24%,~,6%,6%",options="header",]
+[cols="5%,24%,~,6%,6%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means pre-ratified/initial version - see 'Pre-ratified/Initial Interface Version' chapter at the end. |RO| 1
@@ -606,7 +605,7 @@ NOTE: Writing to this register while trace is enabled may unintentionally change
 NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the same control interface, but protocol itself may be extended with new packets/ messages/ fields.
 
 .*Register: trTeInstFeatures: Trace Instruction Features Register (trBaseEncoder+0x008)*
-[cols="7%,30%,~,8%,8%",options="header",]
+[cols="5%,24%,~,6%,6%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeInstNoAddrDiff|When set, trace messages/packets always carry a full address.|WARL|0
@@ -632,7 +631,7 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 NOTE: Applicability of different `trTeInst??` fields for each trace encoding protocol is described in a document which defines the protocol (and not all fields are applicable to all protocols).
 
 .*Register: trTeInstFilters: Trace Instruction Filters Register (trBaseEncoder+0x00C)*
-[cols="7%,30%,~,8%,8%",options="header",]
+[cols="5%,24%,~,6%,6%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |15:0 |trTeInstFilters |
@@ -642,7 +641,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 |===
 
 .*Register: trTeDataControl: Data Trace Control Register (trBaseEncoder+0x010)*
-[cols="7%,30%,~,8%,8%",options="header",]
+[cols="5%,24%,~,6%,6%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeDataImplemented|Read as 1 if data trace is implemented.|RO|SD
