@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate:  May 07, 2024
-:revnumber: 1.0.0_rc31
+:revdate:  May 23, 2024
+:revnumber: 1.0.0_rc33
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -10,7 +10,7 @@
 :colophon:
 :appendix-caption: Appendix
 :title-logo-image: image:docs-resources/images/risc-v_logo.svg[pdfwidth=3.25in,align=center]
-:pdf-theme: ./docs-resources/themes/riscv-pdf.yml
+:pdf-theme: ./riscv-pdf.yml
 :pdf-fontsdir: ./docs-resources/fonts/
 // Settings:
 :experimental:
@@ -52,9 +52,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc31
-* 2024-05-07
-** Ready for Freeze.
+=== Version 1.0.0_rc33
+* 2024-05-23
+** PDF theme from ISA Manual ADOC.
+** Accepted by ARC.
 
 [Preface]
 == Copyright and license information

@@ -2,9 +2,11 @@
 
 ## Status of each PDF
 
-**2024/05/07 status:**
+**2024/05/23 status:**
 
-All 3 PDFs are using updated PDF template with nice header and footer and are located inside of [./pdfs](./pdfs) directory.
+PDFs 1.0.0_rc33: Theme from ISA Manual ADOC file (much nicer look and feel).
+
+Inside of [./pdfs](./pdfs) directory:
 
 * **N-Trace PDF**: Version 1.0.0_rc31. Ready for Freeze.
 * **Controls PDF**: Version 1.0.0_rc31. Ready for Freeze.
@@ -12,6 +14,8 @@ All 3 PDFs are using updated PDF template with nice header and footer and are lo
 
 ## TODO (before official freeze)
 
+* TODO: Font in tables is smaller, so columns will be adjusted (as very next step).
+* TODO: Issue of 'minimal reset' (in Control PDF) is discussed with ARC and TG.
 * TODO: Fix annoying page breaks (manual insert of 'page-break').
 * TODO: Make release with all PDFs 'Frozen', same date/version and pass back to ARC for official OK-stamp.
 * TODO: Make Public Review announcement (all PDFs Frozen).

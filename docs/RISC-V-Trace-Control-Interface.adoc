@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  May 21, 2024
-:revnumber: 1.0.0_rc32
+:revdate:  May 23, 2024
+:revnumber: 1.0.0_rc33
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -10,7 +10,7 @@
 :colophon:
 :appendix-caption: Appendix
 :title-logo-image: image:docs-resources/images/risc-v_logo.svg[pdfwidth=3.25in,align=center]
-:pdf-theme: ./docs-resources/themes/riscv-pdf.yml
+:pdf-theme: ./riscv-pdf.yml
 :pdf-fontsdir: ./docs-resources/fonts/
 // Settings:
 :experimental:
@@ -52,9 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc32
-* 2024-05-21
-** All notes from ARC (except reset values) DONE.
+=== Version 1.0.0_rc33
+* 2024-05-23
+** PDF theme from ISA Manual ADOC.
 ** Only reset values remaining to be changed.
 
 [Preface]
