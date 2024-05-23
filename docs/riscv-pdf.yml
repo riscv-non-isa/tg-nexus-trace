@@ -1,4 +1,8 @@
 ---
+# There are modifications to make these same as ISA PDFs.
+# This file was sent by Bill via email
+# It modifies fonts for headings and bold inside tables.
+# NOTE: Eventually this file will not be needed, but I cannot want
 extends: default
 font:
   catalog:
@@ -76,19 +80,24 @@ codespan:
     #font_family: Droid Fallback
   font_family: M+ 1mn
   font_style: normal
-  font-size: 11.5
+  font-size: 0.9em
 menu_caret_content: ' <font size="1.15em"><color rgb="b12146">›</color></font> '
 heading:
   align: left
-  font_color: 3e058e
+#  font_color: 3e058e
+  font-color: 000000
   font_family: headings
-  font_style: light
+  font_style: bold
   h1_font_size: floor($base_font_size * 2.8)
   # h2 is used for chapter titles (book doctype only)
-  h2_font_size: floor($base_font_size * 2.15)
-  h3_font_size: round($base_font_size * 1.7)
-  h4_font_size: $base_font_size_large
-  h5_font_size: $base_font_size
+  #h2_font_size: floor($base_font_size * 2.15)
+  h2_font_size: 11.5
+  #h3_font_size: round($base_font_size * 1.7)
+  h3_font_size: 11.5
+  #h4_font_size: $base_font_size_large
+  h4_font_size: 11.5
+  #h5_font_size: $base_font_size
+  h5_font_size: 11.5
   h6_font_size: $base_font_size_small
 title_page:
   align: center
@@ -232,7 +241,7 @@ table:
   #head_background_color: <hex value>
   #head_font_color: $base_font_color
   head_font_style: bold
-  font-size: 11.5
+  font-size: 0.8em
   #body_background_color: <hex value>
   body_stripe_background_color: d7d7d7
   foot_background_color: f0f0f0
