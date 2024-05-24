@@ -689,7 +689,7 @@ Timestamp Unit is an optional sub-component present in either Trace Encoder or T
 * *Shared* - shares timestamp with another Trace Encoder or Trace Funnel
 * *External* - accepts a binary timestamp value from an outside source such as ARM CoreSight(TM) trace (for both Trace Encoders and Trace Funnels)
 
-Implementations may have no timestamp, one timestamp mode, or more than one mode. The WARL field `trTsMode`` is used to determine the system capability and to set the desired timestamp mode.
+Implementations may have no timestamp, one timestamp mode, or more than one mode. The WARL field `trTsMode` is used to determine the system capability and to set the desired timestamp mode.
 
 The width of the timestamp is implementation-dependent, typically 40 or 48 bits (40 bit timestamp will overflow every 4.7 minutes assuming 1GHz timestamp clock).
 
@@ -757,7 +757,7 @@ Debug module triggers are signals from the hart that a trigger was hit, but the 
 .*Debug Trigger Actions*
 [cols="30%,~",options="header"]
 |===
-|*Action (from debug spec)* |*Effect*
+|*Trigger Action (from debug spec)* |*Effect*
 |0 |Breakpoint exception (as defined in RISC-V Debug Specification)
 |1 |Debug exception (as defined in RISC-V Debug Specification)
 |2 |*Trace-on action* +
@@ -768,7 +768,7 @@ When `trTeInstTrigEnable` = 1 it will stop instruction tracing (`trTeInstTracing
 When `trTeDataTrigEnable` = 1 it will stop data tracing (`trTeDataTracing` -> 0). 
 |4 |*Trace-notify action* +
 If tracing is active (`trTeInstTracing` = 1), then the encoder generates a packet with the current PC and, if enabled, a timestamp.
-|5 |*Vendor-specific action* (optional)
+|5 |*Vendor-specific trace action* (optional)
 |===
 
 If there are vendor-specific features that require control, the `trTeTrigDbgControl` register is used. 
