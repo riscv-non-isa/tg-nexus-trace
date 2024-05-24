@@ -477,7 +477,7 @@ Table below shows one N-Trace message with several fields. It is an output from 
 
 [#MDO_MSEO Examples]
 .MDO and MSEO Encoding Example
-[cols="5%,10%,10%,20%,~",options="header"]
+[cols="6%,10%,10%,18%,~",options="header"]
 |====
 |Byte|MDO [5:0]|MSEO [1:0]|Decoded (by reference tool)|Explanation
 |0xFF| 111111|11 | Idle | Most likely idle, but can also be the last byte of the previous message.
@@ -599,26 +599,26 @@ Message field attributes are described using the following terminology:
 * *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
 
 .Fields in Messages
-[cols="24%,8%,5%,6%,8%,14%,7%,8%,~",options="header",]
+[cols="22%,8%,5%,6%,8%,14%,7%,8%,10%,12%",options="header",]
 |===========================================================================================
-| Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]
-|[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     |
-|[[msg_DirectBranch]]<<msg2_DirectBranch,DirectBranch>>          |3    |Cfg|    |     |                  |Yes |     |
-|[[msg_IndirectBranch]]<<msg2_IndirectBranch,IndirectBranch>>        |4    |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|
-|[[msg_Error]]<<msg2_Error,Error>>                 |8    |Cfg|    |     |<<field_ETYPE,ETYPE>> *[4]* + <<field_ECODE,ECODE>> *[Var]*  |    |     |
-|[[msg_ProgTraceSync]]<<msg2_ProgTraceSync,ProgTraceSync>>         |9    |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>|
-|[[msg_DirectBranchSync]]<<msg2_DirectBranchSync,DirectBranchSync>>      |11   |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>|
-|[[msg_IndirectBranchSync]]<<msg2_IndirectBranchSync,IndirectBranchSync>>    |12   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|
-|[[msg_ResourceFull]]<<msg2_ResourceFull,ResourceFull>>          |27   |Cfg|    |     |<<field_RCODE,RCODE>> *[4]* + <<field_RDATA,RDATA>> *[Var]*|    |     |
-|[[msg_IndirectBranchHist]]<<msg2_IndirectBranchHist,IndirectBranchHist>>    |28   |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|Yes
-|[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes
-|[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Cfg|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     |
-|[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Cfg|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Cfg*
-|<<msg_other,Vendor Defined>>|56..62|Cfg 6+| Designated for use by Vendor Defined messages
-|<<msg_other,Reserved>>|other|Cfg 6+| Reserved for future extensions of N-Trace specification
+| Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]|<<field_TSTAMP,TSTAMP>> [Var,Cfg]
+|[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     ||Cfg
+|[[msg_DirectBranch]]<<msg2_DirectBranch,DirectBranch>>          |3    |Cfg|    |     |                  |Yes |     ||Cfg
+|[[msg_IndirectBranch]]<<msg2_IndirectBranch,IndirectBranch>>        |4    |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>||Cfg
+|[[msg_Error]]<<msg2_Error,Error>>                 |8    |Cfg|    |     |<<field_ETYPE,ETYPE>> *[4]* + <<field_ECODE,ECODE>> *[Var]*  |    |     ||Cfg
+|[[msg_ProgTraceSync]]<<msg2_ProgTraceSync,ProgTraceSync>>         |9    |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_DirectBranchSync]]<<msg2_DirectBranchSync,DirectBranchSync>>      |11   |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_IndirectBranchSync]]<<msg2_IndirectBranchSync,IndirectBranchSync>>    |12   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_ResourceFull]]<<msg2_ResourceFull,ResourceFull>>          |27   |Cfg|    |     |<<field_RCODE,RCODE>> *[4]* + <<field_RDATA,RDATA>> *[Var]*|    |     ||Cfg
+|[[msg_IndirectBranchHist]]<<msg2_IndirectBranchHist,IndirectBranchHist>>    |28   |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|Yes|Cfg
+|[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes|Cfg
+|[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Cfg|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     ||Cfg
+|[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Cfg|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Cfg*|Cfg
+|<<msg_other,Vendor Defined>>|56..62|Cfg 7+| Designated for use by Vendor Defined messages
+|<<msg_other,Reserved>>|other|Cfg 7+| Reserved for future extensions of N-Trace specification
 |===========================================================================================
 
-IMPORTANT: Any message may include the optional <<field_TSTAMP,TSTAMP>> *[Var,Cfg]* field as the very last field of a message (it is not shown in above table because of lack of space). It must be enabled by <<trTsEnable,trTsEnable>> control bit. Timestamp field always starts at byte-boundary (as it is always preceded by variable-length field). See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details. 
+IMPORTANT: Any message may include the optional <<field_TSTAMP,TSTAMP>> *[Var,Cfg]* field as the very last field of a message. It must be enabled by <<trTsEnable,trTsEnable>> control bit. Timestamp field always starts at byte-boundary (as it is always preceded by variable-length field). See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details. 
 
 [[msg_other]]
 NOTE: Messages marked as *Reserved* or *Vendor Defined* should be ignored by decoders interested in program flow only.
@@ -669,7 +669,7 @@ NOTE: Reference code is using plain C-style identifiers, so the field name as *B
 Table below provides details for fields which are used in more than one message type. Fields which are present in only one message are described with each message. 
 
 .Details of Common Fields
-[cols="8%,5%,15%,~",options="header"]
+[cols="9%,5%,15%,~",options="header"]
 |======================================================================================================
 | Name | Bits | Description | Values/Notes
 4+|*Fields used in many messages*
@@ -708,7 +708,7 @@ IEEE-5001 Nexus Standard does not define limits for variable-length fields, but 
 
 [#Max_Field_Sizes]
 .Maximum Field Sizes
-[cols="20%,25%,6%,~",options="header"]
+[cols="10%,25%,5%,~",options="header"]
 |======================================================================================================
 |Field|Symbol|Bits|Description
 [[NTRACE_MAX_SRC]]
@@ -779,7 +779,7 @@ Field PROCESS is encoded as 4 sub-fields (FORMAT, PRV, V, CONTEXT). Bit layout i
  PROCESS[x+5:0] = {CONTEXT[x:0], V[0], PRV[1:0], FORMAT[1:0]}
 
 .Encoding of PROCESS field (in LSB to MSB order)
-[cols="35%,20%,12%,8%,25%",options="header",align=center,width=60%]
+[cols="35%,20%,12%,8%,25%",options="header",align=center,width=80%]
 |======================================================================================================
 |Reason|FORMAT[1:0]|PRV[1:0]|V[0]|CONTEXT[x:0]
 | V and/or PRV change |00   |Yes|Yes|--
