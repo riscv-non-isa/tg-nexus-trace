@@ -488,7 +488,8 @@ Table below shows one N-Trace message with several fields. It is an output from 
 |0x1D| 000111|01 | U-ADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three most significant 0-s).
 |0xF8| 111110|00 || Normal transfer of new field (6 least significant bits).
 |0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra most significant 0-s.
-5+|Here optional TSTAMP field could be sent (previous MSEO should became 01 encoding end of HIST field, but not end of the message).
+5+|Here optional TSTAMP field could be sent +
+Previous MSEO should became 01 encoding end of HIST field, but not end of the message).
 |0xFF| 111111|11 | Idle|This is idle as this is the second byte with MSEO=11 (NOTE: Last byte of message is also 0xFF).
 |====
 
@@ -599,7 +600,7 @@ Message field attributes are described using the following terminology:
 * *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
 
 .Fields in Messages
-[cols="22%,8%,5%,6%,8%,14%,7%,8%,10%,12%",options="header",]
+[cols="22%,8%,5%,6%,8%,14%,7%,8%,8%,~",options="header",]
 |===========================================================================================
 | Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]|<<field_TSTAMP,TSTAMP>> [Var,Cfg]
 |[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     ||Cfg
@@ -686,7 +687,7 @@ Table below provides details for fields which are used in more than one message 
                                 *1:* Exception or interrupt (if the encoder is not capable of reporting 2 and 3). +
                                 *2:* *Extension:* Exception +
                                 *3:* *Extension:* Interrupt +
-                                *NOTE:* Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
+*NOTE:* Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
 [[field_I-CNT]]
 | I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is the number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
 [[field_F-ADDR]]
