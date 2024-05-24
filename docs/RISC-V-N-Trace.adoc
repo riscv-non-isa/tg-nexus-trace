@@ -177,7 +177,7 @@ NOTE: Placement of the Trace Encoder and Trace Control Layer are implementation 
 
 [#Terms Used In This Specification]
 .Terms Used In This Specification
-[cols="25%,75%",options="header",]
+[cols="20%,~",options="header"]
 |======================================================================================================
 |Term| Definition
 |Message|N-Trace messages are sequences of bytes. First byte of every message includes the TCODE field, which defines the type of information carried in the message and its format. When messages are transmitted or stored, a protocol, described in <<N-Trace Transmission Protocol,N-Trace Transmission Protocol>> chapter, defines the start and the end of each message.
@@ -205,7 +205,7 @@ The table below provides a detailed mapping of causes for terminating an instruc
 
 [#Generating itype for different instructions]
 .Generating itype for different instructions
-[cols="20%,40%,40%",options="header",]
+[cols="18%,~,35%",options="header"]
 |======================================================================================================
 |Instruction|Condition/Notes|itype Value/Name
 |Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
@@ -261,7 +261,7 @@ Table below defines how N-Trace encoder should handle different 3-bit *itype* va
 
 [#Handling of 3-bit itype values]
 .Handling of 3-bit itype values
-[cols="5%,20%,75%",options="header",]
+[cols="5%,20%,75%",options="header"]
 |======================================================================================================
 |#|itype|Encoder Action
 |0|No special type|Only update <<field_I-CNT,I-CNT>> field.
@@ -297,7 +297,7 @@ When the *itype* input of ingress port is 4-bit wide, the Indirect jump (with or
 
 [#Handling of 4-bit itype values]
 .Handling of 4-bit itype values
-[cols="5%,20%,63%,12%",options="header",]
+[cols="5%,20%,63%,12%",options="header"]
 |======================================================================================================
 |#|itype|Encoder Action|Stack Action
 |8|Indirect call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
@@ -346,7 +346,7 @@ N-Trace message transmission protocol is a strict subset of IEEE-5001 Nexus Stan
 
 [N-Trace subset]
 .N-Trace subset
-[cols="33%,20%,45%",options="header",]
+[cols="25%,20%,~",options="header"]
 |====
 |Protocol Feature|Nexus Standard|N-Trace (strict subset of Nexus)
 |Number of *MSEO* bits|1 or 2|2
@@ -384,7 +384,7 @@ The table below provides possible sequences of *MSEO[1:0]* bits (to expand above
 
 [#MSEO Transitions]
 .Transitions of MSEO Bits 
-[cols="30%,30%",options="header",]
+[cols="40%,60%",options="header",align=center,width=80%]
 |====
 |MSEO Function|Previous-*Current* MSEO[1:0] Sequence
 |Start of message|11-*00*
@@ -477,7 +477,7 @@ Table below shows one N-Trace message with several fields. It is an output from 
 
 [#MDO_MSEO Examples]
 .MDO and MSEO Encoding Example
-[cols="7%,10%,8%,25%,50%",options="header",]
+[cols="5%,10%,10%,20%,~",options="header"]
 |====
 |Byte|MDO [5:0]|MSEO [1:0]|Decoded (by reference tool)|Explanation
 |0xFF| 111111|11 | Idle | Most likely idle, but can also be the last byte of the previous message.
@@ -500,7 +500,7 @@ NOTE: The table below does not provide names of Trace Encoder control registers 
 
 [#Details_Control_Parameters]
 .Trace Encoder Parameters and Controls
-[cols="30%,17%,53%",options="header",]
+[cols="25%,15%,~",options="header"]
 |======================================================================================================
 |Trace Control Field|Applicability|Description
 |trTeActive |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
@@ -599,7 +599,7 @@ Message field attributes are described using the following terminology:
 * *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
 
 .Fields in Messages
-[cols="27%,9%,6%,7%,9%,17%,8%,10%,7%",options="header",]
+[cols="24%,8%,5%,6%,8%,14%,7%,8%,~",options="header",]
 |===========================================================================================
 | Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]
 |[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     |
@@ -669,7 +669,7 @@ NOTE: Reference code is using plain C-style identifiers, so the field name as *B
 Table below provides details for fields which are used in more than one message type. Fields which are present in only one message are described with each message. 
 
 .Details of Common Fields
-[cols="10%,7%,18%,65%",options="header",]
+[cols="8%,5%,15%,~",options="header"]
 |======================================================================================================
 | Name | Bits | Description | Values/Notes
 4+|*Fields used in many messages*
@@ -678,28 +678,25 @@ Table below provides details for fields which are used in more than one message 
 [[field_SRC]]
 | SRC        | *Cfg* | Source of Message Transmission | Width of SRC field is defined by <<trTeSrcBits,trTeSrcBits>> control field and it may be enabled/disabled by <<trTeInhibitSrc,trTeInhibitSrc>> control bit. This optional field is used to identify the source of the message transmission. In configurations that comprise only a single hart, this field need not be transmitted. For devices that comprise multiple harts, this field must be transmitted (if enabled) as part of the message to identify the source of the message transmission. The transmitted SRC field size should be the same for all enabled trace encoders sharing a trace stream.
 [[field_SYNC]]
-| SYNC       | 4             |Reason for Synchronization| Encodings and details are provided in <<Synchronizing Messages,Synchronizing Messages>> chapter.
-
-NOTE: The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> field, so decoding may start from a message containing the SYNC field.
+| SYNC       | 4             |Reason for Synchronization| Encodings and details are provided in <<Synchronizing Messages,Synchronizing Messages>> chapter. +
+*NOTE:* The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> field, so decoding may start from a message containing the SYNC field.
 [[field_B-TYPE]]
 | B-TYPE      | 2             | Branch Type | Reason for indirect flow change: +
                                 *0:* Indirect control flow change (jump, call or return). +
                                 *1:* Exception or interrupt (if the encoder is not capable of reporting 2 and 3). +
                                 *2:* *Extension:* Exception +
                                 *3:* *Extension:* Interrupt +
-                                NOTE: Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
+                                *NOTE:* Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
 [[field_I-CNT]]
 | I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is the number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
 [[field_F-ADDR]]
 | F-ADDR      | *Var* | Full Target Address | Full PC without the least significant bit.
 The least significant bit is not reported as it is always 0.
-See <<Address Compression,Address Compression>> chapter for more details.
-
- NOTE: The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
+See <<Address Compression,Address Compression>> chapter for more details. +
+*NOTE:* The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
 [[field_U-ADDR]]
 | U-ADDR      | *Var* | Unique part of Target Address | Unique part of PC address (XOR with recently reported address).
-See <<Address Compression,Address Compression>> chapter for more details.
-
+See <<Address Compression,Address Compression>> chapter for more details. +
 The U-ADDR field is always sent together with the <<field_B-TYPE,B-TYPE>> field.
 [[field_HIST]]
 | HIST       | *Var* | Direct Branch History map |  Most significant bit (always 1) serves as a 'stop-bit', the least significant bit denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
@@ -711,7 +708,7 @@ IEEE-5001 Nexus Standard does not define limits for variable-length fields, but 
 
 [#Max_Field_Sizes]
 .Maximum Field Sizes
-[cols="22%,30%,8%,50%",options="header",]
+[cols="20%,25%,6%,~",options="header"]
 |======================================================================================================
 |Field|Symbol|Bits|Description
 [[NTRACE_MAX_SRC]]
@@ -765,7 +762,7 @@ NOTE: If tracing multiple OS-es, main decoder may route messages to an OS-specif
 
 [#Fields_Ownership]
 .Ownership Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=2(0x2). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -782,7 +779,7 @@ Field PROCESS is encoded as 4 sub-fields (FORMAT, PRV, V, CONTEXT). Bit layout i
  PROCESS[x+5:0] = {CONTEXT[x:0], V[0], PRV[1:0], FORMAT[1:0]}
 
 .Encoding of PROCESS field (in LSB to MSB order)
-[cols="35%,20%,12%,8%,25%",options="header",]
+[cols="35%,20%,12%,8%,25%",options="header",align=center,width=60%]
 |======================================================================================================
 |Reason|FORMAT[1:0]|PRV[1:0]|V[0]|CONTEXT[x:0]
 | V and/or PRV change |00   |Yes|Yes|--
@@ -815,7 +812,7 @@ This message is generated when the taken direct conditional branch has retired.
 
 [#Fields_DirectBranch]
 .Direct Branch Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=3(0x3). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -844,7 +841,7 @@ This message is generated under two conditions:
 
 [#Fields_IndirectBranch]
 .Indirect Branch Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=4(0x4). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -872,7 +869,7 @@ An error message must be generated in the event of an internal messages FIFO ove
 
 [#Fields_Error]
 .Error Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=8(0x8). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -919,7 +916,7 @@ In above case, Error Message will be the last message in trace stream.
 
 [#Fields_ProgTraceSync]
 .Program Trace Synchronization Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=9(0x9). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -942,7 +939,7 @@ Additionally, the F-ADDR field provides the complete PC address at the moment th
 
 [#Fields_DirectBranchSync]
 .Direct Branch with Sync Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=11(0xB). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -963,7 +960,7 @@ However, it further includes details on the reason for synchronization via the S
 
 [#Fields_IndirectBranchSync]
 .Indirect Branch with Sync Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=12(0xC). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -987,7 +984,7 @@ This mechanism ensures that no information is lost, as it enables the decoder to
 
 [#Fields_ResourceFull]
 .Resource Full Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=27(0x1B). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -1022,7 +1019,7 @@ messages.
 
 [#Fields_IndirectBranchHist]
 .Indirect Branch History Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=28(0x1C). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -1045,7 +1042,7 @@ Next PC is determine by applying the <<Address Compression,Address Compression>>
 
 [#Fields_IndirectBranchHistSync]
 .Indirect Branch History with Sync Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=29(0x1D). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -1068,7 +1065,7 @@ However, it further includes details on the reason for synchronization via the S
 
 [#Fields_RepeatBranch]
 .Repeat Branch Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=30(0x1E). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -1090,7 +1087,7 @@ This message is emitted when the trace is disabled or stopped.
 
 [#Fields_ProgTraceCorrelation]
 .Program Trace Correlation Message Fields
-[cols="10%,13%,77%",options="header",]
+[cols="8%,10%,~",options="header"]
 |======================================================================================================
 |Bits|Name|Description
 |6   |TCODE            |Value=33(0x21). Standard Transfer Code (<<field_TCODE,TCODE>>) field.
@@ -1455,7 +1452,7 @@ Trace requires different types of synchronization on different abstraction level
 
 [#SYNC Field Values]
 .SYNC Field Values
-[cols="7%,18%,12%,63%",options="header",]
+[cols="6%,15%,10%,~",options="header"]
 |====
 |Value|Name |Required|Description
 |0| External Trace Trigger | No | This message serves as a marker of external trigger. If trace is enabled by an external trigger SYNC=5 should be used.
@@ -1558,7 +1555,7 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 
 [#Corner Cases]
 .Corner Cases
-[cols="25%,75%",options="header",]
+[cols="20%,~",options="header"]
 |====
 |Sequence of events|Messages Generated
 |Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
@@ -2032,7 +2029,7 @@ Table below is proposing some future enhancements for N-Trace messages. These we
 
 [#Future Enhancements]
 .Future Enhancements
-[cols="25%,17%,58%",options="header",]
+[cols="17%,17%,~",options="header"]
 |====
 |Enhancement|Conformance|Notes
 |Instrumentation Data Trace|Nexus Compatible|Very likely (Nexus defines appropriate messages). It will require software to be instrumented by code sending data using trace infrastructure (Arm CoreSight ITM enabled many use-cases).
