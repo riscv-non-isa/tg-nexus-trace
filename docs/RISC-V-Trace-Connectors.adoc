@@ -2,7 +2,7 @@
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
 :revdate:  May 23, 2024
-:revnumber: 1.0.0_rc33
+:revnumber: 1.0.0_rc34
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc33
+=== Version 1.0.0_rc34
 * 2024-05-23
 ** PDF theme from ISA Manual ADOC.
+** Adjusted column widths in tables.
 ** Accepted by ARC.
 
 [Preface]
@@ -111,7 +112,7 @@ This connector adds 1-bit/2-bit/4-bit parallel trace and serial trace options on
 
 [#MIPI20 Connector Layout]
 .MIPI20 Connector Layout
-[cols = "~,8%,8%,~", options = header]
+[cols = "~,8%,8%,~", options = header, align=center, width=80%]
 |=========================================================
 |Signal         |Odd Pin#|Even Pin#|Signal
 |VREF           |1	|2	|TMS / TMSC
@@ -132,7 +133,7 @@ NOTE: Smaller MIPI10 version of this connector (pins #1 .. #10 only) is capable 
 
 [#Details of MIPI20 Signals]
 .Details of MIPI20 Signals
-[cols = "8%,30%,~", options = header]
+[cols = "6%,25%,~", options = header]
 |=================================================================================
 |Pin# | Pin Name	        |Explanation
 | 1 | VREF	                |Reference voltage for all other pins and signals (single voltage for debug and trace).
@@ -200,7 +201,7 @@ Mictor-38 connector provides also an option to have different reference voltages
 
 [#Mictor-38 Connector Layout]
 .Mictor-38 Connector Layout
-[cols = "~,10%,8%,8%,10%,~", options = header]
+[cols = "~,10%,8%,8%,10%,~", options = header, align=center, width=80%]
 |======================================
 |Signal|Ref Voltage|Odd Pin#|Even Pin#|Ref Voltage|Signal
 |NC          |     | 1 | 2 |     | NC
@@ -232,7 +233,7 @@ All debug signals share alternate functions as defined for the MIPI20 connector.
 
 [#Micror-38 additional pins]
 .Micror-38 additional pins (comparing to MIPI20 defined above)
-[cols = "8%,20%,~", options = header]
+[cols = "6%,20%,~", options = header]
 |=================================================================================
 |Pin# | Pin Name	|Explanation (comparing to MIPI20)
 | 7   | TRIGIN	    |Same as MIPI20 #18 alternative pin function but not shared with trace.
