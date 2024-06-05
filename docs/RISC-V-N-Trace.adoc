@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  May 23, 2024
-:revnumber: 1.0.0_rc34
+:revdate:  June 05, 2024
+:revnumber: 1.0.0_rc35
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,11 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc34
-* 2024-05-23
-** PDF theme from ISA Manual ADOC.
-** Adjusted column widths in tables.
-** Accepted by ARC.
+=== Version 1.0.0_rc35
+* 2024-06-05
+** Moved 'Virtual Addresses Optimization' to dedicated chapter (agreed with Ved)
 
 [Preface]
 == Copyright and license information
@@ -1154,100 +1152,6 @@ Rules when generating addresses:
  |           | XOR =0000_0001_0010_0110_1000 | U-ADDR=1001_0011_0100=0x934          | 0x3E100 |
  ==============================================================================================
 
-=== Virtual Addresses Optimization
-
-This optimization must be enabled by <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit. 
-
-NOTE: Normally (without above bit enabled or implemented) addresses with many most significant bits=1 will be send as long messages (as variable size fields skip most significant bit=0 only). The following address *0xFFFF_FFFF_8000_31F4* (real address from Linux kernel) will be encoded as *F-ADDR=0x7FFF_FFFF_C000_18FA* (least significant 0-bit skipped). Such 63-bit variable field value will require 11 bytes to be sent (as we have 6 MDO bits in each byte).
-
-NOTE: Normally (without the above bit enabled or implemented), addresses with many
-most significant bits set to 1 will be sent as long messages (as variable size
-fields skip only the most significant bit set to 0). The following address,
-*0xFFFF_FFFF_8000_31F4* (a real address from the Linux kernel), will be encoded
-as F-ADDR=*0x7FFF_FFFF_C000_18FA* (with the least significant 0-bit skipped).
-Such a 63-bit variable field value will require 11 bytes to be sent (as we
-have 6 MDO bits in each byte).
-
-The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set:
-
-* The encoder may skip any number of most significant identical bits in the U-ADDR/F-ADDR fields. However, it must ensure that if any bits are skipped, then the number of transmitted bits is an multiple of the MDO size. Additionally, the most significant transmitted bit must have the same value as the skipped bits.
-
-* If F-ADDR/U-ADDR field is received by decoder, then the last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending on XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
-
-* This method does NOT require a trace decoder to know what a virtual memory system mode is or if an address is physical or virtual. The decoder must look at the most significant bit of the last MDO in F-ADDR/U-ADDR field and either extend or not.
-
-* Simple implementations may not implement an enable bit and always send full address. Benefits of using it on 32-bit cores is small, so it may not be implemented.
-
-This way of encoding allows an encoder to efficiently send:
-
-* Any physical address.
-* Any virtual address (in any mode).
-* Any illegal address.
-
-Trace encoder must implement a most significant bit detection (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending F-ADDR/U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an F-ADDR/U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
-
-*Example Encodings*
-
-*Non-extended address (most significant MDO bit = 0)*
-
-            MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
-  -------------------
-    #0:  111111_00
-    #1:  111111_00
-    #2:  111111_00
-    #3:  111111_00
-    #4:  111111_00
-    #5:  011111_01     <- Last MDO+MSO byte. Most significant bit #5 is 0, so NO extension.
-                       F-ADDR field=0x7_FFFF_FFFF, Encoded address=0xF_FFFF_FFFE
-
-*Extended address (most significant MDO bit = 1)*
-
-            MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
-  -------------------
-    #0:  111111_00
-    #1:  111111_00
-    #2:  111111_00
-    #3:  111111_00
-    #4:  011111_00
-    #5:  111100_01     <- Last MDO+MSEO byte. Most significant bit #5 is 1, so WITH extension.
-                       F-ADDR field=0xF_1FFF_FFFF, Encoded address=0xFFFF_FFFE_3FFF_FFFE
-
-*Non-extended address (extra MDO with all 0-s prevents extension)*
-
-            MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
-  -------------------
-    #0:  111111_00
-    #1:  111111_00
-    #2:  111111_00
-    #3:  111111_00
-    #4:  111111_00
-    #5:  111111_00
-    #6:  000000_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
-                       F-ADDR field=0xF_FFFF_FFFF, Encoded address=0x1F_FFFF_FFFE
-
-*Non-extended full 64-bit address (invalid address)*
-
-            MDO_MSEO
- #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
-  -------------------
-    #0:  111111_00
-    #1:  111111_00
-    #2:  111111_00
-    #3:  111111_00
-    #4:  111111_00
-    #5:  111111_00
-    #6:  111111_00
-    #7:  111111_00
-    #8:  111111_00
-    #9:  111111_00
-   #10:  000101_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
-                       F-ADDR field=0x5FFF_FFFF_FFFF_FFFF, Encoded address=0xBFFF_FFFF_FFFF_FFFE
-
-NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any RISC-V virtual memory modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
-
 === HIST Field Generation
 
 When operating in HTM mode, the encoder does not generate messages for conditional branches. 
@@ -1706,6 +1610,98 @@ NOTE: This type of compression (reporting shorter patterns and larger counts) ma
 NOTE: When number of repeated branches is bigger than max HREPEAT counter value then several consecutive messages with max HREPEAT value should be generated. Total count represented by all these messages (sum of all HREPEAT fields) will be a number of repeated branch history message.
 
 NOTE: HREPEAT counter should not have too many bits as it is not desired to not generate any trace messages for longer periods of time. Bigger HREPEAT will not make compression better but will produce timestamp rarelly.
+
+=== Virtual Addresses Optimization
+
+This optimization must be enabled by <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit. 
+
+NOTE: Normally (without the above bit enabled or implemented), addresses with many
+most significant bits set to 1 will be sent as long messages (as variable size
+fields skip only the most significant 0-s). The following address,
+*0xFFFF_FFFF_8000_31F4* (a real address from the Linux kernel), will be encoded
+as F-ADDR = *0x7FFF_FFFF_C000_18FA* (with the least significant 0-bit skipped).
+Such a 63-bit variable field value will require 11 bytes to be sent (as we
+have 6 MDO bits in each byte).
+
+The following additional rules are used when <<trTeInstExtendAddrMSB,trTeInstExtendAddrMSB>> control bit is implemented and set:
+
+* The encoder may skip any number of most significant identical bits in the U-ADDR/F-ADDR fields. However, it must ensure that if any bits are skipped, then the number of transmitted bits is an multiple of the MDO size. Additionally, the most significant transmitted bit must have the same value as the skipped bits.
+
+* If F-ADDR/U-ADDR field is received by decoder, then the last (most significant) bit of the very last MDO record must be extended up to bit#63 or bit#31 (depending on XLEN of the core). It is similar to sign-extension, but it is NOT a sign bit.
+
+* This method does NOT require a trace decoder to know what a virtual memory system mode is or if an address is physical or virtual. The decoder must look at the most significant bit of the last MDO in F-ADDR/U-ADDR field and either extend or not.
+
+* Simple implementations may not implement an enable bit and always send full address. Benefits of using it on 32-bit cores is small, so it may not be implemented.
+
+This way of encoding allows an encoder to efficiently send:
+
+* Any physical address.
+* Any virtual address (in any mode).
+* Any illegal address.
+
+Trace encoder must implement a most significant bit detection (skipping identical 1-s or 0-s in addition to skipping identical 0-s as for any other variable size field) while sending F-ADDR/U-ADDR field. Trace decoders must do it in reverse order, which means that a sign extension (if needed) must be done after collecting the last MDO bit in an F-ADDR/U-ADDR field. Calculation of full address (as defined in <<Address Compression,Address Compression>> chapter above) must be done after sign extension of U-ADDR field.
+
+*Example Encodings*
+
+*Non-extended address (most significant MDO bit = 0)*
+
+            MDO_MSEO
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
+  -------------------
+    #0:  111111_00
+    #1:  111111_00
+    #2:  111111_00
+    #3:  111111_00
+    #4:  111111_00
+    #5:  011111_01     <- Last MDO+MSO byte. Most significant bit #5 is 0, so NO extension.
+                       F-ADDR field=0x7_FFFF_FFFF, Encoded address=0xF_FFFF_FFFE
+
+*Extended address (most significant MDO bit = 1)*
+
+            MDO_MSEO
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
+  -------------------
+    #0:  111111_00
+    #1:  111111_00
+    #2:  111111_00
+    #3:  111111_00
+    #4:  011111_00
+    #5:  111100_01     <- Last MDO+MSEO byte. Most significant bit #5 is 1, so WITH extension.
+                       F-ADDR field=0xF_1FFF_FFFF, Encoded address=0xFFFF_FFFE_3FFF_FFFE
+
+*Non-extended address (extra MDO with all 0-s prevents extension)*
+
+            MDO_MSEO
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
+  -------------------
+    #0:  111111_00
+    #1:  111111_00
+    #2:  111111_00
+    #3:  111111_00
+    #4:  111111_00
+    #5:  111111_00
+    #6:  000000_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
+                       F-ADDR field=0xF_FFFF_FFFF, Encoded address=0x1F_FFFF_FFFE
+
+*Non-extended full 64-bit address (invalid address)*
+
+            MDO_MSEO
+ #byte:  543210        <- MDO bit index (bit#5 is most significant bit)
+  -------------------
+    #0:  111111_00
+    #1:  111111_00
+    #2:  111111_00
+    #3:  111111_00
+    #4:  111111_00
+    #5:  111111_00
+    #6:  111111_00
+    #7:  111111_00
+    #8:  111111_00
+    #9:  111111_00
+   #10:  000101_01     <- Last MDO+MSEO byte. Most significant bit #5 is 0, so NO extension.
+                       F-ADDR field=0x5FFF_FFFF_FFFF_FFFF, Encoded address=0xBFFF_FFFF_FFFF_FFFE
+
+NOTE: Address *0xBFFF_FFFF_FFFF_FFFF* is NOT a legal address in any RISC-V virtual memory modes as it does not have all most significant bits identical. But such an address may be encountered as result of a bug and as such should be reported.
 
 == Rules of Generating Messages
 
