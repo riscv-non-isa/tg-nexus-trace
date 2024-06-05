@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  May 23, 2024
-:revnumber: 1.0.0_rc34
+:revdate:  June 05, 2024
+:revnumber: 1.0.0_rc35
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,11 +52,10 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc34
-* 2024-05-23
-** PDF theme from ISA Manual ADOC.
-** Adjusted column widths in tables.
-** Only reset values remaining to be changed.
+=== Version 1.0.0_rc35
+* 2024-06-05
+** Most 'SD' bits changed to 'Undef'.
+** Removed 'trTeDiscovery' range.
 
 [Preface]
 == Copyright and license information
@@ -109,7 +108,11 @@ This specification allows a wide range of implementations including low-gate-cou
 
 *WARL* - Denotes Write any, read legal bit/field/register. If a non-legal value is written, the written value is converted to a value that is supported. That value should deterministically depend on the illegal written value and the architectural state of the trace sub-system. 
 
+[[SD]]
 *SD* - Reset value of a field/register is system dependent - these fields should always have the same values at trace component reset. In many cases this may be the only value supported.
+
+[[Undef]]
+*Undef* - This field/register may not reset. Trace tool must write correct value before enabling a particular trace component.
 
 *ATB* - Advanced Trace Bus, a protocol described in ARM document _AMBA ATB Protocol Specification_. This is one of alternative methods to send the trace (in addition to native Trace Sinks defined in this specification).
 
@@ -424,11 +427,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 |0x054 |trTeTrigExtInControl |Optional |External Triggers Input control register
 |0x058 |trTeTrigExtOutControl |Optional |External Triggers Output control register
 4+|*_Reserved_*
-|0x060 - 0x0DF |--|Reserved|Reserved for future standard extension
-4+|*_Discovery related_*
-|0x0E0 - 0x0FF |trTeDiscovery0.. trTeDiscovery7 |Optional |Protocol dependent configuration/discovery-related registers
-4+|*_Reserved_*
-|0x100 - 0x3FF |--|Reserved|Reserved for future standard extension
+|0x060 - 0x3FF |--|Reserved|Reserved for future standard extension
 4+|*_Filters & comparators (trTeFilter??, trTeComp??)_*
 |0x400 - 0x5FF |trTeFilter?? |Optional |Trace Encoder Filter Registers
 |0x600 - 0x7FF |trTeComp?? |Optional |Trace Encoder Comparator Registers
@@ -501,7 +500,7 @@ Each component has a `tr??Impl` register, which includes two 4-bit `tr??VerMinor
 * Value 0 as `tr??VerMajor` is NOT allowed (due to compatibility reasons).
 * Different components may report different versions (as some components may be updated more often than others).
 * The major version `tr??VerMajor` field is incremented when the modification breaks backward compatibility.
-* The minor version `tr??VerMinor` field  is incremented when the modification maintains backward compatibility (for example adding a new field) - for that reason software should always write 0 to undefined bits in registers. 
+* The minor version `tr??VerMinor` field  is incremented when the modification maintains backward compatibility (for example adding a new field) - for that reason software should always write 0 to reserved bits in registers. 
 * Version 15.x is reserved for non-compatible version encoding.
 * Version n.15 should be used as experimental (in development) implementation.
 
@@ -532,11 +531,11 @@ Many features of the Trace Encoder (TE for short) are optional. In most cases, o
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trTeActive |Primary activate/reset bit for the TE. When 0, the TE may have clocks gated off or be powered
-down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
 
-|1 |trTeEnable |*1:* Trace Encoder is enabled. Allows `trTeInstTracing` and `trTeDataTracing` to turn tracing on and off. Setting `trTeEnable` to 0 flushes any queued trace data to the sink or funnel attached to this encoder. This bit can be set to 1 only by direct writing to it. This write of 1 should be done after all other settings are done. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW |0
+|1 |trTeEnable |*1:* Trace Encoder is enabled. Allows `trTeInstTracing` and `trTeDataTracing` to turn tracing on and off. Setting `trTeEnable` to 0 flushes any queued trace data to the sink or funnel attached to this encoder. This bit can be set to 1 only by direct writing to it. This write of 1 should be done after all other settings are done. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW|0
 
-|2 |trTeInstTracing |*1:* Instruction trace is being generated. Written from a trace tool (after a write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW |0
+|2 |trTeInstTracing |*1:* Instruction trace is being generated. Written from a trace tool (after a write to `trTeEnable`) or controlled by triggers. When `trTeInstTracing=1`, instruction trace data may be subject to additional filtering in some implementations (additional `trTeInstMode` settings). |RW|<<Undef,Undef>>
 
 |3 |trTeEmpty |Reads as 1 when all generated trace have been emitted. |RO|1
 |6:4 |trTeInstMode |
@@ -547,35 +546,35 @@ Instruction trace generation mode +
 *4-5:* Reserved for future trace use. +
 *6:* Generate instruction trace using Branch History Trace. +
 *7:* Reserved for vendor-defined instruction trace mode.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |8:7 |--|Reserved|--|0
-|9 |trTeContext |Enable sending trace messages/fields with scontext/mcontext values and/or privilege levels. |WARL|SD
+|9 |trTeContext |Enable sending trace messages/fields with scontext/mcontext values and/or privilege levels. |WARL|<<Undef,Undef>>
 |10 |--|Reserved|--|0
 |11  |trTeInstTrigEnable |*1:* Allows `trTeInstTracing` to be set or cleared by Trace-on
-and Trace-off signals generated by the corresponding trigger module.|WARL|0
-|12  |trTeInstStallOrOverflow |Set to 1 by hardware when trace buffer overflow (also known as trace lost) occurs, or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RW1C|0
+and Trace-off signals generated by the corresponding trigger module.|WARL|<<Undef,Undef>>
+|12  |trTeInstStallOrOverflow |Set to 1 by hardware when trace buffer overflow (also known as trace lost) occurs, or when the TE requests a hart stall. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RW1C|<<Undef,Undef>>
 |13 |trTeInstStallEna |
 *0:* If TE cannot send a message, the message is dropped. The protocol dependent overflow instruction trace synchronization message/packet is generated when the trace is restarted, so the decoder will know that trace is lost and must reset any internal decoder state. +
 *1:* If TE cannot send a message, the hart is stalled until it can. With this option execution of instructions by the hart may be intrusively affected, but in many cases it is acceptable.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |14 |--|Reserved|--|0
 
 |15 |trTeInhibitSrc |
 *0:* Messages/packets generated by the trace encoder include a message source field if the
  source width held in `trTeSrcBits` is not 0. +
 *1:* Disable inclusion of source field in trace messages/packets. 
-|WARL|SD
+|WARL|<<Undef,Undef>>
 
 |17:16 |trTeInstSyncMode |Select the periodic instruction trace synchronization message/packet generation mechanism. At least one non-zero mechanism must be implemented. +
 *0:* Off +
 *1:* Count trace messages/packets +
 *2:* Count hart clock cycles +
 *3:* Count instruction 16-bit half-words +
-Once the max value of periodic counter is reached, an instruction trace synchronization message/packet should be generated.|WARL|SD
+Once the max value of periodic counter is reached, an instruction trace synchronization message/packet should be generated.|WARL|<<Undef,Undef>>
 
 |19:18 |--|Reserved|--|0
 
-|23:20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If an instruction trace synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL|SD
+|23:20 |trTeInstSyncMax |The maximum interval (in units determined by `trTeInstSyncMode`) between instruction trace synchronization messages/packets. Generate synchronization when count reaches 2^(`trTeInstSyncMax`+4). If an instruction trace synchronization message/packet is generated for another reason, the internal counter should be reset.|WARL|<<Undef,Undef>>
 
 |26:24 |trTeFormat |
 Trace recording/protocol format: +
@@ -583,7 +582,7 @@ Trace recording/protocol format: +
 *1:* Format defined by RISC-V N-Trace (Nexus-based Trace) Specification +
 *2-6:* Reserved for future formats +
 *7:* Vendor-specific format
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |31:27 |--|Reserved|--|0
 |===
 
@@ -593,15 +592,15 @@ NOTE: Writing to this register while trace is enabled may unintentionally change
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means pre-ratified/initial version - see 'Pre-ratified/Initial Interface Version' chapter at the end. |RO| 1
+|3:0 |trTeVerMajor |Trace Encoder Component Major Version. Value 1 means the component is compliant with this document. Value 0 means pre-ratified/initial version - see 'Pre-ratified/Initial Interface Version' chapter at the end. |RO|1
 |7:4 |trTeVerMinor |Trace Encoder Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trTeCompType |Trace Encoder Component Type (Trace Encoder) |RO|0x1
 |15:12 |--|Reserved for future versions of this standard|--|0
 |19:16 |trTeProtocolMajor |Trace Protocol Major Version. As specified by specification governing `trTeFormat`.
-|RO|SD
+|RO|<<SD,SD>>
 |23:20 |trTeProtocolMinor |Trace Protocol Minor Version. As specified by specification governing `trTeFormat`.
-|RO|SD
-|31:24 |--|Reserved for vendor specific implementation details|--|SD
+|RO|<<SD,SD>>
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
 |===
 
 NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the same control interface, but protocol itself may be extended with new packets/ messages/ fields.
@@ -610,24 +609,24 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTeInstNoAddrDiff|When set, trace messages/packets always carry a full address.|WARL|0
-|1 |trTeInstNoTrapAddr|When set, do not include trap handler address in trap messages/packets.|WARL|0
-|2 |trTeInstEnSequentialJump|When set, treat sequentially inferrable jumps as inferable PC discontinuities.|WARL|0
-|3 |trTeInstEnImplicitReturn|When set, treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitReturnMode` below provides more details.|WARL|0
-|4 |trTeInstEnBranchPrediction|When set, branch predictor based compression is enabled.|WARL|0
-|5 |trTeInstEnJumpTargetCache|When set, Jump target cache based compression is enabled.|WARL|0
+|0 |trTeInstNoAddrDiff|When set, trace messages/packets always carry a full address.|WARL|<<Undef,Undef>>
+|1 |trTeInstNoTrapAddr|When set, do not include trap handler address in trap messages/packets.|WARL|<<Undef,Undef>>
+|2 |trTeInstEnSequentialJump|When set, treat sequentially inferrable jumps as inferable PC discontinuities.|WARL|<<Undef,Undef>>
+|3 |trTeInstEnImplicitReturn|When set, treat returns as inferable PC discontinuities when returning from a recent call on a stack. Field `trTeInstImplicitReturnMode` below provides more details.|WARL|<<Undef,Undef>>
+|4 |trTeInstEnBranchPrediction|When set, branch predictor based compression is enabled.|WARL|<<Undef,Undef>>
+|5 |trTeInstEnJumpTargetCache|When set, Jump target cache based compression is enabled.|WARL|<<Undef,Undef>>
 |7:6|trTeInstImplicitReturnMode|Defines how the decoder is handling stack of return addresses (if enabled by `trTeInstEnImplicitReturn` bit): +
 *0:* Implicit Return mode is not supported or implementation is not reporting how it is implemented. +
 *1:* Simple level counting without the return address compare. +
 *2:* Partial (LSB portion of return address) compare (smaller logic cost than 3 below, but in most cases adequate as chances to have an incorrect return address with same LSB bits is very slim). +
 *3:* Full address compare (always assures skipped return addresses are the same as addresses deducted from call instruction). Implementation may take advantage of RAS (Return Address Stack) if implemented by the hart.
-|WARL|SD
-|8 |trTeInstEnRepeatedHistory|Enable repeated branch history detection when set.|WARL|0
-|9 |trTeInstEnAllJumps|Enable emitting of trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder is able to determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|0
-|10 |trTeInstExtendAddrMSB|When set, allow extended handing of MSB address bits. Encoding details are trace protocol dependent.|WARL|0
+|WARL|<<Undef,Undef>>
+|8 |trTeInstEnRepeatedHistory|Enable repeated branch history detection when set.|WARL|<<Undef,Undef>>
+|9 |trTeInstEnAllJumps|Enable emitting of trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder is able to determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|<<Undef,Undef>>
+|10 |trTeInstExtendAddrMSB|When set, allow extended handing of MSB address bits. Encoding details are trace protocol dependent.|WARL|<<Undef,Undef>>
 |15:11 |--|Reserved for additional instruction trace control/status bits|--|0
-|27:16 |trTeSrcID |Trace source ID assigned to this trace encoder. If `trTeSrcBits` is not 0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field.|WARL|SD
-|31:28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. Some trace protocols may require that this field is identical for all enabled trace encoders within the same trace stream. |WARL|SD
+|27:16 |trTeSrcID |Trace source ID assigned to this trace encoder. If `trTeSrcBits` is not 0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field.|WARL|<<Undef,Undef>>
+|31:28 |trTeSrcBits |The number of bits in the trace source field (0..12), unless disabled by `trTeInhibitSrc`. Some trace protocols may require that this field is identical for all enabled trace encoders within the same trace stream. |WARL|<<Undef,Undef>>
 |===
 
 NOTE: Applicability of different `trTeInst??` fields for each trace encoding protocol is described in a document which defines the protocol (and not all fields are applicable to all protocols).
@@ -638,7 +637,7 @@ NOTE: Applicability of different `trTeInst??` fields for each trace encoding pro
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |15:0 |trTeInstFilters |
 Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encoder Filter Registers>> chapter qualify an instruction trace. If bit *__n__* is a 1 then instructions will be traced when filter *__n__* matches. If all bits are 0, all instructions are traced.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |31:16 |--|Reserved|--|0
 |===
 
@@ -646,25 +645,25 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTeDataImplemented|Read as 1 if data trace is implemented.|RO|SD
-|1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tool or controlled by triggers. When `trTeDataTracing`=1, data trace  may be subject to additional filtering in some implementations.|WARL|SD
-|2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL|0
-|3 |trTeDataStallOrOverflow |Set to 1 by hardware when data trace causes trace buffer overflow, or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RW1C|0
+|0 |trTeDataImplemented|Read as 1 if data trace is implemented.|RO|<<SD,SD>>
+|1 |trTeDataTracing |*1:* Data trace is being generated. Written from a trace tool or controlled by triggers. When `trTeDataTracing`=1, data trace  may be subject to additional filtering in some implementations.|WARL|<<Undef,Undef>>
+|2 |trTeDataTrigEnable|Global enable/disable for data trace triggers|WARL|<<Undef,Undef>>
+|3 |trTeDataStallOrOverflow |Set to 1 by hardware when data trace causes trace buffer overflow, or when the TE requests a hart stall due to data trace. Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear. |RW1C|<<Undef,Undef>>
 |4 |trTeDataStallEna |
 *0:* If TE cannot send data trace messages, an overflow message is generated when the trace is restarted. +
 *1:* If TE cannot send data trace messages, the hart is stalled until it can.
-|WARL|0
-|5 |trTeDataDrop|Written to 1 by hardware when the data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RW1C|0
-|6 |trTeDataDropEna|*1:* Allow temporary suppression of data trace (at some watermark level) to prevent trace overflow or stall. This way instruction trace will have higher priority.|WARL|0
+|WARL|<<Undef,Undef>>
+|5 |trTeDataDrop|Written to 1 by hardware when the data trace packet was dropped (if enabled). Clears to 0 at TE reset or when the trace is enabled (`trTeEnable` set to 1). Write 1 to clear.|RW1C|<<Undef,Undef>>
+|6 |trTeDataDropEna|*1:* Allow temporary suppression of data trace (at some watermark level) to prevent trace overflow or stall. This way instruction trace will have higher priority.|WARL|<<Undef,Undef>>
 |15:7 |--|Reserved for additional data trace control/status bits.|--|0
-|16 |trTeDataNoValue|When set, omit data values from data trace packets.|WARL|SD
-|17 |trTeDataNoAddr|When set, omit data address from data trace packets.|WARL|SD
+|16 |trTeDataNoValue|When set, omit data values from data trace packets.|WARL|<<Undef,Undef>>
+|17 |trTeDataNoAddr|When set, omit data address from data trace packets.|WARL|<<Undef,Undef>>
 |19:18 |trTeDataAddrCompress|Data trace address compression selection: +
 *0:* Only send full (unmodified) addresses +
 *1:* Use XOR compression +
 *2:* Use differential compression +
 *3:* Protocol defined address compression
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |31:20 |--|Reserved|--|0
 |===
 
@@ -678,7 +677,7 @@ NOTE: Applicability of different `trTeData??` fields for each trace encoding pro
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |15:0 |trTeDataFilters|
 Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encoder Filter Registers>> chapter qualify data trace. If bit *__n__* is a 1 then data accessed will be traced when filter *__n__* matches. If all bits are 0, all data accesses are traced.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |31:16 |--|Reserved|--|0
 |===
 
@@ -705,17 +704,17 @@ In a system with an Internal Core timestamp counter (implemented in Trace Encode
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTsActive |Primary activate/reset bit for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
+|0 |trTsActive |Primary activate/reset bit for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
 |1 |trTsCount |*Internal System or Core* timestamp only. +
 *1:* counter runs, +
 *0:* counter stopped.
-|WARL |0
+|WARL|<<Undef,Undef>>
 |2 |trTsReset |*Internal System or Core* timestamp only. +
-Write 1 to reset the timestamp counter.|W1 |0
+Write 1 to reset the timestamp counter.|W1|--
 |3 |trTsRunInDebug |*Internal Core* timestamp only. +
 *1:* counter runs when hart is halted (in debug mode), +
 *0:* stopped 
-|WARL|0
+|WARL|<<Undef,Undef>>
 |6:4 |trTsMode a|
 Mode used by Timestamp unit: +
 *0:* None +
@@ -724,15 +723,15 @@ Mode used by Timestamp unit: +
 *3:* Internal Core +
 *4:* Shared +
 *5-7:* Vendor-specific mode
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |7 |--|Reserved|--|0
 |9:8 |trTsPrescale |*Internal System or Core* timestamp only. +
 Prescale timestamp input clock by 2^(2*trTsPrescale). It will be divided by 1, 4, 16, 64 respectively.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |14:10 |--|Reserved|--|0
-|15 |trTsEnable |Enable for timestamp field in trace messages/packets (for Trace Encoder only). |WARL|0
-|23:16 | |Vendor-specific bits to control what message/packet types include timestamp fields. |WARL|0
-|29:24 |trTsWidth |Width of timestamp in bits (0..63)|RO|SD
+|15 |trTsEnable |Enable for timestamp field in trace messages/packets (for Trace Encoder only). |WARL|<<Undef,Undef>>
+|23:16 | |Vendor-specific bits to control what message/packet types include timestamp fields. |WARL|<<Undef,Undef>>
+|29:24 |trTsWidth |Width of timestamp in bits (0..63)|RO|<<SD,SD>>
 |31:30 |--|Reserved|--|0
 |===
 
@@ -779,7 +778,7 @@ If there are vendor-specific features that require control, the `trTeTrigDbgCont
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trTeTrigDbgControl |Vendor-specific trigger setup |WARL|0
+|31:0 |trTeTrigDbgControl |Vendor-specific trigger setup |WARL|<<Undef,Undef>>
 |===
 
 ==== External Trace Triggers
@@ -805,8 +804,8 @@ When `trTeDataTrigEnable` = 1 it will stop data tracing (`trTeDataTracing` -> 0)
 *4:* *Trace-notify action* +
 If tracing is active (`trTeInstTracing` = 1), then the encoder generates a packet with the current PC and, if enabled, a timestamp. +
 *5-15:* Reserved +
-|WARL|0
-|31:4 |trTeTrigExtInAction**N** |Select actions (as defined for bits 3-0) for external trigger input #**N** (1..7). If an external trigger input does not exist, then its action is fixed at 0. |WARL|0
+|WARL|<<Undef,Undef>>
+|31:4 |trTeTrigExtInAction**N** |Select actions (as defined for bits 3-0) for external trigger input #**N** (1..7). If an external trigger input does not exist, then its action is fixed at 0. |WARL|<<Undef,Undef>>
 |===
 
 .*Register: trTeTrigExtOutControl: External Trigger Output Control Register (trBaseEncoder+0x058)*
@@ -821,8 +820,8 @@ Start trace transition (`trTeInstTracing` 0 -> 1) will fire the trigger. +
 Stop trace transition (`trTeInstTracing` 1 -> 0) will fire the trigger. +
 *Bit 2-3:* +
 Vendor-specific event (optional)
-|WARL|0
-|31:4 |trTeTrigExtOutEvent**N** |Select events for external trigger output #**N** (1..7). If an external trigger output does not exist, then its event bits are fixed at 0 |WARL|0
+|WARL|<<Undef,Undef>>
+|31:4 |trTeTrigExtOutEvent**N** |Select events for external trigger output #**N** (1..7). If an external trigger output does not exist, then its event bits are fixed at 0 |WARL|<<Undef,Undef>>
 |===
 
 ==== Triggers Precedence
@@ -873,47 +872,47 @@ NOTE: Filter and comparator registers refer to values of some signals (as *priv*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0     |trTeFilterEnable | Overall filter enable for filter #__i__|WARL|0 
+|0     |trTeFilterEnable | Overall filter enable for filter #__i__|WARL|<<Undef,Undef>> 
 |1     |trTeFilterMatchPrivilege | 
 When set, match privilege levels specified by `trTeFilterMatchChoicePrivilege` field for filter #__i__.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |2     |trTeFilterMatchEcause | 
 When set, start matching from exception cause codes specified by `trTeFilterMatchChoiceEcause` field for filter #__i__, and
 stop matching upon return from the 1st matching exception.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |3     |trTeFilterMatchInterrupt | 
 When set, start matching from either an interrupt or exception as specified by  
 `trTeFilterMatchValueInterrupt` field for filter #__i__, and stop matching upon return from the 1st matching trap.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |4     |trTeFilterMatchComp1 | 
 When set, the output of the comparator selected by `trTeFilterComp1` must be true in order for the filter to match.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |7:5   |trTeFilterComp1 |
 Specifies the comparator unit to use for the 1st comparison.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |8     |trTeFilterMatchComp2 | 
 When set, the output of the comparator selected by `trTeFilterComp2` must be true in order for the filter to match.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |11:9  |trTeFilterComp2 |
 Specifies the comparator unit to use for the 2nd comparison.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |12    |trTeFilterMatchComp3 | 
 When set, the output of the comparator selected by `trTeFilterComp3` must be true in order for the filter to match.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |15:13 |trTeFilterComp3 |
 Specifies the comparator unit to use for the 3rd comparison.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |16    |trTeFilterMatchImpdef | 
 When set, match *impdef* values as specified by `trTeFilterMatchValueImpdef` and 
 `trTeFilterMatchMaskImpdef` fields for filter #__i__.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |23:17 |--|Reserved|--|0
 |24    |trTeFilterMatchDtype | 
 When set, match *dtype* values as specified by `trTeFilterMatchChoiceDtype` field for filter #__i__.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |25    |trTeFilterMatchDsize | 
 When set, match *dsize* values as specified by `trTeFilterMatchChoiceDsize` field for filter #__i__.
-|WARL|0
+|WARL|<<Undef,Undef>>
 |31:26 |--|Reserved|--|0
 |===
 
@@ -924,11 +923,11 @@ When set, match *dsize* values as specified by `trTeFilterMatchChoiceDsize` fiel
 |7:0   |trTeFilterMatchChoicePrivilege | 
 When `trTeFilterMatchPrivilege` field for filter #__i__ is set, match all privilege
 levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value is N
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |8     |trTeFilterMatchValueInterrupt |
 When `trTeFilterMatchInterrupt` field for filter #__i__ is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
 respectively.
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |31:9 |--|Reserved|--|0
 |===
 
@@ -938,7 +937,7 @@ respectively.
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeFilterMatchChoiceEcauseLow | 
 When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion causes for which the corresponding bit is set. If bit N is 1, then match if the *ecause* is N.
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeFilter__i__MatchEcauseHigh : Filter _i_ Ecause Match Control (high) Register (trBaseEncoder+0x40C + 0x20__i__)*
@@ -946,7 +945,7 @@ When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion 
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeFilterMatchChoiceEcauseHigh | This register stores bits 63:32 to allow matching of higher *ecause* codes. If bit N is 1, then match if the *ecause* is N+32.
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeFilter__i__MatchValueImpdef : Filter _i_ Impdef Match Value Register (trBaseEncoder+0x410 + 0x20__i__)*
@@ -957,7 +956,7 @@ When `trTeFilterMatchEcause` field for filter #__i__ is set, match all excepion 
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
 (`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeFilter__i__MatchMaskImpdef : Filter _i_ Impdef Match Mask Register (trBaseEncoder+0x414 + 0x20__i__)*
@@ -968,7 +967,7 @@ When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 (*impdef* & `trTeFilterMatchMaskImpdef`) ==
 (`trTeFilterMatchValueImpdef` & `trTeFilterMatchMaskImpdef`).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeFilter__i__MatchData : Filter _i_ Data Match Control Register (trBaseEncoder+0x418 + 0x20__i__)*
@@ -978,11 +977,11 @@ When `trTeFilterMatchimpdef` field for filter #__i__ is set, match if
 |15:0   |trTeFilterMatchChoiceDtype | 
 When `trTeFilterMatchDtype` field for filter #__i__ is set, match all data access types
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dtype* value is N.
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |23:16  |trTeFilterMatchChoiceDsize |
 When `trTeFilterMatchDsize` field for filter #__i__ is set, match all data access sizes
 for which the corresponding bit is set. For example, if bit N is 1, then match if the *dsize* value is N.
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |31:24 |--|Reserved|--|0
 |===
 
@@ -996,8 +995,8 @@ Determines which input to compare against the primary comparator. +
 *1:* *context* +
 *2:* *tval* +
 *3:* *daddr*
-|WARL|SD 
-|3:2   |trTeCompSInput | Determines which input to compare against the secondary comparator.  Same encoding as `trTeCompPInput`. |WARL|SD
+|WARL|<<Undef,Undef>> 
+|3:2   |trTeCompSInput | Determines which input to compare against the secondary comparator.  Same encoding as `trTeCompPInput`. |WARL|<<Undef,Undef>>
 |6:4   |trTeCompPFunction |
 Selects the primary comparator function.  Primary result is true if input selected via `trTeCompPInput` is: +
 *0:* equal to `trTeCompPMatch` +
@@ -1008,7 +1007,7 @@ Selects the primary comparator function.  Primary result is true if input select
 *5:* greater than or equal to `trTeCompPMatch` +
 *6:* Result always false (input ignored).  Prime latch to 1 if `trTeCompMatchMode` is 3 +
 *7:* Result always true (input ignored)
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |7 |--|Reserved|--|0
 |10:8   |trTeCompSFunction |
 Selects the secondary comparator function.  Secondary result is true if input selected via `trTeCompSInput` is: +
@@ -1020,7 +1019,7 @@ Selects the secondary comparator function.  Secondary result is true if input se
 *5:* greater than or equal to `trTeCompSMatch` +
 *6:* Result always true (input ignored).  Use `trTeCompSMatch` as a mask for `trTeCompPMatch` +
 *7:* Result always true (input ignored)
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |11 |--|Reserved|--|0
 |13:12   |trTeCompMatchMode |
 Selects the match condition used to assert the overall comparator output +
@@ -1028,19 +1027,19 @@ Selects the match condition used to assert the overall comparator output +
 *1:* primary and secondary result both true: (P && S) +
 *2:* Either primary or secondary result does not match: !(P && S) +
 *3:* Set when primary result is true and continue to assert until instruction after secondary result is true
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |14   |trTeCompPNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
 primary match. This is also known as a watchpoint.
 Requires `trTeCompPInput` to be 0, and has no effect otherwise.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |15   |trTeCompSNotify | 
 Generate a trace packet explicitly reporting the address
 of the final instruction in a block that causes a
 secondary match. This is also known as a watchpoint.
 Requires `trTeCompSInput` to be 0, and has no effect otherwise.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |31:16 |--|Reserved|--|0
 |===
 
@@ -1052,7 +1051,7 @@ IMPORTANT: Comparisions are performed as unsigned numbers. Only bits from an inp
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeCompPMatchLow | 
 The match value for the primary comparator (bits 31:0).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeComp__j__PMatchHigh : Comparator _j_ Primary match (high) Register (trBaseEncoder+0x614 + 0x20__j__)*
@@ -1061,7 +1060,7 @@ The match value for the primary comparator (bits 31:0).
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeCompPMatchHigh | 
 The match value for the primary comparator (bits 63:32).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeComp__j__SMatchLow : Comparator _j_ Secondary match (low) Register (trBaseEncoder+0x618 + 0x20__j__)*
@@ -1070,7 +1069,7 @@ The match value for the primary comparator (bits 63:32).
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeCompSMatchLow | 
 The match value for the secondary comparator (bits 31:0).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trTeComp__j__SMatchHigh : Comparator _j_ Secondary match (high) Register (trBaseEncoder+0x61C + 0x20__j__)*
@@ -1079,7 +1078,7 @@ The match value for the secondary comparator (bits 31:0).
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |31:0   |trTeCompSMatchHigh | 
 The match value for the secondary comparator (bits 63:32).
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 == Trace RAM Sink
@@ -1095,27 +1094,27 @@ Be aware that in case trace memory wraps around some protocols may require addit
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trRamActive |Primary activate/reset bit for Trace RAM Sink. When 0, the Trace RAM Sink may have clocks gated off or be powered
-down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
-|1 |trRamEnable |*1:* Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to memory (idle bytes/packet may be appended after the last message/packet to assure memory access alignment). See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details. Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP??` registers. Disabling trace may update `trRamWP??` as a result of flushing.|RW |0
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|1 |trRamEnable |*1:* Trace RAM Sink enabled. Setting `trRamEnable` to 0 flushes any queued trace data to memory (idle bytes/packet may be appended after the last message/packet to assure memory access alignment). See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details. Enabling trace CANNOT change any of `trRamStart/Limit/WP/RP??` registers. Disabling trace may update `trRamWP??` as a result of flushing.|RW|0
 |2 |--|Reserved|--|0
 |3 |trRamEmpty |Reads 1 when Trace RAM Sink internal buffers are empty, which means that all trace data is flushed.|RO|1
 |4 |trRamMode |
 *0:* This RAM Sink will operate in SRAM mode +
 *1:* This RAM Sink will operate in SMEM mode
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |7:5 |--|Reserved|--|0
-|8 |trRamStopOnWrap |*1:* Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full. Sink should stop accepting new messages which may result in an overflow or stall condition at an encoder.|WARL|0
+|8 |trRamStopOnWrap |*1:* Disable storing trace to RAM (`trRamEnable` -> 0) when the circular buffer gets full. Sink should stop accepting new messages which may result in an overflow or stall condition at an encoder.|WARL|<<Undef,Undef>>
 |10:9 |trRamMemFormat |
 *0:* Memory is formatted as plain bytes +
 *1-2:* Reserved for future formats +
 *3:* Reserved for custom memory format
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |11 |--|Reserved|--|0
 |14:12 |trRamAsyncFreq |
 *0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |31:15 |--|Reserved|--|0
 |===
 
@@ -1126,10 +1125,10 @@ Details should be defined in definition of each trace protocol.
 |3:0 |trRamVerMajor |Trace RAM Sink Component Major Version. Value 1 means the component is compliant with this document. |RO|1
 |7:4 |trRamVerMinor |Trace RAM Sink Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trRamCompType |Trace RAM Sink Component Type (RAM Sink) |RO|0x9
-|12 |trRamHasSRAM |This RAM Sink supports SRAM mode|RO|SD
-|13 |trRamHasSMEM |This RAM Sink supports SMEM (System Memory) mode|RO|SD
+|12 |trRamHasSRAM |This RAM Sink supports SRAM mode|RO|<<SD,SD>>
+|13 |trRamHasSMEM |This RAM Sink supports SMEM (System Memory) mode|RO|<<SD,SD>>
 |23:14 |--|Reserved for future versions of this standard|--|0
-|31:24 |--|Reserved for vendor specific implementation details|--|SD
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
 |===
 
 NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them may be enabled at the same time. It is also possible to have more than one RAM Sink in a system.
@@ -1139,7 +1138,7 @@ NOTE: Single RAM Sink may support both SRAM and SMEM modes, but not both of them
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1:0 |--|Always 0 (two LSB of 32-bit address)|RO|0
-|31:2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL|Undef or fixed to 0
+|31:2 |trRamStartLow |Byte address of start of trace sink circular buffer. It is always aligned on at least a 32-bit/4-byte boundary. An SRAM sink will usually have `trRamStartLow` fixed at 0. |WARL|<<Undef,Undef>> or fixed to 0
 |===
 
 For a bus with an address larger than 32-bit, corresponding `High` registers define the MSB part of such a larger address. 
@@ -1148,7 +1147,7 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trRamStartHigh |High order bits (63:32) of `trRamStart` register. |WARL|Undef
+|31:0 |trRamStartHigh |High order bits (63:32) of `trRamStart` register. |WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamLimitLow: Trace RAM Sink Limit Register (trBaseRamSink+0x018)*
@@ -1156,30 +1155,30 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1:0 |--|Always 0 (two LSB of 32-bit address)|RO|0
-|31:2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. |WARL|Undef
+|31:2 |trRamLimitLow |Highest absolute 32-bit part of address of trace circular buffer. The `trRamWP` register is reset to `trRamStart` after a trace word has been written to this address. |WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamLimitHigh: Trace RAM Sink Limit High Bits Register (trBaseRamSink+0x01C)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trRamLimitHigh |High order bits (63:32) of `trRamLimit` register. |WARL|Undef
+|31:0 |trRamLimitHigh |High order bits (63:32) of `trRamLimit` register. |WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamWPLow: Trace RAM Sink Write Pointer Register (trBaseRamSink+0x020)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trRamWrap |Set to 1 by hardware when `trRamWP` wraps. It is only set to 0 if `trRamWPLow` is written|WARL|0
+|0 |trRamWrap |Set to 1 by hardware when `trRamWP` wraps. It is only set to 0 if `trRamWPLow` is written|WARL|<<Undef,Undef>>
 |1 |--|Always 0 (bit B1 of 32-bit address)|RO|0
-|31:2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to a natural boundary. After a trace word write occurs while `trRamWP` = `trRamLimit`, `trRamWP` is set to `trRamStart`.|WARL|Undef
+|31:2 |trRamWPLow |Absolute 32-bit part of address in trace sink memory where next trace message will be written. Fixed to a natural boundary. After a trace word write occurs while `trRamWP` = `trRamLimit`, `trRamWP` is set to `trRamStart`.|WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamWPHigh: Trace RAM Sink Write Pointer High Bits Register (trBaseRamSink+0x024)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trRamWPHigh |High order bits (63:32) of `trRamWP` register.|WARL|Undef
+|31:0 |trRamWPHigh |High order bits (63:32) of `trRamWP` register.|WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamRPLow: Trace RAM Sink Read Pointer Register (trBaseRamSink+0x028)*
@@ -1187,21 +1186,21 @@ For a bus with an address larger than 32-bit, corresponding `High` registers def
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |1:0 |--|Always 0 (two LSB of 32-bit address)|RO|0
-|31:2 |trRamRPLow |Absolute 32-bit part of address in trace circular memory buffer visible through `trRamData`. `trRamRP` auto-increments following an access to `trRamData`. After a trace word read occurs while `trRamRP` = `trRamLimit`, `trRamRP` is set to `trRamStart`. Required for SRAM mode and optional for SMEM mode. |WARL|Undef
+|31:2 |trRamRPLow |Absolute 32-bit part of address in trace circular memory buffer visible through `trRamData`. `trRamRP` auto-increments following an access to `trRamData`. After a trace word read occurs while `trRamRP` = `trRamLimit`, `trRamRP` is set to `trRamStart`. Required for SRAM mode and optional for SMEM mode. |WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamRPHigh: Trace RAM Sink Read Pointer High Bits Register (trBaseRamSink+0x02C)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trRamRPHigh |High order bits (63:32) of `trRamRP` register.|WARL|Undef
+|31:0 |trRamRPHigh |High order bits (63:32) of `trRamRP` register.|WARL|<<Undef,Undef>>
 |===
 
 .*Register: trRamData: Trace RAM Sink Data Register (trBaseRamSink+0x040)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|31:0 |trRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM mode and optional for SMEM mode. |R or RW |Undef
+|31:0 |trRamData |Read (and optional write) value for trace sink memory access. SRAM is always accessed by 32-bit words through this path regardless of the actual width of the sink memory. Required for SRAM mode and optional for SMEM mode. |R or RW|<<Undef,Undef>>
 |===
 
 NOTE: When trace capture was wrapped around (`trRamWrap` = 1) beginning of trace is not available and oldest packets/messages in the trace buffer (starting at address in `trRamWP`) will be most likely not complete. Trace decoders must look for the start of a message. Also when trace is stopped on wrap around, the very last message recorded in trace memory may not be complete.
@@ -1260,8 +1259,8 @@ The Trace Funnel combines messages/packets from multiple sources into a single t
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trFunnelActive |Primary activate/reset bit for trace funnel. When 0, the Trace Funnel may have clocks gated off or be powered
-down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
-|1 |trFunnelEnable |*1:* Trace Funnel enabled. Setting `trFunnelEnable` to 0 flushes any queued trace data to output. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW |0
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|1 |trFunnelEnable |*1:* Trace Funnel enabled. Setting `trFunnelEnable` to 0 flushes any queued trace data to output. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW|0
 |2 |--|Reserved|--|0
 |3 |trFunnelEmpty |Reads 1 when Trace Funnel internal buffers are empty |RO|1
 |31:4 |--|Reserved|--|0
@@ -1275,14 +1274,14 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |7:4 |trFunnelVerMinor |Trace Funnel Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |RO|0x8
 |23:12 |--|Reserved for future versions of this standard|--|0
-|31:24 |--|Reserved for vendor specific implementation details|--|SD
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
 |===
 
 .*Register: trFunnelDisInput: Disable Individual Funnel Inputs (trBaseFunnel+0x008)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|15:0 |trFunnelDisInput |*1:* Funnel input *#n* (bit position in register) is disabled. Incoming messages are read from diabled input but discarded.|WARL|0
+|15:0 |trFunnelDisInput |*1:* Funnel input *#n* (bit position in register) is disabled. Incoming messages are read from diabled input but discarded.|WARL|<<Undef,Undef>>
 |31:16 |--|Reserved|--|0
 |===
 
@@ -1305,27 +1304,27 @@ The modes and behavior described here are intended to be compatible with trace p
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trPibActive |Primary activate/reset bit for PIB Sink component. When 0, the PIB Sink may have clocks gated off or be powered
-down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
 |1 |trPibEnable |
 *0:* PIB does not accept input but holds output(s) at idle state defined by pibMode. +
 *1:* Enable PIB to generate output. +
  See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.
-|RW |0
+|RW|0
 |2 |--|Reserved|--|0
 |3 |trPibEmpty |Reads 1 when PIB internal buffers are empty.|RO|1
-|7:4 |trPibMode |Select mode for output pins. Allowed values are described in the `Allowed PIB Configurations` table below.|WARL|0
-|8 |trPibClkCenter |In parallel modes, adjust TRC_CLK timing to the center of the bit period. This can be set only if `trPibMode` selects one of the parallel protocols.|WARL|SD
-|9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. In this mode input to the sink is not consumed. The calibration pattern is described below.|WARL|0
+|7:4 |trPibMode |Select mode for output pins. Allowed values are described in the `Allowed PIB Configurations` table below.|WARL|<<Undef,Undef>>
+|8 |trPibClkCenter |In parallel modes, adjust TRC_CLK timing to the center of the bit period. This can be set only if `trPibMode` selects one of the parallel protocols.|WARL|<<Undef,Undef>>
+|9 |trPibCalibrate |Set this to 1 to generate a repeating calibration pattern to help tune a probe's signal delays, bit rate, etc. In this mode input to the sink is not consumed. The calibration pattern is described below.|WARL|<<Undef,Undef>>
 |11:10 |--|Reserved|--|0
 |14:12 |trPibAsyncFreq |
 *0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |15 |--|Reserved|--|0
 |31:16 |trPibDivider |Timebase selection for the PIB module. The input clock is divided by `trPibDivider` + 1. PIB data is sent at either this divided rate or 1/2 of this rate, depending on `trPibMode`. Width is implementation-dependent. 
 After the PIB reset value of this field should be set to safe (not too fast clock) setting for a particular SoC. Trace tools may set smaller values in order to utilize higher bandwidth. 
-|WARL|SD 
+|WARL|<<Undef,Undef>> 
 |===
 
 .*Register: trPibImpl: Trace PIB Implementation Register (trBasePib+0x004)*
@@ -1336,7 +1335,7 @@ After the PIB reset value of this field should be set to safe (not too fast cloc
 |7:4 |trPibVerMinor |Trace PIB Sink Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
 |11:8 |trPibCompType |Trace PIB Sink Component Type (PIB Sink) |RO|0xA
 |23:12 |--|Reserved for future versions of this standard|--|0
-|31:24 |--|Reserved for vendor specific implementation details|--|SD
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
 |===
 
 Software can determine what modes are available by attempting to write each mode setting to the WARL field `trPibMode` and reading back to see if the value was accepted.
@@ -1444,12 +1443,12 @@ Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace pr
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |0 |trAtbBridgeActive |Primary activate/reset for the ATB Bridge. When 0, the ATB Bridge may have clocks gated off or be powered
-down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW |0
-|1 |trAtbBridgeEnable |*1:* ATB Bridge enabled. Setting `trAtbBridgeEnable` to 0 flushes any queued trace data to ATB. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW |0
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|1 |trAtbBridgeEnable |*1:* ATB Bridge enabled. Setting `trAtbBridgeEnable` to 0 flushes any queued trace data to ATB. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW|0
 |2 |--|Reserved|--|0
 |3 |trAtbBridgeEmpty |Reads 1 when ATB Bridge internal buffers are empty |RO|1
 |7:4 |--|Reserved|--|0
-|14:8 |trAtbBridgeID |ID of this node on ATB. Values of 0x00 and 0x70-0x7F are reserved by the ATB specification and should not be used. |RW |0
+|14:8 |trAtbBridgeID |ID of this node on ATB. Values of 0x00 and 0x70-0x7F are reserved by the ATB specification and should not be used. |RW|<<Undef,Undef>>
 |31:15 |--|Reserved|--|0
 |===
 
@@ -1464,9 +1463,9 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 *0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
 *1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
 Details should be defined in definition of each trace protocol.
-|WARL|SD
+|WARL|<<Undef,Undef>>
 |23:15 |--|Reserved for future versions of this standard|--|0
-|31:24 |--|Reserved for vendor specific implementation details|--|SD
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
 |===
 
 An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB port.
@@ -1542,11 +1541,13 @@ It is hard to define required mode as it depends on SoC bandwidth requirements a
 
 === Reset and Discovery
 
-This chapter describes what trace tools should do to reset and discover trace features. 
+This chapter describes what trace tools should do to reset and discover trace features.
 
 IMPORTANT: Trace tools must be provided with base addresses of all trace components.
 
-There are several (independent) reset bits defined by this specification:
+Only the `tr??Active` and the `tr??Enable` bits are reset to 0 on power-up.
+
+These `tr??Active` bits act as independent resets for the respected trace components:
 
 * `trTeActive` - reset for Trace Encoder component (this will disable encoder from single hart)
 * `trFunnelActive` - reset for Trace Funnel component
@@ -1555,32 +1556,65 @@ There are several (independent) reset bits defined by this specification:
 * `trAtbBridgeActive` - resets ATB Bridge component (resets ATB Bridge interface)
 * `trTsActive` - resets the Timestamp Unit sub-component (resets timestamp generation logic)
 
-These reset bits should (when kept low) reset most of other registers/fields/bits to defined reset values.
+When component is held in reset (`tr??Active` is 0), then `tr??Enable` bit must be reset to 0 as well (what makes component disabled).
 
-Releasing components from reset may take time - debug tools should monitor (with reasonable timeout) if the appropriate bit actually changed from 0 to 1. Other fields/bits should remain unchanged (as were set during reset).
+Releasing components from reset (by setting `tr??Active` to 1) may take time - debug tools should monitor (with reasonable timeout) if the appropriate bit changed from 0 to 1.
 
-NOTE: Some of the reset values are defined as `SD` (system dependent) and these values should reset as well and each time to the same value as would be after power-up.
+As not all fields/registers are affected by reset (defined as <<Undef,Undef>>), the trace tools must initialize (usually a write of a value 0) several registers to assure that trace component is in a predictable state.
 
-NOTE: Some bigger registers (holding RAM addresseses) may not reset - debugger is expected to write to them before enabling trace. These registers have `Undef` specified in reset behavior of the field. It should not prevent some implementations from resetting these.
+[NOTE]
+====
+* Some of the reset values are defined as <<SD,SD>> (system dependent) and these values should reset as well and each time to the same value as would be after power-up.
+* Most of fields/registers have <<Undef,Undef>> specified in reset behavior of the field. It should not prevent some implementations from resetting these.
+====
 
 Reset and Discovery should be performed as follows:
 
 * Reset the component by setting `tr??Active` = 0.
-* Read-back and wait until `tr??Active` = 0 is read.
-* Release from reset by setting `tr??Active` = 1 and wait for `tr??Active` = 1 to be read (to confirm component is not in reset). 
+** This should be done by writing a value 0x0 to `tr??Control` register.
+* Read-back and wait until `tr??Active` = 0 is read, which means that a component reached a reset state.
+* Release a component from reset by setting `tr??Active` = 1. 
+** This should be done by writing a value 0x1 to `tr??Control`` register. This write will reset most of other enable/mode bits in this register and all WARL and read-only fields will be set to defaults.
+* Read-back and wait until `tr??Active` = 1 is read, which means that a component was released from reset.
+** In this moment `tr??Enable` is set to 0 and the component is not yet enabled.
+** Component clock should be enabled to allow programming of other registers.
 
-IMPORTANT: When performing a write which is setting `tr??Active` = 1, no other bits should be changed (read-modify write is recommended)
-
-* Optionally save `tr??Control` register as it holds all reset values of all fields. It may be cached/shadowed and trace tool may execute faster write-only (intead a read-modify-write) operations.
+* Optionally save `tr??Control` register as it holds all reset values of all fields. It may be cached/shadowed, and trace tool may execute faster write-only (instead a read-modify-write) operations.
 * Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
 ** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as pre-ratified/initial version 0 or generate fatal error with an appropriate error message.
 * Read `tr??Impl` and compare `tr??ComType` field with expected value.
-* Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` = 1) by mistake.
-* Configure some initial values in all needed registers/fields. Read-back each one to assure these are set properly.
+* Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` to 1) by mistake.
+* Configure some initial values in all needed registers/fields. Optionally Read-back to assure these are set properly.
+
+The table below is showing what registers needs to be written to have each trace component in identical, predictable state.
+
+.*Trace Components Reset*
+[cols="20%,20%,10%,~",options="header"]
+|===
+|*Component*|*Register*|*Write*|*Notes*
+|Trace Encoder      |trTeControl            |0x1|Release from reset and set all defaults.
+|                   |trTeInstFeatures       |0x0|Force minimal sub-set of features.
+|                   |trTeInstFilters        |0x0|Disable all filters.
+|                   |trTeDataControl        |0x0|Disable data trace.
+|                   |trTeDataFilters        |0x0|Disable filters for data trace.
+|                   |trTeTrigDbgControl     |0x0|Disable all triggers from Debug module.
+|                   |trTeTrigExtInControl   |0x0|Disable all external trigger inputs.
+|                   |trTeTrigExtOutControl  |0x0|Do not general any external trigger outputs.
+|                   |trTsControl            |0x0|Keep timestamp unit in reset.
+|Trace Funnel       |trFunnelControl        |0x1|Release from reset and set all defaults.
+|                   |trFunnelDisInput       |0x0|Make sure all inputs are enabled.
+|                   |trTsControl            |0x0|Keep timestamp unit in reset.
+|Trace RAM Sink     |trRamControl           |0x1|Release from reset and set all defaults.
+|Trace PIB Sink     |trPibControl           |0x1|Release from reset and set all defaults.
+|Trace ATB Bridge   |trAtbBridgeControl     |0x1|Release from reset and set all defaults.
+|===
 
 As we are dealing with several independent components, it is important to assure that the component which is in reset (or powered down) is keeping its outputs on safe values, so garbage trace data is not emitted.
 
-In general it is safer to power-up and enable components starting from sinks/bridges, followed by Funnel and Encoder as last. Each implementation should test this sequence.
+In general, it is safer to power-up and enable components starting from sinks/bridges, followed by Trace Funnels and Trace Encoders as last. Each implementation should test this sequence to assure trace tools are working seamlessly.
+
+IMPORTANT: Pre-release version of this specification specified that most of fields and registers were reset. It was suggested (by Architecture Review Committee) that reset logic is made minimal to follow RISC-V ISA style.
+Older implementations (which reset more bits) are still compatible with a ratified version. These implementations do not have to change as it is perfectly OK to reset more fields and registers.
 
 === Enabling and Disabling
 
@@ -1598,13 +1632,13 @@ Enabling should work as follows:
 * Set main enable for RAM Sink/PIB Sink/ATB Bridge component by setting `tr??Enable` = 1.
 ** Read back and wait for confirmation (`tr??Enable` = 1).
 * Enable Trace Funnel[s] in the same way.
-* Configure and Enable Trace Encoder[s] in the same way (last should be write of `trTeEnable` = 1 followed by read to verify that it is set).
-* Either  manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or set triggers to start the trace.
+* Configure and Enable Trace Encoder[s] in the same way (last should be writing `trTeEnable` = 1 followed by reading to verify that it is set).
+* Either manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or set triggers to start the trace.
 * Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTeInstTracing` or `trTeDataTracing` bit is set).
 * Periodically read `trTeControl` for status of trace (as it may stop by itself due to triggers).
 ** If RAM Sink was configured with `trRamStopOnWrap` = 1, read `trRamEnable` to see if RAM capture was stopped. 
 
-NOTE: Discovery may not be necessary to enable and test the trace during development of SoC. However discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
+NOTE: Discovery may not be necessary to enable and test the trace during development of SoC. However, a discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
 
 NOTE: Trace tools may verify a particular setting once per session, so subsequent starts of trace may be faster.
 
@@ -1613,7 +1647,7 @@ NOTE: Trace tools should provide configuration settings allowing more verbose lo
 Disabling the trace should work as follows:
 
 * It is essential to disable the trace from encoders associated with stopped harts as entering debug mode is NOT flushing any trace pipelines.
-* Disable and flush trace starting from Encoders, then Funnels and finally Sinks or Bridges.
+* Disable and flush trace starting from Trace Encoders, then Trace Funnels and finally Trace Sinks or Trace Bridges.
 ** Set `tr??Enable` = 0 and wait for `tr??Enable` = 0 and `tr??Empty` = 1 for each trace component.
 ** It is important to do it in that order as otherwise data may be lost.
 * Stop physical capture if PIB sink was enabled (trace probe dependent).
@@ -1626,7 +1660,7 @@ Disabling the trace should work as follows:
 
 Decoding trace
 
-* Decoder (in most cases) must have an access to code which is running on device either by reading it from device or from a file containing the code (binary/hex/srec/ELF).
+* Decoder (in most cases) must have access to code which is running on device either by reading it from device or from a file containing the code (binary/hex/srec/ELF).
 * The trace collected by trace probes can be read and decoded while a trace is being captured (this is called trace streaming mode).
 ** There is no guarantee that the last trace packet is completed until the trace is properly flushed and disabled.
 * Decoding of the trace should never affect code being traced.
