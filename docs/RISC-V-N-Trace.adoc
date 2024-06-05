@@ -55,6 +55,7 @@ PDF generated on: {localdatetime}
 === Version 1.0.0_rc35
 * 2024-06-05
 ** Moved 'Virtual Addresses Optimization' to dedicated chapter (agreed with Ved)
+** Clarified EVCODE=4 in example.
 
 [Preface]
 == Copyright and license information
