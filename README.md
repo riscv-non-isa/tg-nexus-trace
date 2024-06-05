@@ -2,19 +2,19 @@
 
 ## Status of each PDF
 
-**2024/05/23 status:**
+**2024/06/05 status:**
 
-PDFs 1.0.0_rc34: Using theme from ISA Manual ADOC and columns adjusted (font is smaller).
+PDFs 1.0.0_rc35: All known issues DONE.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0.0_rc34. Ready for Freeze (**accepted by ARC via email**).
-* **Controls PDF**: Version 1.0.0_rc34. Almost ready for Freeze (**see TODO below**).
-* **Connectors PDF**: Version 1.0.0_rc34. Ready for Freeze (**accepted by ARC via email**).
+* **N-Trace PDF**: Version 1.0.0_rc34. Ready for Freeze (**Acepted by ARC via email**).
+  * 1.0.0_rc35: Moved chapter to better place, clarification of EVCODE=4 in examples. 
+* **Controls PDF**: Version 1.0.0_rc35. Ready for Freeze  (**All known issues DONE**).
+* **Connectors PDF**: Version 1.0.0_rc34. Ready for Freeze (**Accepted by ARC via email**).
 
 ## TODO (before official freeze)
 
-* TODO: Issue of 'minimal reset' (in Control PDF) is discussed with ARC and TG.
 * TODO: Fix annoying page breaks (manual insert of 'page-break').
 * TODO: Make release with all PDFs 'Frozen', same date/version and pass back to ARC for official OK-stamp.
 * TODO: Make Public Review announcement (all PDFs Frozen).
