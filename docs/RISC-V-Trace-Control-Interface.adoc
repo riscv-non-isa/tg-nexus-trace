@@ -1,9 +1,9 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  June 05, 2024
-:revnumber: 1.0.0_rc35
-:revremark: Stable state (ready for Freeze)
+:revdate:  June 06, 2024
+:revnumber: 1.0.0_rc37
+:revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
 :preface-title: Preamble
@@ -52,10 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc35
+=== Version 1.0.0_rc37
 * 2024-06-05
-** Most 'SD' bits changed to 'Undef'.
-** Removed 'trTeDiscovery' range.
+** Waiting for official Freeze
 
 [Preface]
 == Copyright and license information
@@ -275,7 +274,7 @@ Other potential unicode characters might be found in the following links:
 
 [[fig:trace-topo-single]]
 .Simplest trace: Single Hart, Trace Encoder and Trace Sink/Bridge
-["ditaa",shadows=false, separation=false, fontsize: 14]
+["ditaa",shadows=false, separation=false, fontsize: 12]
 ....
 +----------------+
 | Single Hart    |
@@ -288,9 +287,10 @@ Other potential unicode characters might be found in the following links:
 +----------------+
 ....
 
+<<<
 [[fig:trace-topo-multi]]
 .Multi-hart trace: Three harts, three Encoders, single Funnel and single Sink/Bridge
-["ditaa",shadows=false, separation=false, fontsize: 14]
+["ditaa",shadows=false, separation=false, fontsize: 12]
 ....
 +-----------+   +---------+
 | Hart with |   |  Trace  |
@@ -313,7 +313,7 @@ Other potential unicode characters might be found in the following links:
 
 [[fig:trace-topo-clusters]]
 .Multi-cluster trace: two three-hart clusters with top-level Funnel and Sink/Bridge  
-["ditaa",shadows=false, separation=false, fontsize: 14]
+["ditaa",shadows=false, separation=false, fontsize: 12]
 ....
 +-------------------------+
 | 3 Harts with 3 Encoders |
@@ -334,7 +334,7 @@ Other potential unicode characters might be found in the following links:
 
 [[fig:trace-topo-mixed]]
 .Local RAM Sink: Three-hart cluster plus extra hart with own RAM Sink (in SRAM mode)
-["ditaa",shadows=false, separation=false, fontsize: 14]
+["ditaa",shadows=false, separation=false, fontsize: 12]
 ....
 +-------------------------+
 | 3 Harts with 3 Encoders |
@@ -433,6 +433,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 |0x600 - 0x7FF |trTeComp?? |Optional |Trace Encoder Comparator Registers
 |===
 
+<<<
 ==== Summary of Trace RAM Sink Registers
 
 .*Trace RAM Sink Registers (trRam??)*
@@ -483,6 +484,7 @@ All other trace components are shared between different trace encoders (N-Trace 
 
 NOTE: Funnels may optionally be a source of timestamp and/or forward timestamp to Trace Encoders in the system. This way several Trace Encoders may share timestamp and trace from several harts may be time-correlated.
 
+<<<
 ==== Summary of Trace ATB Bridge Registers
 
 .*Trace ATB Bridge Registers (trAtbBridge??)*
@@ -641,6 +643,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 |31:16 |--|Reserved|--|0
 |===
 
+<<<
 .*Register: trTeDataControl: Data Trace Control Register (trBaseEncoder+0x010)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -681,6 +684,7 @@ Determine which filters defined in <<Trace Encoder Filter Registers, Trace Encod
 |31:16 |--|Reserved|--|0
 |===
 
+<<<
 === Timestamp Unit
 
 Timestamp Unit is an optional sub-component present in either Trace Encoder or Trace Funnel. An implementation may choose from several modes of timestamps: 
@@ -749,6 +753,7 @@ Prescale timestamp input clock by 2^(2*trTsPrescale). It will be divided by 1, 4
 |31:0 |trTsCounterHigh |Upper bits of timestamp counter, zero-extended. |RO|0
 |===
 
+<<<
 === Trace Encoder Triggers
 
 ==== Debug Trigger Module
@@ -781,6 +786,7 @@ If there are vendor-specific features that require control, the `trTeTrigDbgCont
 |31:0 |trTeTrigDbgControl |Vendor-specific trigger setup |WARL|<<Undef,Undef>>
 |===
 
+<<<
 ==== External Trace Triggers
 
 The TE may be configured with up to 8 external trigger inputs for controlling trace. These are in addition to the external triggers present in the Debug Module when Halt Groups are implemented. The specific hardware signals comprising an external trigger are implementation-dependent.
@@ -826,10 +832,9 @@ Vendor-specific event (optional)
 
 ==== Triggers Precedence
 
-It is implementation-dependent what happens when triggers (from debug module or external) with conflicting actions occur simultaneously (signaled at the same ingress port cycle) or if triggers occur too frequently to process.
+It is implementation-dependent what happens when triggers (from debug module or external) with conflicting actions occur simultaneously (signaled at the same ingress port cycle) or if triggers occur too frequently. It is recommended that tracing starts from the oldest instruction retired in the cycle that Trace-on is asserted, and stops following the newest instruction retired in the cycle that Trace-off is asserted.
 
-It is recommended that tracing starts from the oldest instruction retired in the cycle that Trace-on is asserted, and stops following the newest instruction retired in the cycle that Trace-off is asserted.
-
+<<<
 === Trace Encoder Filter Registers
 
 All registers with offsets 0x400 .. 0x7FC are designated for additional trace encoder filter options (context, addresses, modes, etc.).
@@ -868,6 +873,7 @@ NOTE: Filter and comparator registers refer to values of some signals (as *priv*
 |0x61C + 0x20*__j__ |trTeComp__j__SmatchHigh |Optional |Comparator _j_ secondary match (bits 63:32)
 |===
 
+<<<
 .*Register: trTeFilter__i__Control : Filter _i_ Control Register (trBaseEncoder+0x400 + 0x20__i__)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -931,6 +937,7 @@ respectively.
 |31:9 |--|Reserved|--|0
 |===
 
+<<<
 .*Register: trTeFilter__i__MatchEcauseLow : Filter _i_ Ecause Match Control (low) Register (trBaseEncoder+0x408 + 0x20__i__)*
 [cols="6%,30%,~,7%,7%",options="header"]
 |===
@@ -985,6 +992,7 @@ for which the corresponding bit is set. For example, if bit N is 1, then match i
 |31:24 |--|Reserved|--|0
 |===
 
+<<<
 .*Register: trTeComp__j__Control : Comparator _j_ Control Register (trBaseEncoder+0x600 + 0x20__j__)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -1045,6 +1053,7 @@ Requires `trTeCompSInput` to be 0, and has no effect otherwise.
 
 IMPORTANT: Comparisions are performed as unsigned numbers. Only bits from an input signal (as defined by `trTeCompPInput` and/or `trTeCompSInput` fields), should be compared. Additional most significant bits from the `trTeComp__j__PMatchLow/High` registers must be ignored.
 
+<<<
 .*Register: trTeComp__j__PMatchLow : Comparator _j_ Primary match (low) Register (trBaseEncoder+0x610 + 0x20__j__)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -1118,6 +1127,7 @@ Details should be defined in definition of each trace protocol.
 |31:15 |--|Reserved|--|0
 |===
 
+<<<
 .*Register: trRamImpl: Trace RAM Sink Implementation Register (trBaseRamSink+0x004)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -1327,6 +1337,7 @@ After the PIB reset value of this field should be set to safe (not too fast cloc
 |WARL|<<Undef,Undef>> 
 |===
 
+<<<
 .*Register: trPibImpl: Trace PIB Implementation Register (trBasePib+0x004)*
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
@@ -1390,27 +1401,10 @@ This example shows 8-bit parallel mode with `trPibClkCenter` = 0 transmitting a 
 
 image:./RISC-V-Trace-Control-Interface-images/pib-ref0.png[image]
 
+<<<
 And an example showing 8-bit parallel mode transmitting a 4-byte packet with `trPibClkCenter` = 1  
 
 image:./RISC-V-Trace-Control-Interface-images/pib-ref1.png[image]
-
-=== Calibration Mode
-
-In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (`trPibDivider` and `trPibClkCenter`). Calibration patterns for each mode are listed below. 
-
-.*PIB Calibration Patterns*
-[cols="25%,30%,~",options="header",align=center,width=80%]
-|===
-|*Mode* |*Calibration Bytes* |*Wire Sequence*
-|UART, Manchester |AA 55 00 FF |alternating 1/0, then all 0, then all 1
-| 1-bit parallel  |AA 55 00 FF |alternating 1/0, then all 0, then all 1
-| 2-bit parallel  |66 66 CC 33 |2, 1, 2, 1, 2, 1, 2, 1, 0, 3, 0, 3, 3, 0, 3, 0
-| 4-bit parallel  |5A 5A F0 0F |A, 5, A, 5, 0, F, F, 0
-| 8-bit parallel  |AA 55 00 FF |AA, 55, 00, FF
-| 16-bit parallel |AA AA 55 55 00 00 FF FF|AAAA, 5555, 0000, FFFF
-|===
-
-NOTE: Calibration mode may be used even by probes which do not support calibration of trace just to assure trace routing on PCB is correct and PIB is correctly enabled. It may be also possible to use calibration mode to check trace signal routing from SoC using scope or logic analyzer.
 
 === SWT Manchester Protocol
 
@@ -1433,6 +1427,24 @@ image:./RISC-V-Trace-Control-Interface-images/swt-manchester.jpg[image]
 In UART protocol, the PIB outputs bytes of a trace message encapsulated in a 10-bit packet consisting of a low start bit, 8 data bits, LSB first, and a high stop bit. Another packet may begin immediately following the stop bit or there may be an idle period between packets. When no data is being sent, TRC_DATA[0] is high in this mode.
 
 image:./RISC-V-Trace-Control-Interface-images/swt-uart.jpg[image]
+
+=== Calibration Mode
+
+In optional calibration mode, the PIB transmits a repeating pattern. Probes can use this to automatically tune input delays due to skew on different PIB signal lines and to adjust to the transmitter's data rate (`trPibDivider` and `trPibClkCenter`). Calibration patterns for each mode are listed below. 
+
+.*PIB Calibration Patterns*
+[cols="25%,30%,~",options="header",align=center,width=80%]
+|===
+|*Mode* |*Calibration Bytes* |*Wire Sequence*
+|UART, Manchester |AA 55 00 FF |alternating 1/0, then all 0, then all 1
+| 1-bit parallel  |AA 55 00 FF |alternating 1/0, then all 0, then all 1
+| 2-bit parallel  |66 66 CC 33 |2, 1, 2, 1, 2, 1, 2, 1, 0, 3, 0, 3, 3, 0, 3, 0
+| 4-bit parallel  |5A 5A F0 0F |A, 5, A, 5, 0, F, F, 0
+| 8-bit parallel  |AA 55 00 FF |AA, 55, 00, FF
+| 16-bit parallel |AA AA 55 55 00 00 FF FF|AAAA, 5555, 0000, FFFF
+|===
+
+NOTE: Calibration mode may be used even by probes which do not support calibration of trace just to assure trace routing on PCB is correct and PIB is correctly enabled. It may be also possible to use calibration mode to check trace signal routing from SoC using scope or logic analyzer.
 
 == Trace ATB Bridge
 
@@ -1539,6 +1551,7 @@ It is hard to define required mode as it depends on SoC bandwidth requirements a
 
 * Field `trAtbBridgeID` must be settable by trace tool (hard-coded ID may not be handled by all trace tools).
 
+<<<
 === Reset and Discovery
 
 This chapter describes what trace tools should do to reset and discover trace features.
@@ -1574,7 +1587,7 @@ Reset and Discovery should be performed as follows:
 ** This should be done by writing a value 0x0 to `tr??Control` register.
 * Read-back and wait until `tr??Active` = 0 is read, which means that a component reached a reset state.
 * Release a component from reset by setting `tr??Active` = 1. 
-** This should be done by writing a value 0x1 to `tr??Control`` register. This write will reset most of other enable/mode bits in this register and all WARL and read-only fields will be set to defaults.
+** This should be done by writing a value 0x1 to `tr??Control` register. This write will reset most of other enable/mode bits in this register and all WARL and read-only fields will be set to defaults.
 * Read-back and wait until `tr??Active` = 1 is read, which means that a component was released from reset.
 ** In this moment `tr??Enable` is set to 0 and the component is not yet enabled.
 ** Component clock should be enabled to allow programming of other registers.
@@ -1616,6 +1629,7 @@ In general, it is safer to power-up and enable components starting from sinks/br
 IMPORTANT: Pre-release version of this specification specified that most of fields and registers were reset. It was suggested (by Architecture Review Committee) that reset logic is made minimal to follow RISC-V ISA style.
 Older implementations (which reset more bits) are still compatible with a ratified version. These implementations do not have to change as it is perfectly OK to reset more fields and registers.
 
+<<<
 === Enabling and Disabling
 
 Enabling should work as follows:
