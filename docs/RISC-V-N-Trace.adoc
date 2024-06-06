@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  June 05, 2024
-:revnumber: 1.0.0_rc35
+:revdate:  June 06, 2024
+:revnumber: 1.0.0_rc36
 :revremark: Stable state (ready for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,10 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc35
-* 2024-06-05
-** Moved 'Virtual Addresses Optimization' to dedicated chapter (agreed with Ved)
-** Clarified EVCODE=4 in example.
+=== Version 1.0.0_rc36
+* 2024-06-06
+** Clarified EVCODE=4 (email discussion on TG).
 
 [Preface]
 == Copyright and license information
@@ -1099,7 +1098,7 @@ This message is emitted when the trace is disabled or stopped.
                             *0:* Entry into Debug Mode. Required (do not send 4 instead!). +
                             *1:* Entry into Low-power Mode. Optional. +
                             *2..3:* Reserved for data trace. +
-                            *4:* Program Trace Disabled (hart is still running). Optional. +
+                            *4:* Program Trace Disabled (hart may be still running). Optional. +
                             *5..7:* Reserved for future extensions of N-Trace specification. +
                             *8..15:* Designated for vendor specific encodings.
 [[field_CDF]]
