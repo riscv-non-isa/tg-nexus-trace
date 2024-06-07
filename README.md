@@ -2,20 +2,18 @@
 
 ## Status of each PDF
 
-**2024/06/05 status:**
+**2024/06/06 status:**
 
-PDFs 1.0.0_rc35: All known issues DONE.
+PDFs 1.0.0_rc37: Page breaks added - waiting for official Freeze.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0.0_rc34. Ready for Freeze (**Acepted by ARC via email**).
-  * 1.0.0_rc35: Moved chapter to better place, clarification of EVCODE=4 in examples. 
-* **Controls PDF**: Version 1.0.0_rc35. Ready for Freeze  (**All known issues DONE**).
-* **Connectors PDF**: Version 1.0.0_rc34. Ready for Freeze (**Accepted by ARC via email**).
+* **N-Trace PDF**: Version 1.0.0_rc37. Waiting for official Freeze (**Accepted by ARC via email**).
+* **Controls PDF**: Version 1.0.0_rc37. Waiting for official Freeze (**Accepted by ARC via email**).
+* **Connectors PDF**: Version 1.0.0_rc37. Waiting for official Freeze  (**Accepted by ARC via email**).
 
 ## TODO (before official freeze)
 
-* TODO: Fix annoying page breaks (manual insert of 'page-break').
 * TODO: Make release with all PDFs 'Frozen', same date/version and pass back to ARC for official OK-stamp.
 * TODO: Make Public Review announcement (all PDFs Frozen).
 
