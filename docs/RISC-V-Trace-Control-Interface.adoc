@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  June 06, 2024
-:revnumber: 1.0.0_rc37
+:revdate:  June 20, 2024
+:revnumber: 1.0.0_rc38
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,8 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc37
-* 2024-06-05
+=== Version 1.0.0_rc38
+* 2024-06-20
+** Small clarifications (as discussed by email).
 ** Waiting for official Freeze
 
 [Preface]
@@ -842,6 +843,7 @@ All registers with offsets 0x400 .. 0x7FC are designated for additional trace en
 Trace encoder filters are an optional feature that can be used to control the generated trace in various ways.
 
 The registers below divide the filter logic into filters and comparators to provide maximum flexibility at low cost. The number of filters and comparators depends on the system. Each filter unit can specify filtering against instruction and optionally against data trace inputs from the hart. When filter __i__ is implemented, the registers `trTeFilter__i__Control` and `trTeInstFilters` must be implemented to enable it. And to apply filter __i__ to the data trace, the `trTeDataFilters` register must also be present. And if a match bit in the `trTeFilter__i__Control` register can be set to 1 (= enabling a filter option), the corresponding register from the bit's description must have a correct value already set as otherwise the trigger may fire unintentionally. Each of the mentioned comparator units is actually a pair of comparators (primary and secondary, or P and S), so a limited range can be matched with a single comparator unit if needed.
+Each enabled filter define independent condition where trace is enabled - if several filters are enabled they act as `logical OR`. Several conditions for single filter act as `logical AND`.
 
 NOTE: Filter and comparator registers refer to values of some signals (as *priv*, *itype*, *ecause*, *dtype*, *dsize*, ...) available on Trace Ingress Port. See E-Trace specification for details of encoding of these values.
 
@@ -922,13 +924,15 @@ When set, match *dsize* values as specified by `trTeFilterMatchChoiceDsize` fiel
 |31:26 |--|Reserved|--|0
 |===
 
+NOTE: Handling of `trTeFilterMatchEcause` and `trTeFilterMatchInterrupt` should include a count of nested traps. The size of the counter is implementation dependent. If the number of nested traps exceeds the number that can be counted, the counter will saturate, meaning that the filtering will turn off prematurely.
+
 .*Register: trTeFilter__i__MatchInst : Filter _i_ Instruction Match Control Register (trBaseEncoder+0x404 + 0x20__i__)*
 [cols="6%,30%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |7:0   |trTeFilterMatchChoicePrivilege | 
 When `trTeFilterMatchPrivilege` field for filter #__i__ is set, match all privilege
-levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value is N
+levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value at ingress port is N. Setting several bits allow matching several provileges.
 |WARL|<<Undef,Undef>> 
 |8     |trTeFilterMatchValueInterrupt |
 When `trTeFilterMatchInterrupt` field for filter #__i__ is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
