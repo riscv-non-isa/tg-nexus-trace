@@ -2,15 +2,15 @@
 
 ## Status of each PDF
 
-**2024/06/06 status:**
+**2024/06/20 status:**
 
-PDFs 1.0.0_rc37: Page breaks added - waiting for official Freeze.
+PDFs 1.0.0_rc38: Spell-checked run on all PDFs.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0.0_rc37. Waiting for official Freeze (**Accepted by ARC via email**).
-* **Controls PDF**: Version 1.0.0_rc37. Waiting for official Freeze (**Accepted by ARC via email**).
-* **Connectors PDF**: Version 1.0.0_rc37. Waiting for official Freeze  (**Accepted by ARC via email**).
+* **N-Trace PDF**: Version 1.0.0_rc38. Waiting for official Freeze (**Accepted by ARC via email**).
+* **Controls PDF**: Version 1.0.0_rc38. Waiting for official Freeze (**Waiting for ARC acceptance**).
+* **Connectors PDF**: Version 1.0.0_rc38. Waiting for official Freeze  (**Accepted by ARC via email**).
 
 ## TODO (before official freeze)
 
