@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  June 20, 2024
-:revnumber: 1.0.0_rc38
+:revdate:  June 25, 2024
+:revnumber: 1.0.0_rc39
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc38
-* 2024-06-20
-** Spell-checker run on PDF.
+=== Version 1.0.0_rc39
+* 2024-06-25
+** Last notes from ARC done.
 ** Waiting for official Freeze
 
 [Preface]
@@ -108,6 +108,8 @@ This specification allows a wide range of implementations including low-gate-cou
 
 *WARL* - Denotes Write any, read legal bit/field/register. If a non-legal value is written, the written value is converted to a value that is supported. That value should deterministically depend on the illegal written value and the architectural state of the trace sub-system. 
 
+*W1* - Denotes write-only bit, which performs an action when 1 is written to it.
+
 [[SD]]
 *SD* - Reset value of a field/register is system dependent - these fields should always have the same values at trace component reset. In many cases this may be the only value supported.
 
@@ -118,21 +120,23 @@ This specification allows a wide range of implementations including low-gate-cou
 
 *PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
 
+*??* - Used in names refer to identical fields/registers in different components. For example `tr??Active` may mean `trTeActive` or `trTsActive`.
+
 == Trace Protocols and Trace Control
 
 There are two standard RISC-V trace protocols which will utilize this *RISC-V Trace Control Interface*:
 
 [#N-Trace Specification]
 * *RISC-V N-Trace (Nexus-based Trace) Specification* 
-** Version 1.0.0 to be ratified together with this specification.
+** Version 1.0 to be ratified together with this specification.
 
 [#E-Trace Specification]
 * *Efficient Trace for RISC-V Specification*
-** At the moment of this writing this is version 2.0 (ratified May 5-th 2022).
+** Version 2.0 (ratified May 5-th 2022).
 
 This specification together with details provided in any of above documents should be considered as a complete guideline for any standard RISC-V trace implementation.
 
-Trace is controlled by set of 32-bit registers.
+Trace is controlled by set of 32-bit memory-mapped registers.
 
 Not all trace protocols and components must support all registers, bits, fields and options. This document includes a chapter <<Minimal Implementation,Minimal Implementation>> which describes the smallest possible set of registers and fields, but each message protocol supported by this standard must clarify the exact meaning of supported registers/fields and bits as some of them define.
 
@@ -545,9 +549,9 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 Instruction trace generation mode +
 *0:* Full Instruction trace is disabled, but other trace (data trace) may be emitted. +
 *1-2:* Reserved for future trace use. +
-*3:* Generate instruction trace using Branch Trace. +
+*3:* Generate instruction trace using <<Branch Trace Messaging,Branch Trace>>. +
 *4-5:* Reserved for future trace use. +
-*6:* Generate instruction trace using Branch History Trace. +
+*6:* Generate instruction trace using <<Branch History Messaging,Branch History Trace>>. +
 *7:* Reserved for vendor-defined instruction trace mode.
 |WARL|<<Undef,Undef>>
 |8:7 |--|Reserved|--|0
@@ -709,7 +713,9 @@ In a system with an Internal Core timestamp counter (implemented in Trace Encode
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTsActive |Primary activate/reset bit for timestamp unit. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|0 |trTsActive |Primary activate/reset bit for timestamp unit. 
+If separated reset for timestamp component is not implemented, it should be a read-only mirror of the corresponding `trTeActive` or `trFunnelActive` bit.
+See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|SD
 |1 |trTsCount |*Internal System or Core* timestamp only. +
 *1:* counter runs, +
 *0:* counter stopped.
