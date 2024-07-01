@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  June 25, 2024
-:revnumber: 1.0.0_rc39
+:revdate:  July 01, 2024
+:revnumber: 1.0.0_rc40
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc39
-* 2024-06-25
-** Last notes from ARC done.
+=== Version 1.0.0_rc40
+* 2024-07-01
 ** Waiting for official Freeze
 
 [Preface]
@@ -86,7 +85,7 @@ Instruction Trace is a system that collects a history of processor execution, al
 
 This specification does not define the hardware interconnection between the hart and Trace Encoder, as this is defined in the _Efficient Trace for RISC-V Specification Version 2.0_. This document also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink.
 
-This specification allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support branch trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
+This specification allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support instruction trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
 
 === Glossary
 
@@ -150,13 +149,13 @@ By monitoring the Ingress Port, the Trace Encoder determines when a program flow
 
 ==== Branch Trace Messaging
 
-Branch Trace Messaging is the simplest form of instruction trace. Each program counter discontinuity results in one trace message, either a Direct or Indirect Branch Message. Linear instructions (or sequences of linear instructions) do not directly generate any trace messages/packets but overflow of counters (or exceptions) may generate corresponding packets/messages - these messages are infrequent and will not affect trace compression.
+Branch Trace Messaging is the simplest, baseline form of instruction trace. Each program counter discontinuity results in one trace message, either a Direct or Indirect Branch Message. Linear instructions (or sequences of linear instructions) do not directly generate any trace messages/packets but overflow of counters (or exceptions) may generate corresponding packets/messages - these messages are infrequent and will not affect trace compression.
 
 Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The Trace Encoder emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
 
 ==== Branch History Messaging
 
-Both the Efficient Trace for RISC-V (E-Trace) Specification and the RISC-V N-Trace (Nexus-based Trace) specification define systems of messages intended to improve compression by reporting only whether conditional branches are taken by encoding each branch outcome in a single taken/not-taken bit. The destinations of non-inferable jumps and calls are reported as compressed addresses. Much better compression can be achieved, but an encoder implementation will typically require more hardware.
+Both the Efficient Trace for RISC-V (E-Trace) Specification and the RISC-V N-Trace (Nexus-based Trace) specification define systems of messages intended to improve compression by reporting only whether conditional branches are taken by encoding each branch outcome in a single taken/not-taken bit. The destinations of non-inferable jumps and calls are reported as compressed addresses. Much better optimized compression can be achieved, but an encoder implementation will typically require more hardware.
 
 ==== Other Optimizations
 
@@ -548,11 +547,12 @@ down, and other register locations may be inaccessible. Hardware may take an arb
 |6:4 |trTeInstMode |
 Instruction trace generation mode +
 *0:* Full Instruction trace is disabled, but other trace (data trace) may be emitted. +
-*1-2:* Reserved for future trace use. +
-*3:* Generate instruction trace using <<Branch Trace Messaging,Branch Trace>>. +
-*4-5:* Reserved for future trace use. +
-*6:* Generate instruction trace using <<Branch History Messaging,Branch History Trace>>. +
-*7:* Reserved for vendor-defined instruction trace mode.
+*1-2:* Protocol defined trace mode. +
+*3:* Baseline instruction trace (for example <<Branch Trace Messaging,Branch Trace>>). +
+*4-5:* Protocol defined trace mode. +
+*6:* Optimized instruction trace (for example <<Branch History Messaging,Branch History Trace>>). +
+*7:* Reserved for vendor-defined instruction trace mode. +
+NOTE: When non-supported mode (different then 0) is set, it cannot revert to 0 but MUST revert to supported non-0 mode.
 |WARL|<<Undef,Undef>>
 |8:7 |--|Reserved|--|0
 |9 |trTeContext |Enable sending trace messages/fields with scontext/mcontext values and/or privilege levels. |WARL|<<Undef,Undef>>
@@ -628,8 +628,8 @@ NOTE: `trTeProtocol??` fields are separated from `trTeVer??` as we may have the 
 *2:* Partial (LSB portion of return address) compare (smaller logic cost than 3 below, but in most cases adequate as chances to have an incorrect return address with same LSB bits is very slim). +
 *3:* Full address comparing (always assures skipped return addresses are the same as addresses deducted from call instruction). Implementation may take advantage of RAS (Return Address Stack) if implemented by the hart.
 |WARL|<<Undef,Undef>>
-|8 |trTeInstEnRepeatedHistory|Enable repeated branch history detection when set.|WARL|<<Undef,Undef>>
-|9 |trTeInstEnAllJumps|Enable emitting of trace message or add history bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder can determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|<<Undef,Undef>>
+|8 |trTeInstEnRepeatedHistory|Enable repeated branch history/map detection when set.|WARL|<<Undef,Undef>>
+|9 |trTeInstEnAllJumps|Enable emitting of trace message or add history/map bit for direct unconditional/inferable control flow changes (jumps or calls). Normally these instructions do not generate any trace as the decoder can determine the next instruction. Trace will not compress well but timestamp accuracy will be better - may be used when profiling loops.|WARL|<<Undef,Undef>>
 |10 |trTeInstExtendAddrMSB|When set, allow extended handing of MSB address bits. Encoding details are trace protocol dependent.|WARL|<<Undef,Undef>>
 |15:11 |--|Reserved for additional instruction trace control/status bits|--|0
 |27:16 |trTeSrcID |Trace source ID assigned to this trace encoder. If `trTeSrcBits` is not 0 and trace source is not disabled by `trTeInhibitSrc`, then trace messages from this TE will all include a trace source field of `trTeSrcBits` bits and all messages from this TE will use this value as trace source field.|WARL|<<Undef,Undef>>
@@ -1516,7 +1516,7 @@ These requirements are applicable to the entire trace sub-system.
 *Minimal Trace Encoder Register/Fields*
 
 * Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
-* One of `trTeInstMode` = 3 (Branch Trace) or 6 (History Trace) must be implemented (can be a hard coded value).
+* One of `trTeInstMode` = 3 (Baseline instruction trace) or 6 (Optimized instruction trace) must be implemented (can be a hard coded value).
 * At least one of the non-0 values of `trTeInstSyncMode` must be settable (or hard coded).
 * Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
 * Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return versions of implemented protocol.
@@ -1657,6 +1657,7 @@ Enabling should work as follows:
 ** Read back and wait for confirmation (`tr??Enable` = 1).
 * Enable Trace Funnel[s] in the same way.
 * Configure and Enable Trace Encoder[s] in the same way (last should be writing `trTeEnable` = 1 followed by reading to verify that it is set).
+** The `trTeInstMode` WARL field should be set to 6 - it may revert to different mode.
 * Either manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or set triggers to start the trace.
 * Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTeInstTracing` or `trTeDataTracing` bit is set).
 * Periodically read `trTeControl` for status of trace (as it may stop by itself due to triggers).

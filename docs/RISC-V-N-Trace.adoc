@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  June 20, 2024
-:revnumber: 1.0.0_rc38
+:revdate:  July 01, 2024
+:revnumber: 1.0.0_rc40
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc38
-* 2024-06-20
-** Spell-checker run on PDF.
+=== Version 1.0.0_rc40
+* 2024-07-01
 ** Waiting for official Freeze
 
 [Preface]
@@ -510,9 +509,12 @@ NOTE: The table below does not provide names of Trace Encoder control registers 
 |trTeInstTracing |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 |trTeEmpty |*Required*|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
 [[trTeInstMode]]
-|trTeInstMode |*Required*|One or more of the following values must be supported: +
-*3:* <<mode_BTM,BTM>> (Branch Trace Messaging) mode +
-*6:* <<mode_HTM,HTM>> (History Trace Messaging) mode
+|trTeInstMode |*Required*|
+*3:* Generate instruction trace using <<mode_BTM,BTM>> (Branch Trace Messaging) mode. +
+*6:* Generate instruction trace using <<mode_HTM,HTM>> (History Trace Messaging) mode. +
+*0, 7:* See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification. +
+*1-2, 4-5:* Reserved for future N-Trace use. +
+At least a value of *3* or *6* must be settable.
 [[trTeContext]]
 |trTeContext|Optional|Controls generation of <<msg2_Ownership,Ownership>> messages.
 |trTeInstTrigEnable |Optional|See <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.

@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Connectors
 :company: RISC-V.org
-:revdate:  June 20, 2024
-:revnumber: 1.0.0_rc38
+:revdate:  July 01, 2024
+:revnumber: 1.0.0_rc40
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc38
-* 2024-06-20
-** Spell-checker run on PDF.
+=== Version 1.0.0_rc40
+* 2024-07-01
 ** Waiting for official Freeze
 
 [Preface]
