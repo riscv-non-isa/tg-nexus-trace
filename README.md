@@ -2,15 +2,15 @@
 
 ## Status of each PDF
 
-**2024/07/01 status:**
+**2024/07/03 status:**
 
-PDFs 1.0.0_rc40: Waiting for ARC acceptance.
+PDFs 1.0.0_rc41: Waiting for official Freeze.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0.0_rc40. Waiting for official Freeze (**Accepted by ARC via email**).
-* **Controls PDF**: Version 1.0.0_rc40. Last round from ARC DONE (**Waiting for ARC acceptance**).
-* **Connectors PDF**: Version 1.0.0_rc40. Waiting for official Freeze  (**Accepted by ARC via email**).
+* **N-Trace PDF**: Version 1.0.0_rc41. Waiting for official Freeze (**Accepted by ARC via email**).
+* **Controls PDF**: Version 1.0.0_rc41. Waiting for official Freeze (**Waiting for ARC acceptance**).
+* **Connectors PDF**: Version 1.0.0_rc41. Waiting for official Freeze  (**Accepted by ARC via email**).
 
 ## TODO (before official freeze)
 
