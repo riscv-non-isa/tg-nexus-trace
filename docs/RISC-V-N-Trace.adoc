@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V N-Trace (Nexus-based Trace)
 :company: RISC-V.org
-:revdate:  July 01, 2024
-:revnumber: 1.0.0_rc40
+:revdate:  July 03, 2024
+:revnumber: 1.0.0_rc41
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,8 +52,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc40
-* 2024-07-01
+=== Version 1.0.0_rc41
+* 2024-07-03
 ** Waiting for official Freeze
 
 [Preface]
