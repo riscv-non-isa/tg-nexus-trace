@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  July 01, 2024
-:revnumber: 1.0.0_rc40
+:revdate:  July 03, 2024
+:revnumber: 1.0.0_rc41
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,8 +52,8 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc40
-* 2024-07-01
+=== Version 1.0.0_rc41
+* 2024-07-03
 ** Waiting for official Freeze
 
 [Preface]
@@ -713,9 +713,9 @@ In a system with an Internal Core timestamp counter (implemented in Trace Encode
 [cols="6%,24%,~,7%,7%",options="header"]
 |===
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
-|0 |trTsActive |Primary activate/reset bit for timestamp unit. 
-If separated reset for timestamp component is not implemented, it should be a read-only mirror of the corresponding `trTeActive` or `trFunnelActive` bit.
-See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|SD
+|0 |trTsActive |Primary activate/reset bit for timestamp unit.
+This must either be RW or, if separated reset for timestamp component is not implemented, a read-only copy of the corresponding `trTeActive` or `trFunnelActive` bit.
+See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|WARL|SD
 |1 |trTsCount |*Internal System or Core* timestamp only. +
 *1:* counter runs, +
 *0:* counter stopped.
