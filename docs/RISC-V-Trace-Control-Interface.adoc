@@ -1,8 +1,8 @@
 [[header]]
 :description: RISC-V Trace Control Interface
 :company: RISC-V.org
-:revdate:  July 03, 2024
-:revnumber: 1.0.0_rc41
+:revdate:  July 22, 2024
+:revnumber: 1.0_rc42
 :revremark: Stable state (waiting for Freeze)
 :url-riscv: http://riscv.org
 :doctype: book
@@ -52,9 +52,9 @@ Change is extremely unlikely.
 
 PDF generated on: {localdatetime}
 
-=== Version 1.0.0_rc41
-* 2024-07-03
-** Waiting for official Freeze
+=== Version 1.0_rc42
+* 2024-07-22
+** ARC approved - waiting for official Freeze sig-off
 
 [Preface]
 == Copyright and license information
