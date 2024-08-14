@@ -2,26 +2,21 @@
 
 ## Status of each PDF
 
-**2024/07/22 status:**
+**2024/08/14 status:**
 
-PDFs 1.0_rc42: **Accepted by ARC** - ONLY version change for Freeze sign-off.
+PDFs 1.0_rc50: **Frozen**.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0_rc42. ONLY version change for Freeze sign-off (**Accepted by ARC**).
-* **Controls PDF**: Version 1.0_rc42. ONLY version change for Freeze sign-off (**Accepted by ARC**).
-* **Connectors PDF**: Version 1.0_rc42. ONLY version change for Freeze sign-off (**Accepted by ARC**).
-
-## TODO (before official freeze)
-
-* TODO: Make release with all PDFs 'Frozen', same date/version and pass back to ARC for official OK-stamp.
-* TODO: Make Public Review announcement (all PDFs Frozen).
+* **N-Trace PDF**: Version 1.0_rc50. **Frozen**.
+* **Controls PDF**: Version 1.0_rc50. **Frozen**.
+* **Connectors PDF**: Version 1.0_rc50. **Frozen**.
 
 ## TODO (after ratification approval)
 
 * TODO: Change status to Ratified.
 * TODO: Change date.
-* TODO: Remove _rc and make version 1.0.0.
+* TODO: Remove _rc and make version 1.0.
 * TODO: Make official release.
 * TODO: Place all 3 PDFs into 'public' place (and update/add links).
 
