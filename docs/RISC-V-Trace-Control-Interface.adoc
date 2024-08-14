@@ -552,7 +552,7 @@ Instruction trace generation mode +
 *4-5:* Protocol defined trace mode. +
 *6:* Optimized instruction trace (for example <<Branch History Messaging,Branch History Trace>>). +
 *7:* Reserved for vendor-defined instruction trace mode. +
-NOTE: When non-supported mode (different then 0) is set, it cannot revert to 0 but MUST revert to supported non-0 mode.
+NOTE: When non-supported mode (different than 0) is set, it cannot revert to 0 but MUST revert to supported non-0 mode.
 |WARL|<<Undef,Undef>>
 |8:7 |--|Reserved|--|0
 |9 |trTeContext |Enable sending trace messages/fields with scontext/mcontext values and/or privilege levels. |WARL|<<Undef,Undef>>
@@ -938,7 +938,7 @@ NOTE: Handling of `trTeFilterMatchEcause` and `trTeFilterMatchInterrupt` should 
 |*Bit* |*Field* |*Description* |*RW* |*Reset*
 |7:0   |trTeFilterMatchChoicePrivilege | 
 When `trTeFilterMatchPrivilege` field for filter #__i__ is set, match all privilege
-levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value at ingress port is N. Setting several bits allow matching several provileges.
+levels for which the corresponding bit is set. For example, if bit N is 1, then match if the *priv* value at ingress port is N. Setting several bits allow matching several privileges.
 |WARL|<<Undef,Undef>> 
 |8     |trTeFilterMatchValueInterrupt |
 When `trTeFilterMatchInterrupt` field for filter #__i__ is set, match *itype* of 2 or 1 depending on whether this bit is 1 or 0
