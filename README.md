@@ -1,5 +1,14 @@
 # TG RISC-V Nexus Trace
 
+## Tracking Public Review
+
+Public Review started Aug 15-th and will end Sep 15-th.
+
+Summary of **Public Review** with short status (DONE=merged, TODO=not yet, NEW=not analyzed):
+
+* Typos (#64=DONE, ...)
+* B-TYPE=0 for some SYNC messages (#65=**TODO**)
+
 ## Status of each PDF
 
 **2024/08/14 status:**
