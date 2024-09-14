@@ -4,10 +4,15 @@
 
 Public Review started Aug 15-th and will end Sep 15-th.
 
-Summary of **Public Review** with short status (DONE=merged, TODO=not yet, NEW=not analyzed):
+Summary of **Public Review** with short status for each issue or PR (DONE=merged, TODO=not yet, NEW=not analyzed, OK=nothing done - spec clarifies it already):
 
-* Typos (#64=DONE, ...)
-* B-TYPE=0 for some SYNC messages (#65=**TODO**)
+As of 2024/09/13 (2 days of public review):
+
+* #64, TYPO: Fix typos, Status=**DONE**.
+* #65, CLARIFY: B-TYPE=0 for some SYNC messages, Status=**TODO**.
+* #66, TYPO: Fix typos: . and ( and :, Status=**TODO**.
+* #67, NO CHANGE: Should read pointer be used for SMEM mode, Status=**OK** (explanation provided).
+* #68, TYPO: HIST field bit in example pseudo-code are reversed, Status=**TODO**.
 
 ## Status of each PDF
 
