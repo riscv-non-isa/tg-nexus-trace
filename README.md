@@ -1,18 +1,19 @@
 # TG RISC-V Nexus Trace
 
-## Tracking Public Review
+## Tracking Ratification Ready
 
-Public Review started Aug 15-th and will end Sep 15-th.
+Public Review period closed on Sep 14-th.
 
-Summary of **Public Review** with short status for each issue or PR (DONE=merged, TODO=not yet, NEW=not analyzed, OK=nothing done - spec clarifies it already):
+Summary of **Public Review** notes with short status for each issue or PR (DONE=merged, TODO=not yet, NEW=not analyzed, OK=nothing done - spec clarifies it already):
 
-As of 2024/09/13 (2 days of public review):
+As of 2024/09/16 (**Public Review** closed):
 
 * #64, TYPO: Fix typos, Status=**DONE**.
-* #65, CLARIFY: B-TYPE=0 for some SYNC messages, Status=**TODO**.
-* #66, TYPO: Fix typos: . and ( and :, Status=**TODO**.
-* #67, NO CHANGE: Should read pointer be used for SMEM mode, Status=**OK** (explanation provided).
-* #68, TYPO: HIST field bit in example pseudo-code are reversed, Status=**TODO**.
+* #65, CLARIFY: B-TYPE=0 for some SYNC messages, Status=**TODO** (prepare PR and merge).
+* #66, TYPO: Fix typos: . and ( and :, Status=**TODO** (PR ready, need to merge).
+* #67, NO CHANGE: Should read pointer be used for SMEM mode, Status=**OK** (explanation provided, issue closed).
+* #68, TYPO: HIST field bit in example pseudo-code are reversed, Status=**TODO** (prepare PR and merge).
+* #69, NO CHANGE: Question why SRC ID is not 15-bit, Status=**OK** (explanation provided, issue closed).
 
 ## Status of each PDF
 
