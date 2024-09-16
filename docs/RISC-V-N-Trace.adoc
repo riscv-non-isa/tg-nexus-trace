@@ -208,10 +208,10 @@ The table below provides a detailed mapping of causes for terminating an instruc
 [cols="18%,~,35%",options="header"]
 |======================================================================================================
 |Instruction|Condition/Notes|itype Value/Name
-|Exception in instruction|An exception trap that occurred following the final retired instruction in the block|1 = Exception
+|Exception in instruction|An exception trap that occurred following the final retired instruction in the block.|1 = Exception
 |EBREAK, ECALL, C.EBREAK|An exception trap that occurred following the final retired instruction in the block due to these instructions. These instructions do not retire.
 |1 = Exception
-|Interrupted instruction|An interrupt trap occurred following the final retired instruction in the block|2 = Interrupt
+|Interrupted instruction|An interrupt trap occurred following the final retired instruction in the block.|2 = Interrupt
 |MRET, SRET| Return from an exception or interrupt handler. |3 = Trap return
 |<<itype_branch,Conditional branch>>|Not-taken direct, conditional branch.|4 = Not-taken branch
 |<<itype_branch,Conditional branch>>|Taken direct, conditional branch.|5 = Taken branch
@@ -300,13 +300,13 @@ When the *itype* input of ingress port is 4-bit wide, the Indirect jump (with or
 [cols="5%,20%,63%,12%",options="header"]
 |======================================================================================================
 |#|itype|Encoder Action|Stack Action
-|8|Indirect call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0|Push
+|8|Indirect call|Update <<field_I-CNT,I-CNT>> field. Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|Push
 |9|Direct call|Only update <<field_I-CNT,I-CNT>> field.|Push
 |10|Indirect jump (without linkage)|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
-<<same_handling,Same handing>> as *itype=14*|-
+<<same_handling,Same handing>> as *itype=14*.|-
 |11|Direct jump (without linkage)|Only update <<field_I-CNT,I-CNT>> field. +
-<<same_handling,Same handing>> as *itype=15*|-
+<<same_handling,Same handing>> as *itype=15*.|-
 |12|Co-routine swap|Update <<field_I-CNT,I-CNT>> field. +
 If Pop does not returns the same address as PC at next valid ingress port cycle, emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0.|Pop,Push
 |13|Return|Update <<field_I-CNT,I-CNT>> field. +
@@ -314,9 +314,9 @@ If Pop does not returns the same address as PC at next valid ingress port cycle,
 |Pop
 |14|Other indirect jump (with linkage)|Update <<field_I-CNT,I-CNT>> field. +
 Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
-<<same_handling,Same handing>> as *itype=10*|-
+<<same_handling,Same handing>> as *itype=10*.|-
 |15|Other direct jump (with linkage)|Only update <<field_I-CNT,I-CNT>> field. +
-<<same_handling,Same handing>> as *itype=11*|-
+<<same_handling,Same handing>> as *itype=11*.|-
 |======================================================================================================
 
 [[same_handling]]
@@ -327,7 +327,7 @@ If optional <<trTeInstEnAllJumps,trTeInstEnAllJumps>> bit is set, trace ingress 
 IMPORTANT: The N-Trace encoder does not require *cause* and *tval* ingress port
 signals, which are valid only for exceptions and interrupts, as these
 details are not reported in N-Trace messages. Instead, N-Trace solely
-provides the address of the exception or interrupt handler
+provides the address of the exception or interrupt handler.
 
 NOTE: Since almost every ingress port cycle updates I-CNT, there is a possibility
 of overflow. For more information, see <<I-CNT Details, I-CNT Details>> chapter regarding
@@ -489,7 +489,7 @@ Table below shows one N-Trace message with several fields. It is an output from 
 |0xF8| 111110|00 || Normal transfer of new field (6 least significant bits).
 |0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra most significant 0-s.
 5+|Here optional TSTAMP field could be sent +
-Previous MSEO should became 01 encoding end of HIST field, but not end of the message).
+(Previous MSEO should became 01 encoding end of HIST field, but not end of the message).
 |0xFF| 111111|11 | Idle|This is idle as this is the second byte with MSEO=11 (NOTE: Last byte of message is also 0xFF).
 |====
 
@@ -1020,7 +1020,7 @@ When RCODE is set to 1, this signifies that the HIST register is full and will n
 the maximum number of history bits implemented within the HIST register.
 
 Nonetheless, implementations may opt to include any quantity of history bits in
-this field, with the range extending from a minimum of 2 bits up to the maximum defined by <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits
+this field, with the range extending from a minimum of 2 bits up to the maximum defined by <<NTRACE_MAX_HIST,NTRACE_MAX_HIST>> bits.
 
 Should the I-CNT counter and the HIST register simultaneously reach their respective capacity limits, it is mandatory to emit two successive ResourceFull
 messages.
@@ -1219,7 +1219,7 @@ NOTE: Trace decoders do not have to be aware about the actual size of the HIST f
 
 The I-CNT field, present in most messages, transmits the value of the I-CNT counter, which counts the number of halfwords used to encode retired instructions.
 
-The I-CNT counter in the trace encoder is reset to 0, in accordance with the IEEE-5001 Nexus Standard, under one of the following two conditions
+The I-CNT counter in the trace encoder is reset to 0, in accordance with the IEEE-5001 Nexus Standard, under one of the following two conditions:
 
 * When tracing starts or is restarted for any reason.
 * After the I-CNT counter value has been transmitted in a message.
@@ -1265,7 +1265,7 @@ Let's analyze a collected trace of above program (in <<mode_BTM,BTM>> mode) exec
 
 . First direct conditional branch at address 0x102 is taken.
 * A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=3* should be generated. It means, that a code block from <0x100..0x105> (as 6=2*3) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x200 from an opcode of the direct conditional branch at an address 0x102.
-* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *C.EBREAK* instruction
+* Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=1* describing range <0x200..0x201> till *C.EBREAK* instruction.
 . First direct conditional branch at address 0x102 is not taken and second direct conditional branch at address 0x10A is taken.
 * A <<msg_DirectBranch,DirectBranch>> message with *I-CNT=7* should be generated. It means, that a code block from <0x100..0x10D> (as 0xE=2*7) was executed and a direct conditional branch at the end of this block was taken. Decoder will know PC=0x300 from an opcode of the direct conditional branch at an address 0x10A.
 * Next message should be <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> with *I-CNT=2* describing a range <0x300..0x303> till *C.EBREAK* instruction.
@@ -1484,7 +1484,7 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 |====
 |Sequence of events|Messages Generated
 |Back to back return|Second message should have <<field_I-CNT,I-CNT>>=1 or 2 (depending on the size of the second return instruction).
-|Other back to back jumps or branches|Same as above (depending on the size of a second instruction)
+|Other back to back jumps or branches|Same as above (depending on the size of a second instruction).
 |Back to back exceptions|Second message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception) and <<field_I-CNT,I-CNT>>=0 (nothing executed in between).
 |Exception at interrupt destination|Same as above.
 |Pending interrupt at debug mode exit|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
@@ -1581,7 +1581,7 @@ To allow generation of repeated history of direct conditional branches in HTM mo
 
 IMPORTANT: It is allowed to generate any sequence of <<msg_ResourceFull,Resource Full>> messages as long as the logically concatenated sequence of (repeated or not ...) HIST bits (excluding most significant stop-bit[s]) is the same.
 
-Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way like <<msg_RepeatBranch,Repeat Branch>> message)
+Tracing of such simple, long loops would benefit from generating special messages/fields which provide counters of taken/not-taken direct conditional branches (in a way like <<msg_RepeatBranch,Repeat Branch>> message).
 
 But this approach will not work with more complex code with a conditional statement (or several of them) inside of a loop.
 
@@ -1977,7 +1977,7 @@ To reconstruct the program control flow using the N-Trace encoded stream of mess
 . Types of all instructions (corresponding to 'itype' signal on trace ingress port - based on analysis of opcodes).
 . For direct unconditional jumps and direct conditional branches an offset (to jump/branch destination) encoded in an opcode.
 
-Decoding must start from a <<Synchronizing Messages,synchronizing message>>. The synchronizing message provides the complete PC in the <<field_F-ADDR,F-ADDR>> field. Transfers relative to this PC may then be inferred using subsequent messages till a new PC is transmitted in a subsequent synchronizing message
+Decoding must start from a <<Synchronizing Messages,synchronizing message>>. The synchronizing message provides the complete PC in the <<field_F-ADDR,F-ADDR>> field. Transfers relative to this PC may then be inferred using subsequent messages till a new PC is transmitted in a subsequent synchronizing message.
 
 NOTE: To provide partial decoding of big trace, messages with <<field_F-ADDR,F-ADDR>> are transmitted periodically. Periodic <<field_F-ADDR,F-ADDR>> transmission is also needed to decode trace from small, circular buffers.
 
