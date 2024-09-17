@@ -1,6 +1,8 @@
 # TG RISC-V Nexus Trace
 
-## Tracking Ratification Ready
+## Tracking Ratification Progress
+
+Generating Version 1.0_rc51: **Frozen (Ratification Ready)** Sep 16-th.
 
 Public Review period closed on Sep 14-th.
 
@@ -17,15 +19,15 @@ As of 2024/09/16 (**Public Review** closed, all known notes addressed).
 
 ## Status of each PDF
 
-**2024/08/14 status:**
+**2024/09/16 status:**
 
-PDFs 1.0_rc50: **Frozen**.
+PDFs 1.0_rc51: **Frozen (Ratification Ready)**.
 
 Inside of [./pdfs](./pdfs) directory:
 
-* **N-Trace PDF**: Version 1.0_rc50. **Frozen**.
-* **Controls PDF**: Version 1.0_rc50. **Frozen**.
-* **Connectors PDF**: Version 1.0_rc50. **Frozen**.
+* **N-Trace PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
+* **Controls PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
+* **Connectors PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
 
 ## TODO (after ratification approval)
 
