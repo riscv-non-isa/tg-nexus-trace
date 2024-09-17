@@ -1407,7 +1407,7 @@ Decoders should report synchronization SYNC field values from messages (includin
 ** Before resetting the encoder state, the trace up to the current location must be emitted (it includes HIST, I-CNT, HREPEAT and B-CNT counters).
 * All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may calculate full/absolute timestamps from this message forward.
 * An <<msg_Ownership,Ownership>> messages (if enabled) must be emitted immediately after all synchronizing messages.
-* Some synchronizing messages not related to code being executed (periodic etc.) may be emitted between jumps. In such a case field <<field_B-TYPE,B-TYPE>>=0 wil be emitted, but it will not mean indirect flow change.
+* Some synchronizing messages not related to code being executed (periodic, notifications etc.) may be emitted between indirect jumps. In such a case field <<field_B-TYPE,B-TYPE>>=0 will be emitted, but it will not mean indirect flow change.
 
 Periodic Synchronization are generated to allow easier decoding (not necessarily from the start of collected trace) and may only be reported when desired by the user (for debugging).
 
