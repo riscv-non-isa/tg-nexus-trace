@@ -686,7 +686,7 @@ The table below provides details for fields which are used in more than one mess
 *NOTE:* The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> field, so decoding may start from a message containing the SYNC field.
 [[field_B-TYPE]]
 | B-TYPE      | 2             | Branch Type | Reason for indirect flow change: +
-                                *0:* Indirect control flow change (jump, call or return). +
+                                *0:* Indirect control flow change (jump, call or return) or in a <<Synchronizing Messages,synchronizing message>> not related to code execution. +
                                 *1:* Exception or interrupt (if the encoder is not capable of reporting 2 and 3). +
                                 *2:* *Extension:* Exception +
                                 *3:* *Extension:* Interrupt +
@@ -942,6 +942,8 @@ associated with the SYNC parameter (e.g., `External Trace Trigger`), the I-CNT f
 Instead, it serves to pinpoint the precise Program Counter (PC) location at which the specified trigger or event occurred.
 Additionally, the F-ADDR field provides the complete PC address at the moment the trigger was activated.
 
+This message may be also generated on linear code for certain synchronization events as described in <<Synchronizing Messages,Synchronizing Message>> chapter.
+
 <<<
 [[msg2_DirectBranchSync]]
 === DirectBranchSync Message
@@ -964,6 +966,8 @@ Additionally, the F-ADDR field provides the complete PC address at the moment th
 This message is produced under the same conditions as the <<msg2_DirectBranch,DirectBranch>> message.
 However, it further includes details on the reason for synchronization via the SYNC field, as well as the full Program Counter (PC) address through the F-ADDR field.
 
+This message may be also generated on linear code for certain synchronization events as described in <<Synchronizing Messages,Synchronizing Message>> chapter.
+
 <<<
 [[msg2_IndirectBranchSync]]
 === IndirectBranchSync Message
@@ -985,6 +989,8 @@ However, it further includes details on the reason for synchronization via the S
 *Explanations and Notes*
 
 This message is generated in the same conditions as <<msg2_IndirectBranch,IndirectBranch>> message, but additionally provides a reason for synchronization (SYNC field) and full PC (F-ADDR field).
+
+This message may be also generated (with <<field_B-TYPE,B-TYPE>>=0 field) on linear code for certain synchronization events as described in <<Synchronizing Messages,Synchronizing Message>> chapter.
 
 <<<
 [[msg2_ResourceFull]]
@@ -1072,6 +1078,8 @@ Next PC is determined by applying the <<Address Compression,Address Compression>
 
 This message is generated in the same conditions as <<msg2_IndirectBranchHist,IndirectBranchHist>> message.
 However, it further includes details on the reason for synchronization via the SYNC field, as well as the full Program Counter (PC) address through the F-ADDR field.
+
+This message may be also generated (with <<field_B-TYPE,B-TYPE>>=0 field) on linear code for certain synchronization events as described in <<Synchronizing Messages,Synchronizing Message>> chapter.
 
 <<<
 [[msg2_RepeatBranch]]
@@ -1399,6 +1407,7 @@ Decoders should report synchronization SYNC field values from messages (includin
 ** Before resetting the encoder state, the trace up to the current location must be emitted (it includes HIST, I-CNT, HREPEAT and B-CNT counters).
 * All synchronizing messages emit an absolute <<field_TSTAMP,TSTAMP>> field (if enabled), so decoder may calculate full/absolute timestamps from this message forward.
 * An <<msg_Ownership,Ownership>> messages (if enabled) must be emitted immediately after all synchronizing messages.
+* Some synchronizing messages not related to code being executed (periodic, notifications etc.) may be emitted between indirect jumps. In such a case field <<field_B-TYPE,B-TYPE>>=0 will be emitted, but it will not mean indirect flow change.
 
 Periodic Synchronization are generated to allow easier decoding (not necessarily from the start of collected trace) and may only be reported when desired by the user (for debugging).
 
