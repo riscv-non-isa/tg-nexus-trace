@@ -1,41 +1,16 @@
 # TG RISC-V Nexus Trace
 
-## Tracking Ratification Progress
-
-Generating Version 1.0_rc51: **Frozen (Ratification Ready)** Sep 16-th.
-
-Public Review period closed on Sep 14-th.
-
-Summary of **Public Review** notes with short status for each issue or PR (DONE=merged, TODO=not yet, NEW=not analyzed, OK=nothing done - spec clarifies it already):
-
-As of 2024/09/16 (**Public Review** closed, all known notes addressed).
-
-* #64, TYPO: Fix typos, Status=**DONE**.
-* #65, CLARIFY: B-TYPE=0 for some SYNC messages, Status=**DONE**.
-* #66, TYPO: Fix typos: . and ( and :, Status=**DONE**.
-* #67, NO CHANGE: Should read pointer be used for SMEM mode, Status=**OK** (explanation provided, issue closed).
-* #68, TYPO: HIST field bit in example pseudo-code are reversed, Status=**DONE**.
-* #69, NO CHANGE: Question why SRC ID is not 15-bit, Status=**OK** (explanation provided, issue closed).
-
 ## Status of each PDF
 
-**2024/09/16 status:**
+**2024/11/21 status:**
 
-PDFs 1.0_rc51: **Frozen (Ratification Ready)**.
+PDFs 1.0: **Ratified**.
 
-Inside of [./pdfs](./pdfs) directory:
+Inside of [./ratified/1.0](../ratified/1.0) directory:
 
-* **N-Trace PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
-* **Controls PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
-* **Connectors PDF**: Version 1.0_rc51: **Frozen (Ratification Ready)**.
-
-## TODO (after ratification approval)
-
-* TODO: Change status to Ratified.
-* TODO: Change date.
-* TODO: Remove _rc and make version 1.0.
-* TODO: Make official release.
-* TODO: Place all 3 PDFs into 'public' place (and update/add links).
+* **RISC-V N-Trace PDF**: Version 1.0: **Ratified**.
+* **RISC-V Trace Controls PDF**: Version 1.0: **Ratified**.
+* **RISC-V Trace Connectors PDF**: Version 1.0: **Ratified**.
 
 ## Repository Overview
 
