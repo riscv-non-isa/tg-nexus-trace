@@ -6,7 +6,7 @@
 
 PDFs 1.0: **Ratified**.
 
-Inside of [./ratified/1.0](../ratified/1.0) directory:
+Inside of [./ratified/1.0](./ratified/1.0) directory:
 
 * **RISC-V N-Trace PDF**: Version 1.0: **Ratified**.
 * **RISC-V Trace Controls PDF**: Version 1.0: **Ratified**.
