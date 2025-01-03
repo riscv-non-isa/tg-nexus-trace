@@ -34,11 +34,23 @@
 
 // Decoder works on two files and dumper on first file
 extern FILE *fNex;      // Nexus messages (binary bytes)
-extern FILE *fCompare;  
 
-static unsigned int nexdeco_pc        = 0;
-static unsigned int nexdeco_lastAddr  = 0;
+extern int conf_nSrc;   // Number of source bits
+
+#if 1 // Callstack related
+extern int conf_CallStack;
+extern void CallStack_Init();
+extern void CallStack_Push(Nexus_TypeAddr ret);
+extern Nexus_TypeAddr CallStack_Pop();
+#endif
+
+int dispHistRepeat = 0;
+
+static Nexus_TypeAddr nexdeco_pc        = 1;  // 1 means, that last address is unknown 
+static Nexus_TypeAddr nexdeco_addrCheck = 1;  // Next PC (sent in a packet should match it)
+static Nexus_TypeAddr nexdeco_lastAddr  = 1;
 static int nInstr = 0;
+static int resourceFull_ICNT = 0; // ICNT adjustment because of recent 'ResourceFull' message[s] (positive or negative)
 
 static int EmitErrorMsg(const char *err)
 {
@@ -49,18 +61,47 @@ static int EmitErrorMsg(const char *err)
 // This function is called with -1 parameter to reach next BRANCH.
 // Otherwise it is 'n' 16-bit steps (over direct JUMP/CALL as well).
 // It should never step over INDIRECT instruction (RET or JUMP/CALL)
-static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
+//  Unless we are in call-stack mode
+static int EmitICNT(FILE *f, int n, Nexus_TypeHist hist, int disp)
 {
-  if (disp & 1) printf(". PC=0x%X, EmitICNT(n=%d,hist=0x%X)\n", nexdeco_pc, n, hist);
+  if (nexdeco_pc & 1) return 0;  // Not synchronized ...
 
-  // if (n >= 0 && hist != 0) n = -1;  // Prove ICNT is optional (big savings!)
+  if ((nexdeco_addrCheck & 1) == 0)
+  {
+    if (nexdeco_pc != nexdeco_addrCheck)
+    {
+      printf("CALL_CHK: ERROR (pc=0x%lX, expected=0x%lX)\n", nexdeco_pc, nexdeco_addrCheck);
+    }
+    else
+    {
+      printf("CALL_CHK: OK\n");
+    }
+  }
 
-  unsigned int histMask = 0;  // MSB is first in history, so we need sliding mask
+  int doneICNT = 0; // Number of done ICNT steps
+
+  if (disp & 1) printf(". PC=0x%lX, EmitICNT(n=%d,hist=0x%x)\n", nexdeco_pc, n, hist);
+
+  // Adjust ICNT by what was handled by ResourceFull message[s] before this message (message with normal ICNT field)
+  //  NOTE: resourceFull_ICNT maybe positive or negative!
+  if (n >= 0 && resourceFull_ICNT != 0)
+  {
+    if (disp & 1) printf(". ICNT adjust: %d to %d\n", n, n + resourceFull_ICNT);
+
+    n += resourceFull_ICNT;
+    if (n < 0) return EmitErrorMsg("ICNT adjustment ERROR");
+
+    resourceFull_ICNT = 0;    // Make adjustment 'consumed'
+
+  }
+
+  Nexus_TypeHist histMask = 0;  // MSB is first in history, so we need sliding mask
   if (hist != 0)
   {
-    if (hist & (1 << 31))
+    // TODO: This can be done better (starting from MSB-side)
+    if (hist & (((Nexus_TypeHist)1u) << (sizeof(Nexus_TypeHist) * 8 - 1)))  // Is MSB 'stop-bit' set?
     {
-      histMask = (1 << 30); // All 32-bits of history are valid
+      histMask = (((Nexus_TypeHist)1u) << (sizeof(Nexus_TypeHist) * 8 - 2)); // All 31/63-bits of history are valid
     }
     else
     {
@@ -70,12 +111,23 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
 
   while (n != 0)
   {
-    fprintf(f, "0x%08X", nexdeco_pc);
+    if (f) fprintf(f, "0x%lX", nexdeco_pc);
     nInstr++; // Statistics (for compression display)
 
-    unsigned int a;
+    if (disp & 0x8) printf("#%d: PC=0x%lX", nInstr, nexdeco_pc);
+
+    Nexus_TypeAddr a;
     unsigned int info = InfoGet(nexdeco_pc, &a);
+    if (info == 0)
+    {
+      nexdeco_pc        = 1;  // 1 means, that last address is unknown 
+      nexdeco_lastAddr  = 1;
+      return 0;
+    }
     if (info == 0) return EmitErrorMsg("info is unknown");
+
+    // Accumulate ICNT we generate (total is returned by this function)
+    if (info & INFO_4) doneICNT += 2; else doneICNT += 1;
 
     if (disp & 0x10) // Append type of instruction to plain PC value
     {
@@ -108,9 +160,13 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
       if (info & (INFO_INDIRECT) && !(info & INFO_RET)) t[nt++] = 'I';
       if (info & INFO_4) t[nt++] = '4'; else t[nt++] = '2';
       t[nt] = '\0';
-      fprintf(f, ",%s", t);
+      if (f) fprintf(f, ",%s", t);
+
+      if (disp & 0x8) printf(",%s", t);
     }
-    fprintf(f, "\n");
+    if (f) fprintf(f, "\n");
+
+    if (disp & 0x8) printf("\n");
 
     if (n > 0)
     {
@@ -119,8 +175,35 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
       if (n < 0) return EmitErrorMsg("ICNT too small");
     }
 
+    if (conf_CallStack > 0 && (info & INFO_CALL))
+    {
+      // This is call (direct or indirect) push address after '[c]jal[r]) to the stack
+      Nexus_TypeAddr ret = nexdeco_pc + ((info & INFO_4) ? 4 : 2);
+      CallStack_Push(ret);
+    }
+
     if (info & INFO_INDIRECT) // Cannot continue over indirect...
     {
+      // We always pop the stack if we see RET ...
+      if (conf_CallStack > 0 && (info & INFO_RET))
+      {
+        Nexus_TypeAddr ret = CallStack_Pop();
+        // nexdeco_addrCheck = ret;  // Set PC to be checked (next time)
+        if (conf_CallStack > 0)
+        {
+          nexdeco_pc = ret;
+        }
+        if (n != 0)
+        {
+          // We should continue from PC we just pop from the stack 
+          if (ret == 1)
+          {
+            return EmitErrorMsg("Not enough entires on callstack");
+          }
+          continue;
+        }
+      }
+
       if (n > 0) {
         printf("ERROR EmitICNT with n=%d\n", n);
         return EmitErrorMsg("indirect address encountered in ICNT");
@@ -157,16 +240,17 @@ static int EmitICNT(FILE *f, int n, unsigned int hist, int disp)
     else                    nexdeco_pc += 2;
   }
 
-  return 1;
+  return doneICNT;  // Number of ICNT steps done (usually at least 1, but can be 0)
 }
 
 #define MSGFIELDS_MAX   10 // Some reasonable limit
 
-static int          msgFieldPos = 0;
-static unsigned int msgFields[MSGFIELDS_MAX];
-static int          msgFieldCnt = 0;
+static int              msgFieldPos = 0;
+static Nexus_TypeField  msgFields[MSGFIELDS_MAX];
+static Nexus_TypeField  savedFields[MSGFIELDS_MAX];
+static int              msgFieldCnt = 0;
 
-static int NexusFieldGet(const char *name, unsigned int *p)
+static int NexusFieldGet(const char *name, Nexus_TypeField *p)
 {
   for (int d = msgFieldPos; nexusMsgDef[d].def != 1; d++)
   {
@@ -181,17 +265,42 @@ static int NexusFieldGet(const char *name, unsigned int *p)
   return 0;
 }
 
-#define NEX_FLDGET(n) unsigned int n = 0; if (!NexusFieldGet(#n, &n)) return (-1)
+unsigned int conf_src = 0;
 
+#define NEX_FLDGET(n) Nexus_TypeField n = 0; if (!NexusFieldGet(#n, &n)) return (-1)
+
+static const Nexus_TypeAddr msb_mask = ((Nexus_TypeAddr)1UL) << 49;
+
+static Nexus_TypeAddr CalculateAddr(Nexus_TypeAddr fu_addr, int full, Nexus_TypeAddr prev_addr)
+{
+  fu_addr <<= NEXUS_PARAM_AddrSkip; // LSB bit is never sent
+  if ((fu_addr >> 32) & 0x10000)           // Perform MSB extension
+  {
+    fu_addr |= 0xFFFF000000000000UL;
+  }
+  // Update (NEW or XOR)
+  if (!full) 
+    fu_addr ^= prev_addr;
+  // printf("NADDR=0x%lX\n", fu_addr);
+  return fu_addr;
+}
 static int MsgHandle(FILE *f, int disp)
 {
+  int doneICNT;
+  
   int TCODE = msgFields[0];
+  if (0 && msgFields[1] != conf_src)      // Is this SRC we are looking for
+  {
+    return 0; // Ignore, but mark as handled
+  }
+
   switch (TCODE)
   {
     case NEXUS_TCODE_DirectBranch:
       {
         NEX_FLDGET(ICNT);
-        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
+        doneICNT = EmitICNT(f, ICNT, 0x0, disp);
+        if (doneICNT < 0) return doneICNT;
       }
       break;
 
@@ -200,8 +309,9 @@ static int MsgHandle(FILE *f, int disp)
         // NEX_FLDGET(BTYPE); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(UADDR);
-        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
-        nexdeco_lastAddr ^= (UADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, 0x0, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(UADDR, 0, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -212,8 +322,9 @@ static int MsgHandle(FILE *f, int disp)
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
 
-        if (EmitICNT(f, ICNT, 0, disp) != 1) return (-2);
-        nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, 0x0, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(FADDR, 1, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -223,8 +334,9 @@ static int MsgHandle(FILE *f, int disp)
         // NEX_FLDGET(SYNC); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
-        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
-        nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, 0x0, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(FADDR, 1, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -235,8 +347,9 @@ static int MsgHandle(FILE *f, int disp)
         // NEX_FLDGET(BTYPE); // We ignore this for now
         NEX_FLDGET(ICNT);
         NEX_FLDGET(FADDR);
-        if (EmitICNT(f, ICNT, 0x0, disp) != 1) return (-2);
-        nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, 0x0, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(FADDR, 1, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -248,8 +361,9 @@ static int MsgHandle(FILE *f, int disp)
         NEX_FLDGET(UADDR);
         NEX_FLDGET(HIST);
 
-        if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
-        nexdeco_lastAddr ^= (UADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, HIST, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(UADDR, 0, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -263,8 +377,9 @@ static int MsgHandle(FILE *f, int disp)
         NEX_FLDGET(FADDR);
         NEX_FLDGET(HIST);
 
-        if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
-        nexdeco_lastAddr = (FADDR << NEXUS_PARAM_AddrSkip);
+        doneICNT = EmitICNT(f, ICNT, HIST, disp);
+        if (doneICNT < 0) return doneICNT;
+        nexdeco_lastAddr = CalculateAddr(FADDR, 1, nexdeco_lastAddr);
         nexdeco_pc = nexdeco_lastAddr;
       }
       break;
@@ -272,14 +387,43 @@ static int MsgHandle(FILE *f, int disp)
     case NEXUS_TCODE_ResourceFull:
       {
         NEX_FLDGET(RCODE);
-        if (RCODE == 0)
+        if (RCODE == 1 || RCODE == 2)
         {
+          // Determine repeat count (for RCODE=2)
+          unsigned int hRepeat = 1;
           NEX_FLDGET(RDATA);
+          if (RCODE == 2)
+          {
+            NEX_FLDGET(HREPEAT);
+            hRepeat = HREPEAT;
+          }
+          
           if (RDATA > 1)
           {
             // Special calling to emit HIST only ...
-            if (EmitICNT(f, -1, RDATA, disp) != 1) return (-2);
+            if (dispHistRepeat)
+            {
+              if (disp & 4) printf("RepeatHIST,0x%lX,%d\n", RDATA, dispHistRepeat);            
+              dispHistRepeat = 0;
+            }
+            do
+            {
+              // ICNT is unknown (-1), what will process only HIST bits
+              doneICNT = EmitICNT(f, -1, RDATA, disp);
+              if (doneICNT < 0) return doneICNT;
+
+              resourceFull_ICNT -= doneICNT;  // Consume, so next time ICNT will be adjusted
+              hRepeat--;
+            } while (hRepeat > 0);
           }
+        }
+        else
+        if (RCODE == 0)
+        {
+          // This is I-CNT overflow
+          NEX_FLDGET(RDATA);
+
+          resourceFull_ICNT += (int)RDATA;  // Accumulate, so next time ICNT will be adjusted
         }
       }
       break;
@@ -292,12 +436,14 @@ static int MsgHandle(FILE *f, int disp)
         if (CDF == 1)
         {
           NEX_FLDGET(HIST);
-          if (EmitICNT(f, ICNT, HIST, disp) != 1) return (-2);
+          doneICNT = EmitICNT(f, ICNT, HIST, disp);
+          if (doneICNT < 0) return doneICNT;
         }
         else
         {
           // No history ...
-          if (EmitICNT(f, ICNT, 0, disp) != 1) return (-2);
+          doneICNT = EmitICNT(f, ICNT, 0, disp);
+          if (doneICNT < 0) return doneICNT;
         }
         nexdeco_pc = nexdeco_lastAddr;
       }
@@ -324,11 +470,18 @@ int NexusDeco(FILE *f, int disp)
 {
   int fldDef = -1;
   int fldBits = 0;
-  unsigned int fldVal = 0;
+  Nexus_TypeField fldVal = 0;
 
   int msgCnt = 0;
   int msgBytes = 0;
   int msgErrors = 0;
+
+  // Make sure decoder is using real call-stack ...
+  if (conf_CallStack < 0)
+  {
+    conf_CallStack = -conf_CallStack;
+  }
+  CallStack_Init();
 
   msgFieldCnt = 0;  // No fields
 
@@ -339,12 +492,34 @@ int NexusDeco(FILE *f, int disp)
     prevByte = msgByte;
     if (fread(&msgByte, 1, 1, fNex) != 1) break;  // EOF
 
+/*
+ 
+. 0x70 011100_00: TCODE[6]=28 (MSG #41) - IndirectBranchHist
+. 0x10 000100_00: BTYPE[2]=0x0
+. 0x49 010010_01: ICNT[10]=0x121
+. 0x70 011100_00:
+. 0x5D 010111_01: UADDR[12]=0x5DC
+. 0xF4 111101_00:
+. 0xFC 111111_00:
+. 0xFC 111111_00:
+. 0xFF 111111_11: HIST[24]=0xFFFFFD
+
+ */     
+
+#if 0 // Some debug code (it make one of tests fail!)
+      if (1 && msgCnt == 42 && prevByte == 0xFC && msgByte == 0xFF)
+      {
+        msgByte = 0x6b;
+      }
+#endif      
+
 #if 1 // This will skip long sequnece of idles (visible in true captures ...)
     if (msgByte == 0xFF && prevByte == 0xFF)
     {
       continue;
     }
 #endif
+
 
     if (disp & 1)
     {
@@ -384,6 +559,7 @@ int NexusDeco(FILE *f, int disp)
         return -2;  // Error return
       }
 
+      // TODO: Convert to look-up table (for all TCODE values)
       for (int d = 0; nexusMsgDef[d].def != 0; d++)
       {
         if ((nexusMsgDef[d].def & 0x100) == 0) continue;
@@ -406,10 +582,13 @@ int NexusDeco(FILE *f, int disp)
       if (mdo == NEXUS_TCODE_RepeatBranch)
       {
         // Save previous message fields
-        msgFields[6] = msgFieldPos;
-        msgFields[7] = msgFieldCnt;
-        msgFields[8] = msgFields[0];
-        msgFields[9] = msgFields[1];
+        savedFields[0] = msgFieldPos;
+        savedFields[1] = msgFieldCnt;
+        savedFields[2] = msgFields[0];
+        savedFields[3] = msgFields[1];
+        savedFields[4] = msgFields[2];
+        savedFields[5] = msgFields[3];
+        savedFields[6] = msgFields[4];
       }
 
       // Save to allow later decoding
@@ -430,19 +609,28 @@ int NexusDeco(FILE *f, int disp)
     }
 
     // Accumulate 'mdo' to field value
-    fldVal |= (mdo << fldBits);
+    fldVal |= (((Nexus_TypeField)mdo) << fldBits);
     fldBits += 6;
 
     msgBytes++;
 
     // Process fixed size fields (there may be more than one in one MDO record)
-    while ((nexusMsgDef[fldDef].def & 0x200) && fldBits >= (nexusMsgDef[fldDef].def & 0xFF))
+    while (nexusMsgDef[fldDef].def & 0x200)
     {
       int fldSize = nexusMsgDef[fldDef].def & 0xFF;
+      if (fldSize & 0x80)
+      {
+        // Size of this field is defined by parameter ...
+        fldSize = 2;
+      }
+      if (fldBits < fldSize)
+      {
+        break;  // Not enough bits for this field
+      }
 
-      msgFields[msgFieldCnt++] = fldVal & ((1 << fldSize) - 1); // Save field
+      msgFields[msgFieldCnt++] = fldVal & ((((Nexus_TypeField)1) << fldSize) - 1); // Save field
 
-      if (disp & 1) printf(" %s[%d]=0x%X", nexusMsgDef[fldDef].name, fldSize, fldVal & ((1 << fldSize) - 1));
+      if (disp & 1) printf(" %s[%d]=0x%lX", nexusMsgDef[fldDef].name, fldSize, fldVal & ((((Nexus_TypeField)1) << fldSize) - 1));
       fldDef++;
       fldVal >>= fldSize;
       fldBits -= fldSize;
@@ -457,7 +645,7 @@ int NexusDeco(FILE *f, int disp)
     if (nexusMsgDef[fldDef].def & 0x400)
     {
       // Variable size field
-      if (disp & 1) printf(" %s[%d]=0x%X\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
+      if (disp & 1) printf(" %s[%d]=0x%lX\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
 
       msgFields[msgFieldCnt++] = fldVal; // Save field
 
@@ -465,14 +653,20 @@ int NexusDeco(FILE *f, int disp)
       {
         int cnt = 1;
 
+        dispHistRepeat = 0; 
+
         if (msgFields[0] == NEXUS_TCODE_RepeatBranch)
         {
           // Special handling for repeat branch (which only has 1 field!)
           cnt = msgFields[1]; // Counter set in RepeatBranch message
-          msgFieldPos = msgFields[6]; // Restrore previous message (saved)
-          msgFieldCnt = msgFields[7];
-          msgFields[0] = msgFields[8];
-          msgFields[1] = msgFields[9];
+          msgFieldPos = savedFields[0]; // Restrore previous message (saved)
+          msgFieldCnt = savedFields[1];
+          msgFields[0] = savedFields[2];
+          msgFields[1] = savedFields[3];
+          msgFields[2] = savedFields[4];
+          msgFields[3] = savedFields[5];
+          msgFields[4] = savedFields[6];
+          dispHistRepeat = cnt;
         }
 
         while (cnt > 0) // Handle (1 or many times ...)

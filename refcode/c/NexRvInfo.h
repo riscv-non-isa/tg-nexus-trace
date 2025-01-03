@@ -20,6 +20,8 @@
 #ifndef NEXRVINFO_H
 #define NEXRVINFO_H
 
+#include <stdint.h> // For uint32_t and uint64_t
+
 #define INFO_LINEAR   0x1   // Linear (plain instruction or not taken BRANCH)
 #define INFO_4        0x2   // If not 4, it must be 2 on RISC-V
 //                    0x4   // Reserved (for exception or so ...)
@@ -29,9 +31,11 @@
 #define INFO_CALL     0x40  // Direct or indirect (and always a jump)
 #define INFO_RET      0x80  // Return (always indirect and always a jump)
 
-extern int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned int *pDest);
+typedef uint64_t InfoAddr;
+
+extern int InfoParse(const char *t, InfoAddr *pAddr, uint32_t *pInfo, InfoAddr *pDest);
 extern int InfoInit(const char *filename);
-extern unsigned int InfoGet(unsigned int addr, unsigned int *pDest);
+extern unsigned int InfoGet(InfoAddr addr, InfoAddr *pDest);
 extern void InfoTerm(void);
 
 #endif  // NEXRVINFO_H

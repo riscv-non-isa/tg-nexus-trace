@@ -40,11 +40,12 @@ int NexusDump(FILE *f, int disp)
 {
   int fldDef  = -1;          
   int fldBits = 0;          
-  unsigned int fldVal = 0;
+  Nexus_TypeField fldVal = 0;
 
   int msgCnt    = 0;
   int msgBytes  = 0;
   int msgErrors = 0;
+  int idleCnt   = 0;
 
   unsigned char msgByte = 0;
   unsigned char prevByte = 0;
@@ -56,6 +57,7 @@ int NexusDump(FILE *f, int disp)
 #if 1 // This will skip long sequnece of idles (visible in true captures ...)
     if (msgByte == 0xFF && prevByte == 0xFF)
     {
+      idleCnt++;
       continue;
     }
 #endif
@@ -80,7 +82,7 @@ int NexusDump(FILE *f, int disp)
 
     if (mseo == 0x2)
     {
-      printf(" ERROR: MSEO='10' is not allowed\n");
+      printf(" ERROR: At offset %d: MSEO='10' is not allowed\n", msgBytes + idleCnt);
       return -1;  // Error return
     }
 
@@ -89,12 +91,13 @@ int NexusDump(FILE *f, int disp)
       if (mseo == 0x3) 
       {
         if (disp & 1) fprintf(f, " IDLE\n");
+        idleCnt++;
         continue;
       }
 
       if (mseo != 0x0)
       {
-        printf(" ERROR: Message must start from MSEO='00'\n");
+        printf(" ERROR: At offset %d: Message must start from MSEO='00'\n", msgBytes + idleCnt);
         return -2;  // Error return
       }
 
@@ -110,7 +113,7 @@ int NexusDump(FILE *f, int disp)
 
       if (fldDef < 0)
       {
-        printf(" ERROR: Message with TCODE=%d is not defined for RISC-V\n", mdo);
+        printf(" ERROR: At offset %d: Message with TCODE=%d is not defined for N-Trace\n", msgBytes + idleCnt, mdo);
         return -3;
       }
 
@@ -127,16 +130,25 @@ int NexusDump(FILE *f, int disp)
     }
 
     // Accumulate 'mdo' to field value
-    fldVal  |= (mdo << fldBits);
+    fldVal  |= (((Nexus_TypeField)mdo) << fldBits);
     fldBits += 6;
 
     msgBytes++;
 
     // Process fixed size fields (there may be more than one in one MDO record)
-    while ((nexusMsgDef[fldDef].def & 0x200) && fldBits >= (nexusMsgDef[fldDef].def & 0xFF))
+    while (nexusMsgDef[fldDef].def & 0x200)
     {
       int fldSize = nexusMsgDef[fldDef].def & 0xFF;
-      if (disp & 1) fprintf(f, " %s[%d]=0x%X", nexusMsgDef[fldDef].name, fldSize, fldVal & ((1 << fldSize) - 1));
+      if (fldSize & 0x80)
+      {
+        // Size of this field is defined by parameter ...
+        fldSize = 2;
+      }
+      if (fldBits < fldSize)
+      {
+        break;  // Not enough bits for this field
+      }
+      if (disp & 1) fprintf(f, " %s[%d]=0x%lX", nexusMsgDef[fldDef].name, fldSize, fldVal & ((((Nexus_TypeField)1) << fldSize) - 1));
       fldDef++;
       fldVal >>= fldSize;
       fldBits -= fldSize;
@@ -151,7 +163,7 @@ int NexusDump(FILE *f, int disp)
     if (nexusMsgDef[fldDef].def & 0x400)
     {
       // Variable size field
-      if (disp & 1) fprintf(f, " %s[%d]=0x%X\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
+      if (disp & 1) fprintf(f, " %s[%d]=0x%lX\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
 
       if (mseo == 3)
       {
@@ -168,14 +180,14 @@ int NexusDump(FILE *f, int disp)
 
     if (fldBits > 0)
     {
-      printf(" ERROR: Not enough bits for non-variable field\n");
+      printf(" ERROR: At offset %d: Not enough bits for non-variable field\n", msgBytes + idleCnt);
       return -4;
     }
   }
 
   if (disp & 4)
   {
-    printf("\nStat: %d bytes, %d messages, %d error messages", msgBytes, msgCnt, msgErrors);
+    printf("\nStat: %d bytes, %d idles, %d messages, %d error messages", msgBytes, idleCnt, msgCnt, msgErrors);
     if (msgCnt > 0) printf(", %.2lf bytes/message", ((double)msgBytes) / msgCnt);
     printf("\n");
   }

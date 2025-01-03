@@ -27,17 +27,18 @@
 #include <stdlib.h> //  For 'exit'
 #include <string.h> //  For 'strcmp', 'strchr' 
 #include <ctype.h>  //  For 'isspace/isxdigit' etc.
+#include <inttypes.h>   //  For scan formats SCNx64
 
 #include "NexRv.h"  //  Common NEXUS_... #define (RISC-V specific subset)
 
 #include "NexRvInfo.h"  // We need info 
 
-// It converst GNU-objdump file (with -d option) to info-file
+// It converts GNU-objdump file (with -d option) to info-file
 
 // This is example line (<t> denotes TAB) - line must start from space!
 // 166:<t>0ba000ef          <t>jal<t>ra, 220 <c_ecall_handler_v2>
 
-static unsigned int GetParAddr(const char *l)
+static Nexus_TypeAddr GetParAddr(const char *l)
 {
   // Skip over opcode (and '/t' following it)
   while (!(*l == '\t' || *l == '\0')) l++;
@@ -53,9 +54,42 @@ static unsigned int GetParAddr(const char *l)
 
   if (!isxdigit(*parAddr)) return 3;
 
-  unsigned int addr;
-  if (sscanf(parAddr, "%X", &addr) != 1) return 5;
+  Nexus_TypeAddr addr;
+  if (sscanf(parAddr, "%" SCNx64, &addr) != 1) return 5;
   return addr;
+}
+
+int ConvRtlTrace(FILE *fIn, FILE *fOut)
+{
+  char line[1000];
+
+  int nInstr = 0;
+  while (fgets(line, sizeof(line), fIn) != NULL)
+  {
+    char *p = strstr(line, " I ");
+    if (p == NULL || (p - 6) < line)
+    {
+      continue;
+    }
+    // (M     ) 0:0:0 I 000000001fc00cfc ---------------- 02835313   srli    x6, x6, 40  # CycleCount=4147     InstrCount=227    SeqNum=35  itag=00000e7
+    //          -----0+++++++++11111111112
+    // p-+:     54321012345678901234567890
+    if (*(p - 2) != ':' || *(p - 4) != ':' || p[20] != '-') // Extra checking ...
+    {
+      continue;
+    }
+    p += 3;           // Isolate 64-bit (16-digit) hex number 
+    p[16] = '\0';
+
+    while (*p == '0') // Skip leading 0-s
+      p++;
+    if (*p == '\0') p--;
+
+    fprintf(fOut, "0x%s\n", p);
+    nInstr++;
+  }
+
+  return nInstr;
 }
 
 int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
@@ -72,8 +106,8 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
       continue;
     }
 
-    unsigned int addr;
-    if (sscanf(l, "%x", &addr) != 1) return -1;
+    Nexus_TypeAddr addr;
+    if (sscanf(l, "%" SCNx64, &addr) != 1) return -1;
     while (isxdigit(*l)) l++;
     if (*l++ != ':') continue;
     if (*l++ != '\t') continue;
@@ -84,7 +118,11 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
     if (sscanf(l, "%x", &code) != 1) return -21;
 
     while (!(*l == '\t' || *l == '\0')) l++;
-    if (*l++ != '\t') return -22;
+    if (*l++ != '\t') 
+    {
+      // return -22;  // Original (stop on error ...)
+      continue; // Instead stopping, skip lines which we do not like ...
+    }
 
     // Here we need to recognize the following opcodes
     //  b??/j/jal (with address)
@@ -101,12 +139,13 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
 
     if (disp)
     {
-      printf("addr=0x%X,code=0x%X,size=%d,instr=%s\n", addr, code, size, instr);
+      printf("addr=0x%lX,code=0x%X,size=%d,instr=%s\n", addr, code, size, instr);
     }
 
     // Determine instruction type based on opcode of instruction
     const char *iType = "L";
-    if (instr[0] == 'j' || instr[0] == 'b')
+    if (instr[0] == 'j' || (instr[0] == 'b' && instr[4] != 'i'))
+      // That 'i' for for bseti/bclri/bexti/binvi - see https://github.com/riscv/riscv-opcodes/blob/master/rv32_zbs
     {
       // "j <a>" or "jal <r>,<a>" or "jr <r>" or "jalr <r>"
       // "b?? ...<a>
@@ -139,15 +178,15 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
     }
 
     // Produce output record
-    fprintf(fPcInfo, "0x%0X,%s%d", addr, iType, size);
+    fprintf(fPcInfo, "0x%lX,%s%d", addr, iType, size);
 
     if (iType[1] == 'D')
     {
       // Direct (branch/call/jump) - we need to extract destination address
       // from parameters. Address may be first or after last ','
-      unsigned int destAddr = GetParAddr(instr);
+      Nexus_TypeAddr destAddr = GetParAddr(instr);
       if (destAddr & 1) return -(30 + (int)destAddr);
-      fprintf(fPcInfo, ",0x%X", destAddr);
+      fprintf(fPcInfo, ",0x%lX", destAddr);
     }
     fprintf(fPcInfo, "\n");
 
@@ -162,7 +201,7 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
   // Scan PC-sequence file and add INFO for each PC
   char line[1000];
 
-  unsigned int branchAddr = 0;  // Address of branch instruction
+  Nexus_TypeAddr branchAddr = 0;  // Address of branch instruction
   unsigned int branchSize = 0;  // Size of previous branch
 
   int nInstr = 0;
@@ -170,6 +209,8 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
   {
     const char *l = line;
     while (isspace(*l)) l++;
+
+    if (0) printf("%s", l); // For debugging ...
 
 #if 0
     // It must be PC in format '0xHHH'
@@ -180,12 +221,23 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
     }
 #endif
 
-    unsigned int a;
-    if (sscanf(l, "%x", &a) != 1)
+    if (l[0] == '.')
+    {
+      // Handle end-marker ...
+      if (l[1] == 'e')
+      {
+        break;
+      }
+    }
+
+    Nexus_TypeAddr a;
+    if (sscanf(l, "%" SCNx64, &a) != 1)
     {
       fprintf(fOut, "ERROR: Line %s does not have PC with 0x prefix\n", line);
       return -2;
     }
+
+    if (0) printf("ADDR=0x%lX\n", a); // For debugging ...
 
     if (fOut == NULL)
     {
@@ -194,13 +246,13 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
       {
         if (fgets(line, sizeof(line), fComp) == NULL)
         {
-          printf("ERROR: Instruction #%d at address 0x%X - no PC at PCOUT file.\n", nInstr, a);
+          printf("ERROR: Instruction #%d at address 0x%lX - no PC at PCOUT file.\n", nInstr, a);
           return -5;
         }
         const char *l = line;
 
-        unsigned int aa;
-        if (sscanf(l, "%x", &aa) != 1)
+        Nexus_TypeAddr aa;
+        if (sscanf(l, "%" SCNx64, &aa) != 1)
         {
           printf("ERROR: Line %s does not have PC with 0x prefix\n", line);
           return -6;
@@ -208,7 +260,7 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
 
         if (a != aa)
         {
-          printf("ERROR: Instruction #%d mismatch. Expected 0x%X, actual 0x%X\n", nInstr, a, aa);
+          printf("ERROR: Instruction #%d mismatch. Expected 0x%lX, actual 0x%lX\n", nInstr, a, aa);
           return -4;
         }
       }
@@ -216,14 +268,14 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
       continue; // Done (no need for INFO processing)
     }
 
-    unsigned int aa;
+    InfoAddr aa;
     unsigned int info = InfoGet(a, &aa);
     if (info == 0)
     {
-#if 1
+#if 1 // This is needed for processing of files generated from Spike (there are 5 instructions at the beginning ...)
       if (nInstr == 0) continue;  // Skip initial wrong addresses ...
 #endif      
-      fprintf(fOut, "ERROR: Instruction at address 0x%X not found in <info-file>\n", a);
+      fprintf(fOut, "ERROR: Instruction at address 0x%lX not found in <info-file>\n", a);
       return -3;
     }
 
@@ -241,7 +293,7 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
 
     nInstr++;
 
-    fprintf(fOut, "0x%08X", a); // Output PC value
+    fprintf(fOut, "0x%lX", a); // Output PC value
     // Append type of instruction to plain PC value
     if (info & INFO_CALL)         fprintf(fOut, ",C");
     else if (info & INFO_RET)     fprintf(fOut, ",R");
@@ -268,7 +320,7 @@ int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp)
     {
       if (!(info & INFO_INDIRECT))
       {
-        fprintf(fOut, ",0x%08X", aa); // Direct address
+        fprintf(fOut, ",0x%lX", aa); // Direct address
       }
     }
 #endif

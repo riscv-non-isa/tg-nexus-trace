@@ -5,17 +5,27 @@ all:
 	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -nobhm
 	../../NexRv.exe -dump ./output/test-NEX.bin ./output/test-DUMP.txt
 	../../NexRv.exe -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
-	diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
-	echo  No Repeat Branch Message ...
-	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -norbm
+	../../NexRv.exe -diff -pconly ./test-PCONLY.txt -pcout ./output/test-PCOUT.txt	
+	echo  No Call-stack and no Repeat Message ...
+	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -cs 0 -rpt 0
 	../../NexRv.exe -dump ./output/test-NEX.bin ./output/test-DUMP.txt
 	../../NexRv.exe -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
-	diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
-	echo  With Repeat Branch Message - default
-	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin
+	../../NexRv.exe -diff -pconly ./test-PCONLY.txt -pcout ./output/test-PCOUT.txt	
+	echo  No Call-stack and with Repeat Message ...
+	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin  -cs 0 -rpt 2
 	../../NexRv.exe -dump ./output/test-NEX.bin ./output/test-DUMP.txt
 	../../NexRv.exe -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
-	diff -s -q ./test-PCONLY.txt ./output/test-PCOUT.txt
+	../../NexRv.exe -diff -pconly ./test-PCONLY.txt -pcout ./output/test-PCOUT.txt	
+	echo  With callstack and no repeat
+	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -cs 8 -rpt 0
+	../../NexRv.exe -dump ./output/test-NEX.bin ./output/test-DUMP.txt
+	../../NexRv.exe -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
+	../../NexRv.exe -diff -pconly ./test-PCONLY.txt -pcout ./output/test-PCOUT.txt	
+	echo  With callstack and repeat -best possible compression
+	../../NexRv.exe -enco ./output/test-PCSEQ.txt -nex ./output/test-NEX.bin -cs 8 -rpt 2
+	../../NexRv.exe -dump ./output/test-NEX.bin ./output/test-DUMP.txt
+	../../NexRv.exe -deco ./output/test-NEX.bin -pcinfo ./output/test-PCINFO.txt -pcout ./output/test-PCOUT.txt
+	../../NexRv.exe -diff -pconly ./test-PCONLY.txt -pcout ./output/test-PCOUT.txt	
 
 ELF:
 	riscv64-unknown-elf-gcc -c -g -fno-builtin -nostdlib -fsigned-char -g -ffunction-sections -fdata-sections -march=rv32imac -mabi=ilp32 -mcmodel=medlow test.c

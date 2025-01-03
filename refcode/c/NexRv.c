@@ -27,21 +27,134 @@
 #include <stdlib.h> //  For 'exit'
 #include <string.h> //  For 'strcmp', 'strchr'
 
+#include "NexRv.h"      // For Nexus_TypeAddr
 #include "NexRvInfo.h"  // For 'InfoInit/InfoTerm'
+
+// #define WITH_EXT 1      // Enable (in code, not by -DWITH_EXT=1 command line)
+
+#ifndef WITH_EXT
+#define WITH_EXT 0      // By default without QEMU trace handling
+#endif
 
 FILE *fNex  = NULL;     // Used by NexusDump/NexusDeco/NexusEnco
 
 extern int NexusDump(FILE *f, int disp);
 extern int NexusDeco(FILE *f, int disp);
 extern int NexusEnco(FILE *f, int level, int disp);
+#if WITH_EXT
+extern int ExtProcess(int argc, char *argv[]);
+#endif
+
 extern int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo);
 extern int ConvAddInfo(FILE *fIn, FILE *fOut, FILE *fComp);
+extern int ConvRtlTrace(FILE *fIn, FILE *fOut);
+
+int conf_Repeat = 0;        // 0=no repeat, 1=releat branch only, 2=repeat history
+
+#if 1 // Callstack related
+
+#define CALLSTACK_MAX 32    // Max depth
+
+int conf_CallStack = 0;     // =0: No support for call stack
+// int conf_CallStack = -8;    // <0: Callstack without a stack (just a counter). Max -N entries.
+// int conf_CallStack = 8;     // >0: Call-stack 'N' entries deep (with storing of an address).
+
+Nexus_TypeAddr callStack[CALLSTACK_MAX] = {0};
+int callStackTop = 0;
+int callStackCnt = 0;
+int callStackMax = 0;
+
+void CallStack_Init()
+{
+  callStackCnt = 0;
+  callStackTop = 0;
+  callStack[0] = 0; // Needed for logging with 'no-stack'
+  if (conf_CallStack >= 0)
+  {
+    callStackMax = conf_CallStack;
+  }
+  else
+  {
+    callStackMax = -conf_CallStack;
+  }
+}
+
+void CallStack_Push(Nexus_TypeAddr ret)
+{
+  if (0) printf("CallPush[%d] 0x%lX\n", callStackCnt + 1, ret);
+
+  if (conf_CallStack <= 0)
+  {
+    // Callstack without storing addresses (just saturating +- counter)
+    if (callStackCnt < callStackMax)
+    {
+      callStackCnt++; // Count (saturating at callStackMax)
+    }
+
+    return;
+  }
+
+  // Adjust 'top' (with wrap-around)
+  if (callStackTop >= callStackMax)
+  {
+    callStackTop = 0; // Wrap-around
+  }
+  else
+  {
+    callStackTop++;   // Just next
+  }
+
+  //Store (in new top)
+  callStack[callStackTop] = ret;
+
+  // Calculate new size (saturating)
+  if (callStackCnt < callStackMax)
+  {
+    callStackCnt++;
+  }
+}
+
+Nexus_TypeAddr CallStack_Pop()
+{
+  if (0) printf("CallPop[%d] 0x%lX\n", callStackCnt, callStack[callStackTop]);
+
+  // Calculate new size (and handle empty)
+  if (callStackCnt == 0) return 1;  // Empty ('1' will never match 'real PC'!
+  callStackCnt--;
+
+  if (conf_CallStack <= 0)
+  {
+    return 0; // Any non-empty address (it will NOT be compared)
+  }
+
+  int prevTop = callStackTop;
+
+  // Adjust 'top' (with wrap-around)
+  if (callStackTop == 0)
+  {
+    callStackTop = (callStackMax - 1);  // Wrap around
+  }
+  else
+  {
+    callStackTop--;                     // Just previous
+  }
+
+  return callStack[prevTop];  // Return element on top (before adjustment)
+}
+
+#endif
 
 static int error(const char *err)
 {
   printf("\n");
   printf("NexRv ERROR: %s\n", err);
   return 9;
+}
+
+// For use externally (nicer name)
+int NexRv_error(const char *err)
+{
+  return error(err);
 }
 
 static int usage(const char *err)
@@ -51,22 +164,47 @@ static int usage(const char *err)
     error(err);
   }
   printf("\n");
+  printf("NexRv v1.0.0 (2025/01/02)\n");
   printf("Usage:\n");
   printf("  NexRv -dump <nex> [<dump>] [-msg|-none] - dump Nexus file\n");
   printf("  NexRv -deco <nex> -pcinfo <info> -pcout <pco> [-stat|-full|-all|-msg|-none] - decode trace\n");
-  printf("  NexRv -enco <pcseq> -nex <nex> [-nobhm|-norbm] [-stat|-full|-all|-msg|-none] - encode trace \n");
+  printf("  NexRv -enco <pcseq> -nex <nex> [-nobhm|-norbm|-cs [<cs>]|-rpt <m>] [-stat|-full|-all|-msg|-none] - encode trace \n");
   printf("  NexRv -conv -objd <objd> -pcinfo <pci> - create <pci> from objdump -d output <objd>\n");
   printf("  NexRv -conv -pcinfo <pci> -pconly <pco> -pcseq <pcs> - convert <pco> to <pcs> using <pci>\n");
-  printf("  NexRv -diff -pcseq <pcs> -pconly <pco> - compare <pcs> with <pco>\n");
+  printf("  NexRv -conv -rtl <rtl> -pconly <pco> -  create <pco> file from <rtl> trace file\n");
+  printf("  NexRv -diff -pcseq <pcs> -pcout <pco> - compare <pcs> with <pco>\n");
+#if WITH_EXT
+  printf("  NexRv -ext ... - extra processing (use -ext only to display extra usage)\n");
+#endif
   printf("where:\n");
   printf("  -nobhm|-norbm               - do not generate Branch History/Repeat Branch Messages\n");
+  printf("  -cs [<cs>]                  - enable call-stack level <cs> (0=none, 8 is default)\n");
+  printf("  -rpt [<m>]                  - enable repeat detection (0=none,1=repeat branch,2=repeat history)\n");
   printf("  -stat|-full|-all|-msg|-none - verbose level\n");
+
+#if 0
+  printf("sizeof(unsigned int) = %d\n",       sizeof(unsigned int));
+  printf("sizeof(unsigned long) = %d\n",      sizeof(unsigned long));
+  printf("sizeof(unsigned long long) = %d\n", sizeof(unsigned long long));
+  printf("sizeof((uint64_t) = %d\n",          sizeof(uint64_t));
+  printf("sizeof(Nexus_TypeAddr) = %d\n",     sizeof(Nexus_TypeAddr));
+#endif
+
   return 1;
 }
 
 int main(int argc, char *argv[])
 {
   if (argc < 2) return usage(NULL);
+
+#if WITH_EXT
+  if (strcmp(argv[1], "-ext") == 0)
+  {
+    // Extra processing (if enabled)
+    int ret = ExtProcess(argc, argv);
+    return ret;
+  }
+#endif
 
   if (strcmp(argv[1], "-dump") == 0) // Dump?
   {
@@ -148,6 +286,28 @@ int main(int argc, char *argv[])
         InfoTerm();
       }
     }
+    else
+    if (argc == 6 && strcmp(argv[2], "-rtl") == 0)
+    {
+      // -conv -objd <objd> -pcinfo <pci>
+      if (strcmp(argv[4], "-pconly") == 0)
+      {
+        // Syntax correct - open all files
+        err = NULL;
+
+        FILE *rtlFile = fopen(argv[3], "rt");
+        if (rtlFile == NULL) return error("Cannot open RTL file");
+
+        FILE *pcoFile = fopen(argv[5], "wt");
+        if (pcoFile == NULL) return error("Cannot create PCONLY file");
+
+        // Run conversion
+        ret = ConvRtlTrace(rtlFile, pcoFile);
+        fclose(pcoFile);
+        fclose(rtlFile);
+      }
+    }
+
     if (err != NULL) return usage(err);
 
     if (ret > 0)
@@ -170,9 +330,9 @@ int main(int argc, char *argv[])
     const char *err = "Incorrect -diff calling";
 
     int ret = 0;
-    if (argc == 6 && strcmp(argv[2], "-pcseq") == 0)
+    if (argc == 6 && (strcmp(argv[2], "-pcseq") == 0 || strcmp(argv[2], "-pconly") == 0))
     {
-      // -conv -objd <objd> -pcinfo <pci>
+      // -diff -pcseq <pcseq> -pcout <pco>
       if (strcmp(argv[4], "-pcout") == 0)
       {
         // Syntax correct - open all files
@@ -219,19 +379,70 @@ int main(int argc, char *argv[])
     fNex = fopen(argv[4], "wb");
     if (fNex == NULL) return error("Cannot create NEX file");
 
-    int level = -1; // Default level
-    if (argc > 5 && strcmp(argv[5], "-nobhm") == 0) level = 10;  // Level 1.0
-    if (argc > 5 && strcmp(argv[5], "-norbm") == 0) level = 20;  // Level 2.0
+    int level = -1;     // Default level
+    conf_CallStack = 0; // No callstack (by default)
+    int disp = 4;       // Default display
 
-    int disp = 4; // Default (stat)
+    // Process options
+    int ai = 5;
+    while (ai < argc)
+    {
+      if (strcmp(argv[ai], "-nobhm") == 0) level = 10;  // Level 1.0
+      else
+      if (strcmp(argv[ai], "-norbm") == 0) level = 20;  // Level 2.0
+      else
+      if (strcmp(argv[ai], "-cs") == 0) 
+      {
+        int v;
+        if (ai + 1 < argc && sscanf(argv[ai + 1], "%d", &v) == 1)
+        {
+          ai++;
+          conf_CallStack = v;
+        }
+        else
+        {
+          conf_CallStack = 8;
+        }
 
-    int dispPos = 5;
-    if (level >= 0) dispPos++; // Skip over level parameter
-    if (argc > dispPos && strcmp(argv[dispPos], "-all") == 0)   disp = 4 | 2 | 1; // All
-    if (argc > dispPos && strcmp(argv[dispPos], "-msg") == 0)   disp = 4 | 2;     // TCODE and stat.
-    if (argc > dispPos && strcmp(argv[dispPos], "-stat") == 0)  disp = 4;         // Only statistics
-    if (argc > dispPos && strcmp(argv[dispPos], "-none") == 0)  disp = 0;         // Nothing
-    if (argc > dispPos && strcmp(argv[dispPos], "-full") == 0)  disp = 0xFF;      // Everything
+        if (abs(conf_CallStack) > CALLSTACK_MAX)
+        {
+          return error("Value of -cs is too big");
+        }
+        printf("NexRv/Callstack: %d\n", conf_CallStack);
+      }
+      else
+      if (strcmp(argv[ai], "-rpt") == 0) 
+      {
+        int v;
+        if (ai + 1 < argc && sscanf(argv[ai + 1], "%d", &v) == 1)
+        {
+          ai++;
+          conf_Repeat = v;
+        }
+        else
+        {
+          conf_Repeat = 2;
+        }
+
+        printf("NexRv/Repeat: %d\n", conf_Repeat);
+      }
+      else
+      if (strcmp(argv[ai], "-all") == 0)   disp = 4 | 2 | 1; // All
+      else
+      if (strcmp(argv[ai], "-msg") == 0)   disp = 4 | 2;     // TCODE and stat.
+      else
+      if (strcmp(argv[ai], "-stat") == 0)  disp = 4;         // Only statistics
+      else
+      if (strcmp(argv[ai], "-none") == 0)  disp = 0;         // Nothing
+      else
+      if (strcmp(argv[ai], "-full") == 0)  disp = 0xFF;      // Everything
+      else
+      {
+        printf("ERROR: Unknown option %s\n", argv[ai]);
+        return 10;
+      }
+      ai++;
+    }
 
     if (level < 0) level = 21;  // Level 2.1 is default
     int ret = NexusEnco(fPcseq, level, disp);
@@ -254,6 +465,8 @@ int main(int argc, char *argv[])
 
   if (strcmp(argv[1], "-deco") == 0) // Decode?
   {
+    conf_CallStack = CALLSTACK_MAX; // Always full call-stack
+
     if (argc < 7) return error("Incorrect number of parameters");
     if (strcmp(argv[3], "-pcinfo") != 0) return error("-pcinfo must be provided");
     if (strcmp(argv[5], "-pcout") != 0) return error("-pcout must be provided");
@@ -263,6 +476,7 @@ int main(int argc, char *argv[])
     if (InfoInit(argv[4]) < 0) return error("Cannot open PCINFO file");
     FILE *fOut = fopen(argv[6], "wt");
     if (fOut == NULL) return error("Cannot create PCOUT file");
+
 
     int disp = 4; // Default (-stat)
     if (argc > 7 && strcmp(argv[7], "-all") == 0)   disp = 4 | 2 | 1; // All

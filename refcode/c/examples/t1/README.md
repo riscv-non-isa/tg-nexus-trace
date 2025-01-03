@@ -7,15 +7,25 @@ Programs provided by [Embench](https://github.com/embench/embench-iot) will be a
 
 ## Results (Nexus Trace compression as displayed by NexRv tool)
 
-* Nexus Level1.0 (only Direct Branch messages):
+* With `-nobhm` option (No Branch History Message - only Direct Branch Message)
 
-    `Stat: 12980 bytes, 6233 messages, 0 error messages, 2.08 bytes/message, 164959 instr, 0.63 bits/instr`
-* Nexus Level2.0 (with Branch History messages):
+    `Stat: 12978 bytes, 6233 messages, 0 error messages, 2.08 bytes/message, 164959 instr, 0.629 bits/instr`
 
-    `Stat: 4994 bytes, 485 messages, 0 error messages, 10.30 bytes/message, 164959 instr, 0.24 bits/instr`
-* Nexus Level2.1 (with Repeat Branch messages):
+* With `-cs 0 -rpt 0` option (No Call-stack and no Repeat Message)
 
-    `Stat: 4906 bytes, 485 messages, 0 error messages, 10.12 bytes/message, 164959 instr, 0.24 bits/instr`
+    `Stat: 3393 bytes, 485 messages, 0 error messages, 7.00 bytes/message, 164959 instr, 0.165 bits/instr`
+
+* With `-cs 0 -rpt 2` option (No Call-stack and with Repeat Message)
+
+    `Stat: 2628 bytes, 371 messages, 0 error messages, 7.08 bytes/message, 164959 instr, 0.127 bits/instr`
+
+* With `-cs 8 -rpt 0` option (With callstack and no repeat)
+
+    `Stat: 3374 bytes, 482 messages, 0 error messages, 7.00 bytes/message, 164959 instr, 0.164 bits/instr`
+
+* With `-cs 8 -rpt 0` option (With callstack and repeat -best possible compression)
+
+    `Stat: 2604 bytes, 367 messages, 0 error messages, 7.10 bytes/message, 164959 instr, 0.126 bits/instr`
 
 ## Files
   Sources:

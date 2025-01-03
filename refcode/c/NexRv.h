@@ -23,6 +23,8 @@
 #ifndef NEXRV_H
 #define NEXRV_H
 
+#include <stdint.h> // For uint32_t and uint64_t
+
 //****************************************************************************
 // Nexus specific values (based on Nexus Standard PDF)
 
@@ -46,7 +48,7 @@
 //****************************************************************************
 
 //****************************************************************************
-// RISC-V Nexus Trace related values (most 'recommented' by Nexus)
+// RISC-V Nexus Trace related values (most 'recommended' by Nexus)
 
 //  Sizes of fields:
 #define NEXUS_FLDSIZE_BTYPE     2 // Branch type
@@ -54,11 +56,25 @@
 #define NEXUS_FLDSIZE_ETYPE     4 // Error type
 #define NEXUS_FLDSIZE_EVCODE    4 // Event code (correlation)
 #define NEXUS_FLDSIZE_CDF       2
-#define NEXUS_FLDSIZE_RCODE     4 // Resource full code
+#define NEXUS_FLDSIZE_RCODE     4 // Resource full code size
+
+#define NEXUS_PAR_SIZE_SRC      0 // SRC field size is defined by parameter #0
+
+#define NEXUS_HIST_BITS         31 // Number of valid HIST bits
 
 // Address skipping (on RISC-V LSB of PC is always 0, so it is not encoded)
 #define NEXUS_PARAM_AddrSkip    1
 #define NEXUS_PARAM_AddrUnit    1
+
+#if 0   // 32-bit only version (initial reference code)
+typedef uint32_t Nexus_TypeAddr;
+typedef uint32_t Nexus_TypeHist;
+typedef uint32_t Nexus_TypeField;   // This must be same (or bigger than Addr/Hist fields)
+#else   // 64-bit (for practical use-cases)
+typedef uint64_t Nexus_TypeAddr;
+typedef uint32_t Nexus_TypeHist;
+typedef uint64_t Nexus_TypeField;   // This must be same (or bigger than Addr/Hist fields)
+#endif
 
 // End of RISC-V related values
 //****************************************************************************

@@ -26,26 +26,37 @@
 #include <stdio.h>  //  For NULL, 'printf', 'fopen, ...'
 #include <stdlib.h> //  For 'malloc', 'free'
 #include <string.h> //  For 'strcmp', 'strchr' 
-//#include <ctype.h>  //  For 'isspace/isxdigit' etc.
+#include <ctype.h>  //  For 'isspace/isxdigit' etc.
+#include <inttypes.h>   //  For scan formats SCNx64
 
 #include "NexRvInfo.h"  //  Definition of Nexus messages
 
-int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned int *pDest);
+// int InfoParse(const char *t, InfoAddr *pAddr, unsigned int *pInfo, InfoAddr *pDest);
 
 static FILE *fInfo = NULL;     // Instruction info (text-based records)
-static unsigned int prevAddr = 0xFFFFFFFF;
+static InfoAddr prevAddr = 0xFFFFFFFF;
 
 typedef struct INFO_REC
 {
-  unsigned int addr;      // Address of instruction
-  unsigned int info;      // INFO for this instruction
-  unsigned int dest;      // Destination address
+  InfoAddr addr;          // Address of instruction
+  InfoAddr dest;          // Destination address
+  unsigned int  info;     // INFO for this instruction
   unsigned int _padding;  // Make it 64-bit aligned
 } INFO_REC;
 
+typedef struct INFO_ADDR
+{
+  unsigned int  info;     // INFO for this instruction
+  InfoAddr      dest;     // Destination address
+} INFO_ADDR;
+
 static int nInfoRec = 0;
 static int infoLast = 0;
-static INFO_REC *pInfoRec;
+static INFO_REC *pInfoRec   = NULL;
+
+InfoAddr infoAddr_min = 0;
+InfoAddr infoAddr_max = 0;
+static INFO_ADDR *pInfoAddr  = NULL;
 
 int InfoInit(const char *filename)
 {
@@ -70,7 +81,8 @@ int InfoInit(const char *filename)
       if (line[0] == '.') continue; // Comment (ignore this line)
       if (line[0] == '\0' || line[0] == '\n') continue; // Ignore empty as well ...
 
-      unsigned int a, info, dest;
+      InfoAddr a, dest;
+      unsigned int info;
       if (!InfoParse(line, &a, &info, &dest)) break;
       if (info == 0) break;
 
@@ -91,6 +103,35 @@ int InfoInit(const char *filename)
     }
   }
 
+#if 1 // Generate table with all INFO for all addresses
+  if (pInfoRec != NULL)
+  {
+    // Get span of addresses ...
+    infoAddr_min = pInfoRec[0].addr;
+    infoAddr_max = pInfoRec[nInfoRec - 1].addr;
+
+    if ((infoAddr_max - infoAddr_min) <= 3 * (nInfoRec * 4))
+    {
+      printf("NexRv/Info: amin=0x%lX, amax=0x%lX, nRec=%d\n", infoAddr_min, infoAddr_max, nInfoRec);
+
+      // This is not so big (not more than 3x bigger than original)
+      pInfoAddr = malloc(sizeof(INFO_ADDR) * (infoAddr_max - infoAddr_min + 1));
+
+      for (int a = 0; a < (infoAddr_max - infoAddr_min + 1); a++)
+      {
+        pInfoAddr[a].info = 0;
+        pInfoAddr[a].dest = 0;
+      }
+
+      for (int i = 0; i < nInfoRec; i++)
+      {
+        pInfoAddr[pInfoRec[i].addr - infoAddr_min].info = pInfoRec[i].info;
+        pInfoAddr[pInfoRec[i].addr - infoAddr_min].dest = pInfoRec[i].dest;
+      }
+    }
+  }
+#endif
+
   infoLast = 0;
   return 0; // OK
 }
@@ -101,13 +142,15 @@ void InfoTerm(void)
   fInfo = NULL;
   if (pInfoRec) free(pInfoRec);
   pInfoRec = NULL;
+  if (pInfoAddr) free(pInfoAddr);
+  pInfoAddr = NULL;
   nInfoRec = 0;
   infoLast = 0;
 }
 
-int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned int *pDest)
+int InfoParse(const char *t, InfoAddr *pAddr, unsigned int *pInfo, InfoAddr *pDest)
 {
-  if (sscanf(t, "0x%X", pAddr) != 1) return 0; // Syntax error
+  if (sscanf(t, "%" SCNx64, pAddr) != 1) return 0; // Syntax error
 
   t = strchr(t, ',');
   if (t == NULL) { *pInfo = 0; return 1; }
@@ -133,13 +176,23 @@ int InfoParse(const char *t, unsigned int *pAddr, unsigned int *pInfo, unsigned 
   t = strchr(t, ','); // Destination addr is after second ','
   if (t != NULL && pDest != NULL)
   {
-    if (sscanf(t + 1, "0x%X", pDest) != 1) return 0; // Syntax error
+    if (sscanf(t + 1, "%" SCNx64, pDest) != 1) return 0; // Syntax error
   }
   return 3;
 }
 
-unsigned int InfoGet(unsigned int addr, unsigned int *pDest)
+unsigned int InfoGet(InfoAddr addr, InfoAddr *pDest)
 {
+  if (pInfoAddr != NULL)
+  {
+    if (addr < infoAddr_min || addr > infoAddr_max)
+    {
+      return 0; // Incorrect address (no INFO)
+    }
+    *pDest = pInfoAddr[addr - infoAddr_min].dest;
+    return pInfoAddr[addr - infoAddr_min].info;
+  }
+
   if (pInfoRec != NULL)
   {
     if (addr < pInfoRec[infoLast].addr)
@@ -184,7 +237,8 @@ unsigned int InfoGet(unsigned int addr, unsigned int *pDest)
       if (line[0] == '.') continue; // Comment (ignore this line)
       if (line[0] == '\0' || line[0] == '\n') continue; // Ignore empty as well ...
 
-      unsigned int a, info;
+      InfoAddr a;
+      unsigned int info;
       if (!InfoParse(line, &a, &info, pDest)) break;
       if (info == 0) break;
       if (a == addr) return info; // Found
