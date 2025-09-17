@@ -42,6 +42,10 @@ int NexusDump(FILE *f, int disp)
   int fldBits = 0;          
   Nexus_TypeField fldVal = 0;
 
+  unsigned int tcode = 0;
+  unsigned int ProgTraceCorrelation_Hist = 0;
+  unsigned int ResourceFull_Hrepeat = 0;
+
   int msgCnt    = 0;
   int msgBytes  = 0;
   int msgErrors = 0;
@@ -107,6 +111,7 @@ int NexusDump(FILE *f, int disp)
         if ((nexusMsgDef[d].def & 0xFF) == mdo)
         {
           fldDef = d; // Found TCODE
+          tcode = mdo;
           break;
         }
       }
@@ -162,6 +167,38 @@ int NexusDump(FILE *f, int disp)
 
     if (nexusMsgDef[fldDef].def & 0x400)
     {
+      // Process ResourceFull cfg HREPEAT field
+      if (tcode == NEXUS_TCODE_ResourceFull)
+      {
+        if (nexusMsgDef[fldDef].name == "RCODE" && fldVal == 0x2)
+        {
+          ResourceFull_Hrepeat = 1;
+        }
+
+        if (nexusMsgDef[fldDef].name == "HREPEAT" && ResourceFull_Hrepeat != 1)
+        {
+          // no HREPEAT field
+          fldDef++;
+          ResourceFull_Hrepeat = 0;
+        }
+      }
+
+      // Process ProgTraceCorrelation cfg HIST field
+      if (tcode == NEXUS_TCODE_ProgTraceCorrelation)
+      {
+        if (nexusMsgDef[fldDef].name == "CDF" && fldVal == 0x2)
+        {
+          ProgTraceCorrelation_Hist = 1;
+        }
+
+        if (nexusMsgDef[fldDef].name == "HIST" && ProgTraceCorrelation_Hist != 1)
+        {
+          // no HIST field
+          fldDef++;
+          ProgTraceCorrelation_Hist = 0;
+        }
+      }
+
       // Variable size field
       if (disp & 1) fprintf(f, " %s[%d]=0x%lX\n", nexusMsgDef[fldDef].name, fldBits, fldVal);
 
