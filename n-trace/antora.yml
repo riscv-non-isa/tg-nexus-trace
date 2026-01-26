@@ -1,0 +1,6 @@
+name: n-trace
+title: RISC-V N-Trace (Nexus-based Trace)
+version: v1.0
+start_page: ROOT::index.adoc
+nav:
+  - modules/ROOT/nav.adoc

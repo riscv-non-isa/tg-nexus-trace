@@ -1,0 +1,6 @@
+name: t-control
+title: RISC-V Trace Control Interface
+version: v1.0
+start_page: ROOT::index.adoc
+nav:
+  - modules/ROOT/nav.adoc

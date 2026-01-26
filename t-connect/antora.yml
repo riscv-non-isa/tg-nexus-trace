@@ -1,0 +1,6 @@
+name: t-connect
+title: RISC-V Trace Connectors
+version: v1.0
+start_page: ROOT::index.adoc
+nav:
+  - modules/ROOT/nav.adoc
