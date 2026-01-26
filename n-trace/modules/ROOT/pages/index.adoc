@@ -1,1 +1,1 @@
-../../../docs/RISC-V-N-Trace.adoc
+../../../../docs/RISC-V-N-Trace.adoc

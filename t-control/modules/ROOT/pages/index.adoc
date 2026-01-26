@@ -1,1 +1,1 @@
-../../../docs/RISC-V-Trace-Control-Interface.adoc
+../../../../docs/RISC-V-Trace-Control-Interface.adoc
