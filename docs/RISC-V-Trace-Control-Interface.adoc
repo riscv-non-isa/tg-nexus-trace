@@ -23,7 +23,7 @@
 :sectnums:
 :sectnumlevels: 5
 :toclevels: 5
-:toc: left
+// :toc: left
 :source-highlighter: pygments
 ifdef::backend-pdf[]
 :source-highlighter: coderay
@@ -1702,4 +1702,5 @@ Original donation from SiFive (which describes implementation of pre-ratified/in
 https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf[RISC-V-Trace-Control-Interface-Proposed-20200612.pdf]
 
 IMPORTANT: Not all trace tools may support pre-ratified/initial version 0. But all such tools should reject a version 0 with a very clear message.
+
 
