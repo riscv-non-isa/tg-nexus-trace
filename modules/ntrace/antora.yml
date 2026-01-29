@@ -1,0 +1,5 @@
+name: ntrace
+title: RISC-V N-Trace
+version: v1.0
+nav:
+- modules/ROOT/nav.adoc

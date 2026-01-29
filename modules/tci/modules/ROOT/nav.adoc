@@ -1,0 +1,3 @@
+.Trace Control Interface
+* xref:index.adoc[Trace Control Interface]
+* xref:RISC-V-Trace-Control-Interface.adoc[RISC-V Trace Control Interface Specification]

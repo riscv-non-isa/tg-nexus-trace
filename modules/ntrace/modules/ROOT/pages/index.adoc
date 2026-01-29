@@ -1,0 +1,7 @@
+image::risc-v_logo.svg[]
+
+== RISC-V N-Trace (Nexus-based Trace) Specification
+
+RISC-V N-Trace Task Group
+
+Version 1.0, Nov 21, 2024: Ratified state

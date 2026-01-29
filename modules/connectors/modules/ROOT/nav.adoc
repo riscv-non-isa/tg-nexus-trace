@@ -1,0 +1,3 @@
+.Trace Connectors
+* xref:index.adoc[Trace Connectors]
+* xref:RISC-V-Trace-Connectors.adoc[RISC-V Trace Connectors Specification]

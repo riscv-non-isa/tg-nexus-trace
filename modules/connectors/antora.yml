@@ -1,0 +1,5 @@
+name: connectors
+title: RISC-V Trace Connectors
+version: v1.0
+nav:
+- modules/ROOT/nav.adoc
