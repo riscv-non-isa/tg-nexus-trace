@@ -2,4 +2,4 @@ name: connectors
 title: RISC-V Trace Connectors
 version: v1.0
 nav:
-- ROOT:nav.adoc
+- modules/ROOT/nav.adoc
