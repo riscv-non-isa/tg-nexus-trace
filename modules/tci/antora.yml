@@ -2,4 +2,4 @@ name: tci
 title: RISC-V Trace Control Interface
 version: v1.0
 nav:
-- modules/ROOT/nav.adoc
+- ROOT:nav.adoc
