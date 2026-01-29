@@ -22,7 +22,7 @@
 :listing-caption: Listing
 :sectnums:
 :sectnumlevels: 5
-:toc: left
+// :toc: left
 :toclevels: 5
 :source-highlighter: pygments
 ifdef::backend-pdf[]
