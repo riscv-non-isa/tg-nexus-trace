@@ -1,0 +1,1 @@
+../../../../../docs/tci/tci_pib_sink.adoc

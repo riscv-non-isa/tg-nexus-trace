@@ -1,0 +1,30 @@
+== Additional Material
+
+*Trace Bandwidth Considerations*
+
+SRC field (if enabled) may change the otherwise optimal layout of <<Fields in Messages,Fields in Messages>>.
+
+*Validation Considerations*
+
+ResourceFull message with I-CNT full is rare and may not be experienced in normal code. Simplest way to generate is to have an infinite loop and (rare) interrupt handler. This loop should increment a register or memory location - this value should correspond to total accumulated I-CNT.
+
+*Potential Future Enhancements*
+
+Table below is proposing some future enhancements for N-Trace messages. These were discussed during the development of the N-Trace specification.
+
+[#Future Enhancements]
+.Future Enhancements
+[cols="17%,17%,~",options="header"]
+|====
+|Enhancement|Conformance|Notes
+|Instrumentation Data Trace|Nexus Compatible|Very likely (Nexus defines appropriate messages). It will require software to be instrumented by code sending data using trace infrastructure (Arm CoreSight ITM enabled many use-cases).
+|Selective Data Trace|Nexus Compatible|Very likely (Nexus defines appropriate messages). It will allow sending some data in response to triggers (from debug module or external).
+|Full Data Trace|Nexus Compatible|Likely (E-Trace supports it), but necessary bandwidth may be a problem.
+|Smaller field sizes|Nexus Extension|Unlikely (too much of a change). Some of the fields may be made shorter (as not all cases are needed), but it may not be justified.
+|System Bus Trace|Nexus Compatible|Likely (Nexus defines appropriate messages and there is a need for more than trace of harts).
+|Additional TCODE|Nexus Extension|Possible, but more real-life examples are needed to justify it.
+|Single MSEO bit|Nexus Compatible|Unlikely to be considered. It may provide (12.5% instead of 25% MSEO overhead), but it is more complex to handle by both encoder and decoders.
+|More MDO bits|Nexus Compatible|Very unlikely to be considered. To keep byte alignment, 14 or 22 or 30-bit MDO may be considered. Even 14-bit will cause a lot of 'wasted' bits.
+|====
+
+NOTE: Each of the above enhancements should be first prototyped and validated using reference C encoder/decoder.

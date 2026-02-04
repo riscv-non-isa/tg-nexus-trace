@@ -1,0 +1,24 @@
+== Debug and Trace Connectors
+
+This specification provides a small, optional extension to connectors described in https://resources.mipi.org/download-mipi-whitepaper-debug-trace-connector[MIPI Debug & Trace Connectors Recommendations White Paper, Version 1.20, 2 July 2021]. 
+
+These optional extensions are as follows:
+
+* Clarifying dual voltage debug and trace via Mictor 38 connector (re-defining obsolete pin #14).
+
+* Allowing MIPI20 `TRC_DATA[2]` and `TRC_DATA[3]` to be optionally used as TRIGIN/TRIGOUT pins.
+
+* Defining some signal as (optional) serial trace and/or application UART.
+
+MIPI Alliance positively reviewed proposals for above optional extensions and hopefully will adopt them in the future.
+
+Additionally, the following MIPI20 signals are clarified as follows:
+
+* MIPI20 pin#12 RTCK signal is not applicable to RISC-V. If the target is not providing a parallel trace, the target connector must provide GND on this pin. If parallel trace is used, pin#12 must be used as a `TRC_CLK` signal.
+* MIPI20 pin#14 nTRST_PD signal is not applicable for RISC-V. If nTRST is really needed, pin#16 nTRST should be used.
+
+Above two signals were present in older RISC-V Debug Specification but were never implemented/used.
+
+This specification also adds the following option (described in dedicated chapter):
+
+* Defining MIPI20 pins #11 and #13 as optional TgtPwr+Cap pins (to supply 5V to power-up a small, evaluation target board). This option is already supported by several debug and trace probe vendors.

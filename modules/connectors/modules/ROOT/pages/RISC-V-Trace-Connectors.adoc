@@ -1,1 +1,0 @@
-../../../../../docs/RISC-V-Trace-Connectors.adoc

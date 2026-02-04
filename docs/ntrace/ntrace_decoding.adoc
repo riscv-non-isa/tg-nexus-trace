@@ -1,0 +1,56 @@
+== N-Trace Decoding Guidelines
+
+To reconstruct the program control flow using the N-Trace encoded stream of messages (as any other compressed trace) access to opcodes of instructions which were executed is necessary. This is usually done by providing an ELF file of a program being executed, but it can also be read-out from the target. Three types of information are needed:
+
+. Size of each instruction (16-bit or 32-bit).
+. Types of all instructions (corresponding to 'itype' signal on trace ingress port - based on analysis of opcodes).
+. For direct unconditional jumps and direct conditional branches an offset (to jump/branch destination) encoded in an opcode.
+
+Decoding must start from a <<Synchronizing Messages,synchronizing message>>. The synchronizing message provides the complete PC in the <<field_F-ADDR,F-ADDR>> field. Transfers relative to this PC may then be inferred using subsequent messages till a new PC is transmitted in a subsequent synchronizing message.
+
+NOTE: To provide partial decoding of big trace, messages with <<field_F-ADDR,F-ADDR>> are transmitted periodically. Periodic <<field_F-ADDR,F-ADDR>> transmission is also needed to decode trace from small, circular buffers.
+
+=== Decoding Algorithm Principles
+
+To reconstruct the control flow of the program from N-Trace messages do the following:
+
+* Copy *HIST* and *I-CNT* fields (if available) to corresponding registers. 
+* Handle <<field_HIST,HIST>> register (while not empty):
+** Analyze code from the current PC through direct (inferable) unconditional jumps (all types) and direct conditional branches (each direct conditional branch will 'consume' a single bit from the *HIST* register).
+** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on the size of that instruction).
+** At the end (after the least significant bit from *HIST* is processed), the PC will be of the instruction executed after the last conditional branch (either taken or not-taken).
+* Handle <<field_I-CNT,I-CNT>> register (while greater than 0x0):
+** Analyze code from current PC through direct (inferable) unconditional jumps (all types) - each encountered direct conditional branch must be treated as not-taken.
+** Each encountered instruction should subtract 1 or 2 (INST_LEN/16) from I-CNT (depending on the size of that instruction).
+* It will reach either indirect, unconditional jump or I-CNT will become 0 to denote that some other 'event' (like exception, interrupt, trace off, trigger etc.) happened.
+** In BTM mode, direct conditional branch may be reached as last instruction. Next PC should be the destination address of that taken branch.
+* At the last step the <<field_F-ADDR,F-ADDR>> or <<field_U-ADDR,U-ADDR>> field (if available) should be applied.
+** This is either a destination address of indirect unconditional jump or an address of an exception/interrupt handler.
+** This will be the next PC where analysis of the next trace message should start.
+* Handle the <<field_B-CNT,B-CNT>> or <<field_RCODE,RCODE>> fields by repeating processing of the fields from previous trace message.
+
+[NOTE]
+=====
+* Phrase *inferable unconditional jumps (all types)* include indirect unconditional jumps, which may be inferable.
+* Extra fields like <<field_SYNC,SYNC>>/<<field_B-TYPE,B-TYPE>> only provide extra details, but are NOT essential for a decoder to reconstruct the PC flow.
+* See https://github.com/riscv-non-isa/tg-nexus-trace/tree/main/refcode/c[N-Trace Reference Code] for simple but fully functional implementation.
+=====
+
+=== Decoding trace from multiple harts
+
+Decoder assigned to a specific hart should process only those messages tagged with a <<field_SRC,SRC>> value corresponding to that hart. To facilitate this,
+all encoders operating within the same trace stream must configure the `trTeSrcBits` field identically to ensure a consistent source identifier bit width,
+and must each be assigned a unique `trTeSrcID` field value. This arrangement ensures that messages can be accurately attributed to their originating hart,
+allowing for precise and isolated trace analysis per hart.
+
+=== Decoding trace of operating systems 
+
+In case of complex operating systems (Linux etc.), where code consists of several independently built programs and libraries, decoders must be aware of different program images (e.g., ELF files) at different locations. <<msg_Ownership,Ownership>> messages should provide enough context. Decoders must be also aware of assignment of *scontext/hcontext* values for programs and processes being traced.
+
+Operating systems may decide to migrate single process to different cores/harts. It may also be the case, when different threads from the same process (sharing code ...) will run in the same time on more than one core/hart.
+
+=== Decoding self-modifying or JIT (Just In Time compiled) code
+
+Trace encoder is just encoding a stream of instructions passed by ingress port from the hart running it, but decoder must be aware of types of all instructions being executed.
+In case of self-modifying code (or JIT code), binary image (at moment of execution) must be available to decoder. How this can be done is not in the scope of this specification.
+

@@ -1,0 +1,44 @@
+== Introduction
+
+This document presents a standardized control interface for RISC-V trace infrastructure (such as trace encoders, trace funnels, trace sinks, ...) for the _Efficient Trace for RISC-V Version 2.0 Specification_ and for the _RISC-V N-Trace (Nexus-based Trace) Specification Version 1.0.0_. Standardized control interface allows trace control software development tools to be used interchangeably with any RISC-V device implementing processor and/or data trace.
+
+Instruction Trace is a system that collects a history of processor execution, along with other events. The trace system may be set up and controlled using a register-based interface. Hart execution activity appears on the Ingress Port and feeds into a Trace Encoder where it is compressed and formatted into trace messages. The Trace Encoder transmits trace messages to a Trace Sink. In multi-core systems, each hart has its own Trace Encoder, and typically all will connect to a Trace Funnel that aggregates the trace data from multiple sources and sends the data to a single destination.
+
+This specification does not define the hardware interconnection between the hart and Trace Encoder, as this is defined in the _Efficient Trace for RISC-V Specification Version 2.0_. This document also does not define the hardware interconnection between the Trace Encoder and Trace Funnel, or between the Trace Encoder/Funnel and Trace Sink.
+
+This specification allows a wide range of implementations including low-gate-count minimal instruction trace and systems with only instrumentation trace. Implementation choices include whether to support instruction trace, data trace, instrumentation trace, timestamps, external triggers, various trace sink types, and various optimization tradeoffs between gate count, features, and bandwidth requirements.
+
+=== Glossary
+
+*Trace Encoder (TE for short)* - Hardware module that accepts execution information from a hart and generates a stream of trace messages/packets.
+
+*Trace Message/Packet* - Depending on protocol different names can be used, but it means the same. It is considered as a continuous sequence of (usually bytes) describing program and/or data flow and other events.
+
+*Trace Funnel* - Hardware module that combines trace streams from multiple trace sources (Trace Encoders and/or other Trace Funnels) into a single output stream of trace messages/packets.
+
+*Trace Sink* - Hardware module that accepts a stream of trace messages/packets and records them into the memory or forwards them onward in some format.
+
+*Trace Decoder* - Software program that takes a recorded trace (from a Trace Sink) and produces a readable execution history.
+
+*RO* - Denotes read-only bit/field - it does not mean it will return the same value each time when read.
+
+*RW* - Denotes read-write bit/field - value being read may not be the same as what was written as some fields may change their values because of other reasons.
+
+*RW1C* - Denotes bit/field, which can be read but you must write 1 to clear it (writing 0 will be ignored). It is used for sticky status bits to assure that these are cleared by deliberate action (write 1). 
+
+*WARL* - Denotes Write any, read legal bit/field/register. If a non-legal value is written, the written value is converted to a value that is supported. That value should deterministically depend on the illegal written value and the architectural state of the trace sub-system. 
+
+*W1* - Denotes write-only bit, which performs an action when 1 is written to it.
+
+[[SD]]
+*SD* - Reset value of a field/register is system dependent - these fields should always have the same values at trace component reset. In many cases this may be the only value supported.
+
+[[Undef]]
+*Undef* - This field/register may not reset. Trace tool must write correct value before enabling the trace component.
+
+*ATB* - Advanced Trace Bus, a protocol described in ARM document _AMBA ATB Protocol Specification_. This is one of alternative methods to send the trace (in addition to native Trace Sinks defined in this specification).
+
+*PIB* - Pin Interface Block, a parallel or serial off-chip trace port feeding into a trace probe.
+
+*??* - Used in names refer to identical fields/registers in different components. For example `tr??Active` may mean `trTeActive` or `trTsActive`.
+

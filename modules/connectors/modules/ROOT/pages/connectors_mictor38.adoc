@@ -1,0 +1,1 @@
+../../../../../docs/connectors/connectors_mictor38.adoc
