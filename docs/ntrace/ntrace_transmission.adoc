@@ -1,0 +1,160 @@
+== N-Trace Transmission Protocol
+
+The IEEE-5001 Nexus Standard defines a trace messaging protocol using several *MDO* (Message Data Out) signals and one or two flag signals known as *MSEO* (Message Start/End Out). A Nexus message is sent or stored in a record composed of *MDO* and *MSEO*. 
+
+N-Trace specification defines 6-bit *MDO* and 2-bit *MSEO* so both fit in a single byte.
+
+* It allows easy storage in memory as well as sending using 1-bit/ 2-bit/ 4-bit/ 8-bit/ 16-bit parallel transport (which is supported by many existing trace probes and connectors).
+* Decoding software may work on bytes and 32-bit/64-bit words and expect MSEO bits at two least significant bits of each byte.
+
+N-Trace message transmission protocol is a strict subset of IEEE-5001 Nexus Standard trace messaging protocol.
+
+[N-Trace subset]
+.N-Trace subset
+[cols="25%,20%,~",options="header"]
+|====
+|Protocol Feature|Nexus Standard|N-Trace (strict subset of Nexus)
+|Number of *MSEO* bits|1 or 2|2
+|Number of *MDO* bits|At least 1|6
+|Total (*MDO*+*MSEO*) bits|At least 2|8 (one byte)
+|Order (transmitted or stored)|Vendor defined|*MSEO* before *MDO*,  least significant bit for each field first
+|Max field size|Not specified|64 bits (some 32 bits or less)
+|Max standard message size|Not specified|38 bytes (maximum sum of all fields)
+|====
+
+The maximum standard message size of 38 bytes in this version of the specification is
+ to transmit <<msg_IndirectBranchHistSync,IndirectBranchHistSync>> message which includes TCODE/ SRC/ SYNC/ B-TYPE(5 bytes total), I-CNT(30 bits, 5 bytes), F-ADDR(63 bits, 11 bytes), HIST(32 bits, 6 bytes) TSTAMP(64 bits, 11 bytes).
+
+While implementations may have a shorter maximum message size (e.g. due to I-CNT being smaller), they must assure that the internal FIFOs are designed to hold at least two maximum sized messages that the implementation can produce.
+
+While decoding software may be designed to avoid dynamic memory allocation, it must nonetheless be robust enough to handle messages of any size. This is to account for scenarios when a trace memory could be corrupted, such as a trace consisting entirely of zeros, which could be interpreted as an unusually long variable-length field.
+
+Custom messages and fields may carry different payloads and may be larger than 64 bits and 38 bytes.
+
+=== MSEO Sequences
+
+*MSEO[1:0]* bits (located in the least significant bits of each byte) are defined by the follow rules:
+
+* The first byte of a message sends the least significant bits of the message and is indicated by *MSEO[1:0]=00*.
+* Bytes occupied by fixed-length fields are sent using *MSEO[1:0]=00*.
+* The last byte of a variable-length field, that is not last byte of a message, is indicated by *MSEO[1:0]=01*.
+** A variable-length field in a message always ends on a byte boundary (zero extended as needed).
+** The non-last bytes of a variable-length fields are indicated by *MSEO[1:0]=00*.
+* The last byte of a message is indicated by *MSEO[1:0]=11*.
+** It also implies an end of the last (fixed-length or variable-length) field of a message.
+* Idle bytes (between messages or used as padding) are indicated by *MSEO[1:0]=11* and *MDO[5:0]=111111* (entire byte is *0xFF*).
+* Value of *MSEO[1:0]=10* is reserved for future extensions.
+
+The table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
+
+[#MSEO Transitions]
+.Transitions of MSEO Bits 
+[cols="40%,60%",options="header",align=center,width=80%]
+|====
+|MSEO Function|Previous-*Current* MSEO[1:0] Sequence
+|Start of message|11-*00*
+|Middle of field|00 (or 01)-*00*
+|End of variable-length field|00 (or 01)-*01*
+|End of message|00 (or 01)-*11*
+|Idle (no message)|11-*11*
+|Reserved|11-*01*
+|Reserved|any-*10*
+|====
+
+[NOTE]
+====
+Original IEEE-5001 Nexus Standard defines the MSEO protocol as follows:
+
+* Two `1`-s followed by one `0` indicates the start of a message.
+* `0` followed by two or more `1`-s indicates the end of a message.
+* `0` followed by `1` followed by `0` indicates the end of a variable-length field.
+* `0`-s at all other clocks during transmission of a message.
+* `1`-s at all clocks during no message transmission (idle).
+
+Dual MSEO protocol (utilized by this N-Trace specification) is a two-pin mode of this general (single and dual) MSEO protocol definition.
+====
+
+=== Unified N-Trace Message Structure
+
+Each N-Trace message has identical structure (100% compatible with IEEE-5001 Nexus Standard):
+
+* Very first field is always fixed-length *TCODE* (Transport Code) which defines the meaning and format of subsequent fields.
+* In case of simultaneous tracing from more than one hart, the second field is always fixed-length *SRC* (Message Source) field, which provides a unique ID of message source.
+** This field allows trace decoders to separate messages from different trace sources (Trace Encoders, harts) without knowing any details of each of the messages.
+** This method can be used to handle different (opaque) trace or debug or performance data using N-Trace transport/storage/export infrastructure. 
+* One or more (fixed-length or variable-length) payload fields. Sequence and selection of these fields depend on the value of *TCODE* field.
+** In some rare cases one of preceding fields may define number of following fields.
+* Very last field is (optional) variable-length *TSTAMP* (Timestamp) field.   
+** It may be possible to generate and analyze timestamps in a unified (simpler) way.
+
+=== Order of bits and bytes
+
+Order of bits and bytes:
+
+* Trace messages/packets are considered as sequences of bytes and are always transmitted with least significant bits/bytes first.
+* IEEE-5001 Nexus Standard MSEO bits are transmitted on the least significant part and bit#0 first.
+* Idle state must be transmitted as all 1s MSEO and MDO bits.
+* For transmission on a 16bit interface (e.g. PIB 16-bit mode), the first byte of message/packet is transmitted on the least significant part and the MSEO of the second/odd byte is transmitted on bits #8-#9 and MDO on bits #10-#15.
+
+NOTE: Above rules allow receiving trace probes to skip idle messages.
+
+=== PIB Idle Cycles Explained
+
+This chapter describes N-Trace specific details about the transmission via a Pin Interface Block (PIB), as it is described in the <<RISC-V_Trace_Control_Interface,RISC-V Trace Control Interface>> Specification.
+
+Trace messages may start on any (positive or negative) edge of trace clock. 
+
+IMPORTANT: Once a message is started all bits of that message must be transmitted on consecutive trace clock edges (both positive and negative).
+
+Said so, an idle sequence may be sent using any number of trace clock edges (positive or negative).
+
+To explain this let's assume the following serially transmitted (in 1-bit PIB mode) sequences of bits (MSEO[0] bit being first on the left):
+
+* < `11` DDDDDD> - 8 bits in a last byte of a message (`11` = MSEO, DDDDDD = DATA bits)
+* < `1*n` >      - sequence of `n`-bits long idle bits (each must be `1`)
+* < `00` TTTTTT> - 8 bits in a first byte of a message (`00` = MSEO, TTTTTTT = TCODE bits)
+
+The following 4 example sequences are all valid:
+
+* ... < `11` DDDDDD> < `00` TTTTTT> ...           => No idle bits/cycles between consecutive messages.
+* ... < `11` DDDDDD> < `1*2` > < `00` TTTTTT> ... => Two (even) idle bits.
+* ... < `11` DDDDDD> < `1*3` > < `00` TTTTTT> ... => Three (odd) idle bits (second message starts at another trace clock edge).
+* ... < `11` DDDDDD> < `1*8` > < `00` TTTTTT> ... => 8 idle bits (idle sequence can be considered as byte 0xFF).
+
+Some implementations may always send idle sequences using even (or even multiple of 8) number of trace clocks - in such a case all messages will always start on a positive or negative trace clock. But conformant trace probes must handle any number of idle clocks.
+
+[NOTE]
+====
+The trace probe needs to be able to synchronize with the trace stream and to detect trace message boundaries. This procedure is sometimes referred to as "message alignment synchronization" or "alignment-sync".
+
+For 8-bit or 16-bit trace idle cycles are not required (to detect an alignment) as MSEO bits are in well-defined positions and trace probes will know where is a start of a message.
+
+For 1-bit, 2-bit and 4-bit trace modes PIB must generate at least one idle byte to allow trace probes to detect which bit is the first MSEO bit of a message.
+How it is done is not defined in this specification. Here are two possible implementations:
+
+* Generate at least one idle byte periodically in a trace stream anywhere between messages (PIB is aware about message boundaries as end of message has MSEO=11 bits). 
+* Always add an extra idle byte before sending synchronizing messages. It will guarantee that boundaries of every synchronizing message are always detectable and decoding may start from it.
+====
+
+=== N-Trace Message Example
+
+Table below shows one N-Trace message with several fields. It is an output from N-Trace dump tool (part of N-Trace reference C code) with an added *Explanation* column.
+
+[#MDO_MSEO Examples]
+.MDO and MSEO Encoding Example
+[cols="6%,10%,10%,18%,~",options="header"]
+|====
+|Byte|MDO [5:0]|MSEO [1:0]|Decoded (by reference tool)|Explanation
+|0xFF| 111111|11 | Idle | Most likely idle but can also be the last byte of the previous message.
+|0x70| 011100|00 | TCODE[6] = 28 - IndirectBranchHist| First byte, all 6 MDO bits have TCODE.
+5+|Here we could have an SRC field (it would shift the start of B-TYPE).
+|0xD0| 110100|00 | B-TYPE[2] = 0x0| This is a 2-bit (fixed-length) field. As B-TYPE is a fixed-length field, four most significant bits are part of the next field (I-CNT).
+|0x1D| 000111|01 | I-CNT[10] = 0x7D| This is a second byte of the 10-bit (value 0x7D) variable-length I-CNT field. Four least significant bits (0b1101=0xD) are defined in previous MDO. Three most significant bits are all 0-s as variable-length field uses all 6 MDO bits.
+|0x1D| 000111|01 | U-ADDR[6] = 0x7| This is a single byte variable-length U-ADDR field (with three most significant 0-s).
+|0xF8| 111110|00 || Normal transfer of new field (6 least significant bits).
+|0xFF| 111111|11 | HIST[12] = 0xFFE| Last byte of message. It implies the end of the 12-bit HIST field. In this field we do not have any extra most significant 0-s.
+5+|Here optional TSTAMP field could be sent +
+(Previous MSEO should became 01 encoding end of HIST field, but not end of the message).
+|0xFF| 111111|11 | Idle|This is idle as this is the second byte with MSEO=11 (NOTE: Last byte of message is also 0xFF).
+|====
+

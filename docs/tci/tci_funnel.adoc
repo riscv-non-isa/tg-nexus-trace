@@ -1,0 +1,41 @@
+== Trace Funnel
+
+The Trace Funnel combines messages/packets from multiple sources into a single trace stream. It is implementation dependent how many incoming messages/packets are accepted before it is switching to another input source and in what order. But a continuous stream of messages/packets at one input cannot cause other inputs to not be handled. Suggested implementation would be to process just a single message/packet from each input in a round-robin fashion.
+
+.*Register: trFunnelControl: Trace Funnel Control Register (trBaseFunnel+0x000)*
+[cols="6%,24%,~,7%,7%",options="header"]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|0 |trFunnelActive |Primary activate/reset bit for trace funnel. When 0, the Trace Funnel may have clocks gated off or be powered
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|1 |trFunnelEnable |*1:* Trace Funnel enabled. Setting `trFunnelEnable` to 0 flushes any queued trace data to output. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW|0
+|2 |--|Reserved|--|0
+|3 |trFunnelEmpty |Reads 1 when Trace Funnel internal buffers are empty |RO|1
+|31:4 |--|Reserved|--|0
+|===
+
+.*Register: trFunnelImpl: Trace Funnel Implementation Register (trBaseFunnel+0x004)*
+[cols="6%,24%,~,7%,7%",options="header"]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|3:0 |trFunnelVerMajor |Trace Funnel Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7:4 |trFunnelVerMinor |Trace Funnel Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11:8 |trFunnelCompType |Trace Funnel Component Type (Trace Funnel) |RO|0x8
+|23:12 |--|Reserved for future versions of this standard|--|0
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
+|===
+
+.*Register: trFunnelDisInput: Disable Individual Funnel Inputs (trBaseFunnel+0x008)*
+[cols="6%,24%,~,7%,7%",options="header"]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|15:0 |trFunnelDisInput |*1:* Funnel input *#n* (bit position in register) is disabled. Incoming messages are read from diabled input but discarded.|WARL|<<Undef,Undef>>
+|31:16 |--|Reserved|--|0
+|===
+
+NOTE: `trFunnelDisInput` register is optional. When not implemented (or never set) it will read as 0, which means that all inputs are always enabled. When implemented, it can be set to 0xFFFF to detect which inputs may be disabled in that trace funnel. Disabling inputs is needed when a single trace encoder may provide output to more than one possible active destination/sink. This register can be also used by trace tools to easily configure a trace in complex systems. Without the ability to disable individual funnel inputs, the trace tool must assure all trace sources which should not be traced are disabled.
+
+=== Timestamp Unit
+
+Trace Funnel may optionally include Timestamp Unit. It is described inside of the Trace Encoder chapter above.
+

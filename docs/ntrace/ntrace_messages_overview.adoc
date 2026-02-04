@@ -1,0 +1,144 @@
+== N-Trace Messages (Overview)
+
+IMPORTANT: The terminology `Indirect Branch` as used by the IEEE-5001 Nexus Standard may lead to confusion, given that the RISC-V ISA exclusively permits direct conditional branches, which are always relative. Furthermore, the RISC-V ISA makes a distinction between 'jump' (unconditional flow change) and 'branch' (conditional flow change), a differentiation not observed in Nexus terminology, where any flow change, including exceptions and interrupts, is uniformly referred to as a 'branch'. This specification employs the terms 'branch' and 'jump' as defined by RISC-V ISA.
+
+// [#Fields in Messages]
+=== Fields in Messages
+
+The table presented below enumerates all message types that can be generated, with each row comprehensively defining the fields associated with a particular message type. Fields that are present in different messages are consistently ordered.
+
+Message field attributes are described using the following terminology:
+
+* *[n]*: A fixed-length field that is *n* bits wide.
+* *[Var]*: A variable-length, non-empty (at least 1-bit wide), field.
+* *[Cfg]*: A configurable field, where the existence and size depend on the encoder configuration options.
+
+.Fields in Messages
+[cols="22%,8%,5%,6%,8%,14%,7%,8%,8%,~",options="header",]
+|===========================================================================================
+| Message ID/Field [size]|<<field_TCODE,TCODE>> [6]|<<field_SRC,SRC>> [Cfg]|<<field_SYNC,SYNC>> [4]|<<field_B-TYPE,B-TYPE>> [2]|Other fields|<<field_I-CNT,I-CNT>> [Var]|<<Address Compression,x-ADDR>> [Var]|<<field_HIST,HIST>> [Var]|<<field_TSTAMP,TSTAMP>> [Var,Cfg]
+|[[msg_Ownership]]<<msg2_Ownership,Ownership>>   |2    |Cfg|    |     |<<field_PROCESS,PROCESS>> *[Var]*        |    |     ||Cfg
+|[[msg_DirectBranch]]<<msg2_DirectBranch,DirectBranch>>          |3    |Cfg|    |     |                  |Yes |     ||Cfg
+|[[msg_IndirectBranch]]<<msg2_IndirectBranch,IndirectBranch>>        |4    |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>||Cfg
+|[[msg_Error]]<<msg2_Error,Error>>                 |8    |Cfg|    |     |<<field_ETYPE,ETYPE>> *[4]* + <<field_ECODE,ECODE>> *[Var]*  |    |     ||Cfg
+|[[msg_ProgTraceSync]]<<msg2_ProgTraceSync,ProgTraceSync>>         |9    |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_DirectBranchSync]]<<msg2_DirectBranchSync,DirectBranchSync>>      |11   |Cfg|Yes |     |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_IndirectBranchSync]]<<msg2_IndirectBranchSync,IndirectBranchSync>>    |12   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>||Cfg
+|[[msg_ResourceFull]]<<msg2_ResourceFull,ResourceFull>>          |27   |Cfg|    |     |<<field_RCODE,RCODE>> *[4]* + <<field_RDATA,RDATA>> *[Var]*|    |     ||Cfg
+|[[msg_IndirectBranchHist]]<<msg2_IndirectBranchHist,IndirectBranchHist>>    |28   |Cfg|    |Yes  |                  |Yes |<<field_U-ADDR,U-ADDR>>|Yes|Cfg
+|[[msg_IndirectBranchHistSync]]<<msg2_IndirectBranchHistSync,IndirectBranchHistSync>>|29   |Cfg|Yes |Yes  |                  |Yes |<<field_F-ADDR,F-ADDR>>|Yes|Cfg
+|[[msg_RepeatBranch]]<<msg2_RepeatBranch,RepeatBranch>>          |30   |Cfg|    |     |<<field_B-CNT,B-CNT>> *[Var]*           |    |     ||Cfg
+|[[msg_ProgTraceCorrelation]]<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>>  |33   |Cfg|    |     |<<field_EVCODE,EVCODE>> *[4]* + <<field_CDF,CDF>> *[2]* |Yes |     |*Cfg*|Cfg
+|<<msg_other,Vendor Defined>>|56..62|Cfg 7+| Designated for use by Vendor Defined messages
+|<<msg_other,Reserved>>|other|Cfg 7+| Reserved for future extensions of N-Trace specification
+|===========================================================================================
+
+IMPORTANT: Any message may include the optional <<field_TSTAMP,TSTAMP>> *[Var,Cfg]* field as the very last field of a message. It must be enabled by <<trTsEnable,trTsEnable>> control bit. Timestamp field always starts at byte-boundary (as it is always preceded by variable-length field). See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details. 
+
+[[msg_other]]
+NOTE: Messages marked as *Reserved* or *Vendor Defined* should be ignored by decoders interested in program flow only.
+However, decoders should provide an option to display/dump them and/or generate a warning as such a message may be seen when trace capture is corrupted.
+*Vendor Defined* messages can be used for prototyping, debugging, validation and maintenance purposes.
+
+Reference code header https://github.com/riscv-non-isa/tg-nexus-trace/blob/main/refcode/c/NexRvMsg.h[NexRvMsg.h] defines all N-Trace messages in machine-readable format. Here is small snipped from this file as an example:
+
+[source,c]
+----
+  // Naming:
+  //    NEXM=Nexus Message, BEG/END=Beginning/End of definition.
+  //    SRC=Message source (system-field). Name of an option given.
+  //    FLD/VAR=Fixed/variable size field.
+  //    ADR=Special case of variable field (without least significant bit). 
+  //    CFG=Configurable, Name of an option given. 
+  NEXM_BEG(IndirectBranchSync, 12)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(SYNC, 4)  
+    NEXM_FLD(BTYPE, 2)
+    NEXM_VAR(ICNT)
+    NEXM_ADR(FADDR)
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
+
+  NEXM_BEG(ResourceFull, 27)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(RCODE, 4)
+    NEXM_VAR(RDATA)
+    NEXM_VAR_CFG(HREPEAT, EnaRepeatedHistory) // Configurable
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
+
+  NEXM_BEG(IndirectBranchHist, 28)
+    NEXM_SRC(SrcBits)                         // Configurable
+    NEXM_FLD(BTYPE, 2)
+    NEXM_VAR(ICNT)
+    NEXM_ADR(UADDR)
+    NEXM_VAR(HIST)
+    NEXM_VAR(TSTAMP)
+  NEXM_END()
+----
+
+NOTE: Reference code is using plain C-style identifiers, so the field name as *B-TYPE* will become *BTYPE*.
+
+=== Common Fields
+
+The table below provides details for fields which are used in more than one message type. Fields which are present in only one message are described with each message. 
+
+.Details of Common Fields
+[cols="9%,5%,15%,~",options="header"]
+|======================================================================================================
+| Name | Bits | Description | Values/Notes
+4+|*Fields used in many messages*
+[[field_TCODE]]
+| TCODE      | 6             | Transfer Code | Message header that identifies the number and/or size of fields to be transferred, and how to interpret each of the fields following it.
+[[field_SRC]]
+| SRC        | *Cfg* | Source of Message Transmission | Width of SRC field is defined by <<trTeSrcBits,trTeSrcBits>> control field and it may be enabled/disabled by <<trTeInhibitSrc,trTeInhibitSrc>> control bit. This optional field is used to identify the source of the message transmission. In configurations that comprise only a single hart, this field need not be transmitted. For devices that comprise multiple harts, this field must be transmitted (if enabled) as part of the message to identify the source of the message transmission. The transmitted SRC field size should be the same for all enabled trace encoders sharing a trace stream.
+[[field_SYNC]]
+| SYNC       | 4             |Reason for Synchronization| Encodings and details are provided in the <<Synchronizing Messages,Synchronizing Messages>> chapter. +
+*NOTE:* The SYNC field is always sent together with the <<field_F-ADDR,F-ADDR>> field, so decoding may start from a message containing the SYNC field.
+[[field_B-TYPE]]
+| B-TYPE      | 2             | Branch Type | Reason for indirect flow change: +
+                                *0:* Indirect control flow change (jump, call or return) or in a <<Synchronizing Messages,synchronizing message>> not related to code execution. +
+                                *1:* Exception or interrupt (if the encoder is not capable of reporting 2 and 3). +
+                                *2:* *Extension:* Exception +
+                                *3:* *Extension:* Interrupt +
+*NOTE:* Either 1-only or both 2 and 3 should be implemented and consistently reported. Extended values 2 and 3 allow trace tools to distinguish exceptions and interrupts easily.
+[[field_I-CNT]]
+| I-CNT       | *Var* | Instruction Count | As RISC-V allows variable-length instructions, this is the number of 16-bit (INST_LEN/2) instruction units executed/retired since the I-CNT counter was transmitted or reset.  See <<I-CNT Details,I-CNT Details>> chapter for more details.
+[[field_F-ADDR]]
+| F-ADDR      | *Var* | Full Target Address | Full PC without the least significant bit.
+The least significant bit is not reported as it is always 0.
+See <<Address Compression,Address Compression>> chapter for more details. +
+*NOTE:* The F-ADDR field is always sent together with the <<field_SYNC,SYNC>> field.
+[[field_U-ADDR]]
+| U-ADDR      | *Var* | Unique part of Target Address | Unique part of PC address (XOR with recently reported address).
+See <<Address Compression,Address Compression>> chapter for more details. +
+The U-ADDR field is always sent together with the <<field_B-TYPE,B-TYPE>> field.
+[[field_HIST]]
+| HIST       | *Var* | Direct Branch History map |  Most significant bit (always 1) serves as a 'stop-bit', the least significant bit denotes the last direct conditional branch. See <<HIST Field Generation,HIST Field Generation>> chapter for more details. 
+[[field_TSTAMP]]
+| TSTAMP     | *Var* | Timestamp (optional) | It must be enabled by <<trTsEnable,trTsEnable>> control bit. See <<Timestamp Reporting,Timestamp Reporting>> chapter for more details.
+|======================================================================================================
+
+IEEE-5001 Nexus Standard does not define limits for variable-length fields, but N-Trace provides some limits. It will help to write efficient decoding software but is not limiting hardware in any way.
+
+[#Max_Field_Sizes]
+.Maximum Field Sizes
+[cols="10%,25%,5%,~",options="header"]
+|======================================================================================================
+|Field|Symbol|Bits|Description
+[[NTRACE_MAX_SRC]]
+|SRC|NTRACE_MAX_SRC|12|Determined by size of Trace Control register field. Enough for 4096 (4K) trace sources.
+[[NTRACE_MAX_ICNT]]
+|I-CNT|NTRACE_MAX_ICNT|22|Usually a smaller value will be sufficient. An overflow bit may be used for efficient I-CNT full detection.
+[[NTRACE_MAX_ADDR]]
+|F-ADDR, U-ADDR|NTRACE_MAX_ADDR|63|Only 63 bits suffice as the least significant bit of an instruction address is always 0 and does not need to be reported.
+[[NTRACE_MAX_HIST]]
+|HIST|NTRACE_MAX_HIST|32|It includes stop-bit. This size is optimal for not wasting any bits in very often used <<msg_ResourceFull,ResourceFull>> messages.
+[[NTRACE_MAX_TSTAMP]]
+|TSTAMP|NTRACE_MAX_TSTAMP|64|It is certainly big enough. It corresponds to architecture defined timer and cycle count registers.
+[[NTRACE_MAX_HREPEAT]]
+|HREPEAT|NTRACE_MAX_HREPEAT|18|Assure some trace is periodically generated for very long loops.
+[[NTRACE_MAX_BCNT]]
+|B-CNT|NTRACE_MAX_BCNT|18|Assure some trace is periodically generated for very long loops.
+|======================================================================================================
+

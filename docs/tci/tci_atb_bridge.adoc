@@ -1,0 +1,38 @@
+== Trace ATB Bridge
+
+Some SoCs may have an Advanced Trace Bus (ATB) infrastructure to manage trace produced by other components. In such systems, it may be desired to route entire RISC-V trace stream to the ATB through an ATB Bridge. This module manages the interface to ATB, generating ATB trace records that encapsulate RISC-V trace produced by the Trace Encoder[s] and/or Trace Funnel[s]. There is a control register that includes trace on/off control and a field allowing software to set the ID to be used on the ATB bus. This ID allows software to extract entire RISC-V trace from the combined trace. This interface is compatible with AMBA 4 ATB v1.1.
+
+.*Register: trAtbBridgeControl: ATB Bridge Control Register (trAtbBridgeBase+0x000)*
+[cols="6%,24%,~,7%,7%",options="header"]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|0 |trAtbBridgeActive |Primary activate/reset for the ATB Bridge. When 0, the ATB Bridge may have clocks gated off or be powered
+down, and other register locations may be inaccessible. Hardware may take an arbitrarily long time to process power-up and power-down and will indicate completion when the read value of this bit matches what was written. See <<Reset and Discovery,Reset and Discovery>> chapter for more details.|RW|0
+|1 |trAtbBridgeEnable |*1:* ATB Bridge enabled. Setting `trAtbBridgeEnable` to 0 flushes any queued trace data to ATB. See <<Enabling and Disabling,Enabling and Disabling>> chapter for more details.|RW|0
+|2 |--|Reserved|--|0
+|3 |trAtbBridgeEmpty |Reads 1 when ATB Bridge internal buffers are empty |RO|1
+|7:4 |--|Reserved|--|0
+|14:8 |trAtbBridgeID |ID of this node on ATB. Values of 0x00 and 0x70-0x7F are reserved by the ATB specification and should not be used. |RW|<<Undef,Undef>>
+|31:15 |--|Reserved|--|0
+|===
+
+.*Register: trAtbBridgeImpl: ATB Bridge Implementation Register (trAtbBridgeBase+0x004)*
+[cols="6%,24%,~,7%,7%",options="header"]
+|===
+|*Bit* |*Field* |*Description* |*RW* |*Reset*
+|3:0 |trAtbBridgeVerMajor |ATB Bridge Component Major Version. Value 1 means the component is compliant with this document. |RO|1
+|7:4 |trAtbBridgeVerMinor |ATB Bridge Component Minor Version. Value 0 means the component is compliant with this document. |RO|0
+|11:8 |trAtbBridgeCompType |ATB Bridge Component Type (ATB Bridge) |RO|0xE
+|14:12 |trAtbBridgeAsyncFreq |
+*0:* Alignment synchronization (Async) packets disabled (may be the only choice for some protocols) +
+*1-7:* Different levels of alignment synchronization (bigger number, bigger distance). +
+Details should be defined the specification of each trace protocol.
+|WARL|<<Undef,Undef>>
+|23:15 |--|Reserved for future versions of this standard|--|0
+|31:24 |--|Reserved for vendor specific implementation details|--|<<SD,SD>>
+|===
+
+An implementation determines the data widths of the connection from the Trace Encoder or Trace Funnel and of the ATB port.
+
+ATB Bridge may optionally insert ATB alignment synchronization packets (controlled by `trAtbBridgeAsyncFreq` field) allowing trace decoding software to detect ATB packet boundaries. Not all protocols may require it. 
+
