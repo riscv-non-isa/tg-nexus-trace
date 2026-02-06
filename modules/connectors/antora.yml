@@ -3,3 +3,7 @@ title: RISC-V Trace Connectors
 version: v1.0
 nav:
 - modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    page-group: debug-trace-ras
