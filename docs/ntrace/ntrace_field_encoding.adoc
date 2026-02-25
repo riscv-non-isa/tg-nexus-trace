@@ -34,8 +34,8 @@ Rules when generating addresses:
 <<<
 === HIST Field Generation
 
-When operating in HTM mode, the encoder does not generate messages for conditional branches. 
-Instead, it maintains a HIST register or accumulator to record the outcomes of these branches, whether taken or not-taken. 
+When operating in HTM mode, the encoder does not generate messages for conditional branches.
+Instead, it maintains a HIST register or accumulator to record the outcomes of these branches, whether taken or not-taken.
 Each conditional branch contributes a single bit to the HIST register, as follows:
 
 * A bit with a value of 1 is appended at the least significant position for a
@@ -46,7 +46,7 @@ not-taken conditional branch.
 The HIST register may be implemented as a left-shift register. Initially, when
 the HIST register is empty, bit 0 of the register is set to 1, with all other
 bits set to 0. Subsequent conditional branches cause the register to shift left,
-recording each taken or not-taken outcome in bit 0. 
+recording each taken or not-taken outcome in bit 0.
 
 Examples:
 
@@ -68,7 +68,7 @@ register.
 ==== HIST Field Full
 
 The transition of the most significant bit in the HIST register from 0 to 1 indicates the register is full. At this point, the
-entire register, including the most significant bit — which serves as the stop-bit — is transmitted 
+entire register, including the most significant bit — which serves as the stop-bit — is transmitted
 using a <<msg2_ResourceFull,ResourceFull>> message with the <<field_RCODE,RCODE>> field set to either 1 or 2.
 
 When a HIST register is full and its value is the same as that of the HIST
@@ -94,7 +94,7 @@ Every retired instruction MUST increment I-CNT counter by 1 (for 16-bit instruct
 * If an instruction is explicitly changing the PC (as jump or return), that instruction itself MUST update the I-CNT.
 * Instructions that either raise exceptions or are interrupted prior to retirement do not increment the I-CNT counter.
 
-NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more. 
+NOTE: In case of longer instructions (48-bit, 64-bit, ...) (future ISA standards or custom) I-CNT may increment by 3 or more.
 
 When I-CNT counter is full (reaches its maximum value or overflow bit is set) it can be reported in one of two ways:
 
@@ -142,7 +142,7 @@ IMPORTANT: Decoder must analyze every instruction in each code block being proce
 Above we analyzed some I-CNT values. Let's consider other I-CNT values.
 
 * *I-CNT=1* is a correct value.
-** The only valid reason to generate a message with I-CNT=1 would be an exception (or interrupt) at an instruction at address 0x102. 
+** The only valid reason to generate a message with I-CNT=1 would be an exception (or interrupt) at an instruction at address 0x102.
 ** In this case an encoder should generate an <<msg_IndirectBranch,IndirectBranch>> or <<msg_IndirectBranchSync,IndirectBranchSync>> message with I-CNT=1, B-TYPE=1 (exception) and U-ADDR/F-ADDR field encoding an address of an exception/interrupt handler.
 
 * *I-CNT=5* is also correct.
@@ -150,7 +150,7 @@ Above we analyzed some I-CNT values. Let's consider other I-CNT values.
 
 * *I-CNT=0* is also possible.
 ** It should be generated when an interrupt was pending before we started the code (and trace) and instruction at address 0x100 was not executed/retired.
-** Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault or is illegal. 
+** Another reason for I-CNT=0 may be a case, where instruction at address 0x100 will generate page fault or is illegal.
 
 [IMPORTANT]
 ====
@@ -215,7 +215,7 @@ Trace with *SYNC=Sequential Instruction Counter* (BTM mode only):
 
 ====
 * Overflown *I-CNT=9* (or *RDATA[0]=9*) field describes <0x100..0x112> range (18 bytes long).
-* The *I-CNT=5* field describes <0x112..0x11C> range (12 bytes long). 
+* The *I-CNT=5* field describes <0x112..0x11C> range (12 bytes long).
 * In both cases total I-CNT is 9+5=14, what describes the entire <0x100..0x11C> range.
 ** Debug Mode is entered before C.EBREAK instruction (as it never retires), so C.EBREAK is NOT included in I-CNT.
 * Using *ResourceFull* generates smaller, more compressed trace.
@@ -258,7 +258,7 @@ Trace requires different types of synchronization on different abstraction level
 |14..15| Reserved |-| For vendor defined codes.
 |====
 
-Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason for the program flow change. 
+Decoders should report synchronization SYNC field values from messages (including reserved codes) as it provides a reason for the program flow change.
 
 * All synchronizing messages fully reset the encoder state, so decoding can be started from this message.
 ** Before resetting the encoder state, the trace up to the current location must be emitted (it includes HIST, I-CNT, HREPEAT and B-CNT counters).
@@ -275,6 +275,8 @@ NOTE: Periodic Synchronization (SYNC=2) messages may not be precise and may be d
 The following cases are created to help illustrate the type of N-trace <<Synchronizing Messages,synchronizing message>> generated for different scenarios. Events which may occur while a hart is running or halted:
 
 image:./images/example_key.PNG[image]
+
+image::example_key.PNG[]
 
 *Case1: Enable/disable debug while tracing:*
 
@@ -342,7 +344,7 @@ It is necessary to assure that the time reported at exceptions/interrupt handler
 
 Normal program flow generates a sequence of messages with I-CNT>0 (reporting at least 1 instruction retired), some HIST fields (to report direct conditional branches) and F-ADDR/U-ADDR fields (to report uninferable unconditional flow changes).
 
-However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases. 
+However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases.
 
 [#Corner Cases]
 .Corner Cases
@@ -356,7 +358,7 @@ However, sometimes normal flow is interrupted (by exception or interrupt) or som
 |Pending interrupt at debug mode exit|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by message with <<field_B-TYPE,B-TYPE>>=3 or 1 (Interrupt).
 |Exception at first instruction traced|<<msg2_ProgTraceSync,ProgTraceSync>> with <<field_SYNC,SYNC>>=3 followed by a message with <<field_B-TYPE,B-TYPE>>=2 or 1 (Exception).
 |Trace starts disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=4 (Trace Disabled). Once trace is enabled message with <<field_SYNC,SYNC>>=5 (Trace Enable).
-|Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed). 
+|Hart halted with trace disabled|<<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> with <<field_EVCODE,EVCODE>>=0 (Enter Debug mode) and <<field_I-CNT,I-CNT>>=0 (nothing executed).
 |Exception/Interrupt immediately following trap return|
 Usual messages describing instructions up to return from trap (MRET/SRET) instruction. +
 Synchronizing message with an address of trap return with <<field_I-CNT,I-CNT>>=0 (as nothing executed after a trap return). +
@@ -364,5 +366,3 @@ Optionally, an <<msg_Ownership,Ownership>> messages describing privilege level a
 Synchronizing message with an address of interrupt/exception handler and appropriate SYNC code. +
 Optionally, an <<msg_Ownership,Ownership>> messages describing privilege level of new exception/interrupt handler.
 |====
-
-
