@@ -6,6 +6,6 @@ nav:
 
 asciidoc:
   attributes:
-    page-pdf_url: _attachments/RISC-V-Connectors.pdf
+    page-pdf_url: _attachments/RISC-V-Trace-Connectors.pdf
     more_details_url: https://riscv.atlassian.net/wiki/external/N2E0Mjk1ZDkzZTM0NDQ2YmJmM2IzZDIxNjBlZTkxNTI
     page-group: debug-trace-ras
