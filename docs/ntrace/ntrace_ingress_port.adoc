@@ -8,7 +8,7 @@ N-Trace uses the same ingress port as specified in <<E-Trace_Specification,E-Tra
 
 The table below provides a detailed mapping of causes for terminating an instruction block to the corresponding *itype* encoding. It could be used during development of ingress port logic inside of a hart. For some instructions operands matter - for example *JALR rd,rs1* instruction may generate 5 different, distinct *itype* values.
 
-[#Generating itype for different instructions]
+[#Generating_itype_for_different_instructions]
 .Generating itype for different instructions
 [cols="18%,~,35%",options="header"]
 |======================================================================================================
@@ -64,7 +64,7 @@ NOTE: Jump instructions (CM.JT and CM.JALT) defined by ratified *Zcmt* extension
 
 Table below defines how N-Trace encoder should handle different 3-bit *itype* values on trace ingress port.
 
-[#Handling of 3-bit itype values]
+[#Handling_of_3-bit_itype_values]
 .Handling of 3-bit itype values
 [cols="5%,20%,75%",options="header"]
 |======================================================================================================
@@ -100,7 +100,7 @@ Emit Indirect Branch message with <<field_B-TYPE,B-TYPE>>=0. +
 
 When the *itype* input of ingress port is 4-bit wide, the Indirect jump (with or without linkage) *itype=6* should not be generated and one of the following values should be generated instead. Encoder must handle call stack action as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter (if enabled).
 
-[#Handling of 4-bit itype values]
+[#Handling_of_4-bit_itype_values]
 .Handling of 4-bit itype values
 [cols="5%,20%,63%,12%",options="header"]
 |======================================================================================================

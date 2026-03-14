@@ -97,7 +97,7 @@ NOTE: Placement of the Trace Encoder and Trace Control Layer are implementation 
 
 === Definitions and Terminology
 
-[#Terms Used In This Specification]
+[#Terms_Used_In_This_Specification]
 .Terms Used In This Specification
 [cols="20%,~",options="header"]
 |======================================================================================================

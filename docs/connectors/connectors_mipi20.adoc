@@ -9,7 +9,7 @@ This connector adds 1-bit/2-bit/4-bit parallel trace and serial trace options on
 * All JTAG/cJTAG pins have the same meaning as defined in the Debug Specification.
 * Notation  "A / B" as signal name is used to separate two alternative functions of the same pin.
 
-[#MIPI20 Connector Layout]
+[#MIPI20_Connector_Layout]
 .MIPI20 Connector Layout
 [cols = "~,8%,8%,~", options = header, align=center, width=80%]
 |=========================================================
@@ -30,7 +30,7 @@ NOTE: `*SerialTrace*` via pin #6 (TDO signal) is considered primary but it requi
 
 NOTE: Smaller MIPI10 version of this connector (pins #1 .. #10 only) can provide `*SerialTrace*` via pin #6 (TDO signal) when cJTAG is used for debugging.
 
-[#Details of MIPI20 Signals]
+[#Details_of_MIPI20_Signals]
 .Details of MIPI20 Signals
 [cols = "6%,25%,~", options = header]
 |=================================================================================

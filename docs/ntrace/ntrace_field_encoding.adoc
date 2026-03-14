@@ -204,7 +204,7 @@ Trace with *SYNC=Sequential Instruction Counter* (BTM mode only):
 * <<msg2_ProgTraceSync,ProgTraceSync>> (start of trace)
 ** SYNC=3 (Exit from Debug Mode), I-CNT=0 (nothing executed as we are starting)
 ** F-ADDR=0x80 (encoding starting address 0x100)
-* <<msg2_ProgramTraceSync,ProgramTraceSync>> (I-CNT overflown to 9 at an address 0x112)
+* <<msg2_ProgTraceSync,ProgTraceSync>> (I-CNT overflown to 9 at an address 0x112)
 ** SYNC=4 (Sequential Instruction Counter), *I-CNT=9* (see note below)
 ** F-ADDR=0x89 (encoding address 0x112)
 * <<msg2_ProgTraceCorrelation,ProgTraceCorrelation>> (describes <0x112..0x11C> range)
@@ -239,7 +239,7 @@ Trace requires different types of synchronization on different abstraction level
 * *Message alignment synchronization*: allows the trace decoder to detect the trace message boundaries (i.e. start and end of a trace message) within a trace stream. This kind of synchronization is not described in this chapter. It can be done via idle cycles, and is described in the <<PIB Idle Cycles Explained,PIB Idle Cycles Explained>> chapter in more detail.
 ====
 
-[#SYNC Field Values]
+[#SYNC_Field_Values]
 .SYNC Field Values
 [cols="6%,15%,10%,~",options="header"]
 |====
@@ -276,42 +276,35 @@ The following cases are created to help illustrate the type of N-trace <<Synchro
 
 //image:./images/example_key.PNG[image]
 
-image::example_key.PNG[]
+image::images/example_key.PNG[]
 
 *Case1: Enable/disable debug while tracing:*
 
-//image:./images/case1_enable_disable_debug_while_tracing.PNG[image]
-
-image::case1_enable_disable_debug_while_tracing.PNG[]
+image::images/case1_enable_disable_debug_while_tracing.PNG[]
 
 *Case2: Enable trace while in debug:*
 
-//image:./images/case2_enable_trace_while_in_debug.PNG[image]
-image::case2_enable_trace_while_in_debug.PNG[]
+image::images/case2_enable_trace_while_in_debug.PNG[]
 
 <<<
 *Case3: Disable trace while in debug:*
 
-//image:./images/case3_disable_trace_while_in_debug.PNG[image]
-image::case3_disable_trace_while_in_debug.PNG[]
+image::images/case3_disable_trace_while_in_debug.PNG[]
 
 *Case4: Sync trigger event (internal or external):*
 
-//image:./images/case4_sync_trigger_event.PNG[image]
-image::case4_sync_trigger_event.PNG[]
+image::images/case4_sync_trigger_event.PNG[]
 
 *Case5: Enable and disable while in debug:*
 
-//image:./images/case5_enable_disable_while_in_debug.PNG[image]
-image::case5_enable_disable_while_in_debug.PNG[]
+image::images/case5_enable_disable_while_in_debug.PNG[]
 
 *Case6: Periodic synchronization:*
 
 * First possibility provides choice of messages generated at exact periodic synchronization event `P`.
 * Second provides a choice of messages which may be generated delayed after the periodic event `P`.
 
-//image:./images/case6_periodic.PNG[image]
-image::case6_periodic.PNG[]
+image::images/case6_periodic.PNG[]
 
 *Superscript notes:*
 
@@ -353,7 +346,7 @@ Normal program flow generates a sequence of messages with I-CNT>0 (reporting at 
 
 However, sometimes normal flow is interrupted (by exception or interrupt) or some other extra event (trigger/enable/disable) happens and sequence of messages or values of some fields may be a bit unusual. Table below is trying to explain some corner cases.
 
-[#Corner Cases]
+[#Corner_Cases]
 .Corner Cases
 [cols="20%,~",options="header"]
 |====

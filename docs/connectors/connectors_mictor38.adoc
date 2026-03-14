@@ -4,7 +4,7 @@ Mictor-38 connector as defined by MIPI Alliance has all signals from MIPI20 conn
 
 Mictor-38 connector provides also an option to have different reference voltages for debug and trace.
 
-[#Mictor-38 Connector Layout]
+[#Mictor-38_Connector_Layout]
 .Mictor-38 Connector Layout
 [cols = "~,10%,8%,8%,10%,~", options = header, align=center, width=80%]
 |======================================
@@ -36,7 +36,7 @@ NOTE: Above table is using names compatible with MIPI specification (however MIP
 
 All debug signals share alternate functions as defined for the MIPI20 connector.
 
-[#Micror-38 additional pins]
+[#Micror-38_additional_pins]
 .Micror-38 additional pins (comparing to MIPI20 defined above)
 [cols = "6%,20%,~", options = header]
 |=================================================================================

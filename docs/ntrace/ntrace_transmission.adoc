@@ -9,7 +9,7 @@ N-Trace specification defines 6-bit *MDO* and 2-bit *MSEO* so both fit in a sing
 
 N-Trace message transmission protocol is a strict subset of IEEE-5001 Nexus Standard trace messaging protocol.
 
-[N-Trace subset]
+[#N-Trace_subset]
 .N-Trace subset
 [cols="25%,20%,~",options="header"]
 |====
@@ -47,7 +47,7 @@ Custom messages and fields may carry different payloads and may be larger than 6
 
 The table below provides possible sequences of *MSEO[1:0]* bits (to expand above rules - *highlighted* MSEO represent the actual function): 
 
-[#MSEO Transitions]
+[#MSEO_Transitions]
 .Transitions of MSEO Bits 
 [cols="40%,60%",options="header",align=center,width=80%]
 |====
@@ -140,7 +140,7 @@ How it is done is not defined in this specification. Here are two possible imple
 
 Table below shows one N-Trace message with several fields. It is an output from N-Trace dump tool (part of N-Trace reference C code) with an added *Explanation* column.
 
-[#MDO_MSEO Examples]
+[#MDO_MSEO_Examples]
 .MDO and MSEO Encoding Example
 [cols="6%,10%,10%,18%,~",options="header"]
 |====

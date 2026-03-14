@@ -12,7 +12,7 @@ ResourceFull message with I-CNT full is rare and may not be experienced in norma
 
 Table below is proposing some future enhancements for N-Trace messages. These were discussed during the development of the N-Trace specification.
 
-[#Future Enhancements]
+[#Future_Enhancements]
 .Future Enhancements
 [cols="17%,17%,~",options="header"]
 |====
