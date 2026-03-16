@@ -38,6 +38,22 @@
 // This is example line (<t> denotes TAB) - line must start from space!
 // 166:<t>0ba000ef          <t>jal<t>ra, 220 <c_ecall_handler_v2>
 
+static const char *branchs[] = {
+  "beq", "bne", "beqz", "bnez", "c.beqz", "c.bnez",
+  "blt", "bltu", "ble", "blez", "bleu", "bltz",
+  "bge", "bgeu", "bgt", "bgtu" "bgtz", "bgez",
+};
+
+int CheckBranch(const char *instr)
+{
+  for (int i = 0; i < sizeof(branchs) /  sizeof(branchs[0]); i++)
+  {
+    if (strncmp(instr, branchs[i], strlen(branchs[i])) == 0)
+      return 1;
+  }
+  return 0;
+}
+
 static Nexus_TypeAddr GetParAddr(const char *l)
 {
   // Skip over opcode (and '/t' following it)
@@ -142,10 +158,11 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
       printf("addr=0x%lX,code=0x%X,size=%d,instr=%s\n", addr, code, size, instr);
     }
 
+    if (instr[0] == 'c' && instr[1] == '.') instr += 2; // Handle C-instructions
+
     // Determine instruction type based on opcode of instruction
     const char *iType = "L";
-    if (instr[0] == 'j' || (instr[0] == 'b' && instr[4] != 'i'))
-      // That 'i' for for bseti/bclri/bexti/binvi - see https://github.com/riscv/riscv-opcodes/blob/master/rv32_zbs
+    if (instr[0] == 'j' || instr[0] == 'b')
     {
       // "j <a>" or "jal <r>,<a>" or "jr <r>" or "jalr <r>"
       // "b?? ...<a>
@@ -162,9 +179,9 @@ int ConvGnuObjdump(FILE *fObjd, FILE *fPcInfo)
       }
       else
       {
-        if (instr[0] == 'b')                    iType = "BD"; // Branch direct
-        if (instr[0] == 'j' && instr[1] != 'a') iType = "JD"; // Jump direct
-        if (instr[0] == 'j' && instr[1] == 'a') iType = "CD"; // Call direct
+        if (instr[0] == 'b' && CheckBranch(instr)) iType = "BD"; // Branch direct
+        if (instr[0] == 'j' && instr[1] != 'a')    iType = "JD"; // Jump direct
+        if (instr[0] == 'j' && instr[1] == 'a')    iType = "CD"; // Call direct
       }
     }
     else
