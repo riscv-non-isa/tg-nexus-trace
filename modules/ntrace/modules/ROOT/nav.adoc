@@ -1,5 +1,5 @@
-.RISC-V N-Trace
-* xref:index.adoc[N-Trace]
+.N-Trace
+* xref:index.adoc[Title Page]
 * xref:ntrace_changelog.adoc[Change Log]
 * xref:ntrace_copyright.adoc[Copyright and License]
 * xref:ntrace_contributors.adoc[Contributors]
