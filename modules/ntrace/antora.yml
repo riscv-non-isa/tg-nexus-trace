@@ -1,11 +1,13 @@
 name: ntrace
-title: RISC-V N-Trace
+title: N-Trace
 version: v1.0
 nav:
 - modules/ROOT/nav.adoc
 
 asciidoc:
   attributes:
+    page-group: debug-trace-ras
+    page-card-description: 'Nexus-based trace data formatting and transport.'
+    page-release-date: 'November 2024'
     page-pdf_url: _attachments/RISC-V-N-Trace.pdf
     more_details_url: https://riscv.atlassian.net/wiki/external/ZTUxYTJmNWRkYzhmNDM4ZDg5OWNlMmQxODMyYjY3YjI
-    page-group: debug-trace-ras

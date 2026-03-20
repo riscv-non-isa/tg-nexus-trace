@@ -1,5 +1,5 @@
 .Trace Connectors
-* xref:index.adoc[Trace Connectors]
+* xref:index.adoc[Title Page]
 * xref:connectors_changelog.adoc[Change Log]
 * xref:connectors_copyright.adoc[Copyright and License]
 * xref:connectors_contributors.adoc[Contributors]

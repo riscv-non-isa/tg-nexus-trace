@@ -1,5 +1,5 @@
 .Trace Control Interface
-* xref:index.adoc[Trace Control Interface]
+* xref:index.adoc[Title Page]
 * xref:tci_changelog.adoc[Change Log]
 * xref:tci_copyright.adoc[Copyright and License]
 * xref:tci_contributors.adoc[Contributors]
