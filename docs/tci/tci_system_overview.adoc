@@ -1,0 +1,52 @@
+== Trace System Overview
+
+This section briefly describes features of the Trace Encoder and other trace components as background for understanding some of the control interface register fields.
+
+=== Trace Encoder
+
+By monitoring the Ingress Port, the Trace Encoder determines when a program flow discontinuity has occurred and whether the discontinuity is inferable or non-inferable. An inferable discontinuity is one for which the Trace Decoder can statically determine the destination, such as a direct branch instruction in which the destination or offset is included in the opcode. Non-inferable discontinuities include all other types such as interrupts, exceptions, and indirect jump instructions.
+
+==== Branch Trace Messaging
+
+Branch Trace Messaging is the simplest, baseline form of instruction trace. Each program counter discontinuity results in one trace message, either a Direct or Indirect Branch Message. Linear instructions (or sequences of linear instructions) do not directly generate any trace messages/packets but overflow of counters (or exceptions) may generate corresponding packets/messages - these messages are infrequent and will not affect trace compression.
+
+Indirect Branch Messages normally contain a compressed address to reduce bandwidth. The Trace Encoder emits a Branch With Sync Message containing the complete instruction address under certain conditions. This message type is a variant of the Direct or Indirect Branch Message and includes a full address and a field indicating the reason for the Sync.
+
+==== Branch History Messaging
+
+Both the Efficient Trace for RISC-V (E-Trace) Specification and the RISC-V N-Trace (Nexus-based Trace) specification define systems of messages intended to improve compression by reporting only whether conditional branches are taken by encoding each branch outcome in a single taken/not-taken bit. The destinations of non-inferable jumps and calls are reported as compressed addresses. Much better optimized compression can be achieved, but an encoder implementation will typically require more hardware.
+
+==== Other Optimizations
+
+Several other optimizations are possible to improve trace compression. These are optional for any Trace Encoder and there should be a way to disable optimizations in case the trace system is used with code that does not follow recommended API rules. Examples of optimizations are a Return-address stack, Branch repetition, Statically inferable jump, and Branch prediction.
+
+=== Trace Sinks
+
+The Trace Encoder transmits completed messages to a Trace Sink. This specification defines a number of different sink types, all optional, and allows an implementation to define other sink types. A Trace Encoder must have at least one sink or funnel attached to it.
+
+NOTE: Trace messages/packets are sequences of bytes. In case of wider sink width, some padding/idle bytes (or additional formatting) may be added by the sink. N-Trace format allows any number of idle bytes between messages.
+
+==== SRAM Sink
+
+The Trace Encoder packs trace messages into fixed-width trace words (usually bytes). These are then stored in a dedicated RAM, typically located on-chip, in a circular-buffer fashion. When the RAM has filled, it may optionally be stopped, or it may wrap and overwrite earlier trace data.
+
+==== System Memory Sink
+
+The Trace Encoder packs trace messages into fixed-width trace words (usually bytes). These are then stored in a range of system memory reserved for trace using a DMA-type bus controller in a circular-buffer fashion. When the memory range has been filled, it may optionally be stopped, or it may wrap and overwrite earlier trace data. This type of sink may also be used to transmit trace off-chip through, for example, a PCIe or USB port.
+
+==== PIB Sink
+
+The Trace Encoder sends trace messages to the PIB Sink. Each message is transmitted off-chip (as sequence of bytes) using a specific protocol described later.
+
+=== ATB Bridge
+
+The ATB Bridge allows sending RISC-V trace to Arm CoreSight infrastructure (instead of RISC-V compliant sink defined in this document) as an ATB initiator. ATB Bridge is not needed for RISC-V only systems.
+
+ATB width is byte aligned (8, 16, 32, 64, 128) which allows transport of trace messages/packets defined as sequence of bytes.
+
+=== Trace Funnel
+
+The Trace Encoder may send trace messages to a Trace Funnel. The Funnel aggregates the trace from each of its inputs (either RISC-V Trace Encoder or another Trace Funnel) and sends the combined trace stream to its designated Trace Sink or ATB Bridge, which is one or more of the sink types above.
+
+NOTE: It is assumed that each input to the funnel (Trace Encoder or another Trace Funnel) has a unique message source ID defined (`trTeSrcID` field in the `trTeControl` register).
+

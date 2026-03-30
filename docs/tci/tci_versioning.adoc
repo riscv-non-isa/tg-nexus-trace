@@ -1,0 +1,29 @@
+== Versioning of Components
+
+Each component has a `tr??Impl` register, which includes two 4-bit `tr??VerMinor` and `tr??VerMajor` fields. These fields are guaranteed to be present in all future revisions of a standard, so trace tools will be able to discover a component version and act accordingly.
+
+* Value 0 as `tr??VerMajor` is NOT allowed (due to compatibility reasons).
+* Different components may report different versions (as some components may be updated more often than others).
+* The major version `tr??VerMajor` field is incremented when the modification breaks backward compatibility.
+* The minor version `tr??VerMinor` field  is incremented when the modification maintains backward compatibility (for example adding a new field) - for that reason software should always write 0 to reserved bits in registers. 
+* Version 15.x is reserved for non-compatible version encoding.
+* Version n.15 should be used as experimental (in development) implementation.
+
+Software tools must report the version number as two decimal numbers __major.minor__ - initial version of this specification is defined as *__1.0__*.
+
+[NOTE]
+====
+
+Trace software should handle versions as follows (let's assume hypothetical version 2.3 was defined as current version in moment of release of trace software)
+
+* 0.x => Reject as not supported or generate a warning and handle as pre-ratified/initial version 0.
+* 2.3 => Accept silently.
+* 2.2 => Accept silently (and trim features or not allow users to set newer features).
+* 2.4 => Generate a warning but continue using 2.3 features.
+* 2.15 => Generate an "experimental version" warning but continue using 2.3 features.
+* 1.x => Generate a warning and continue or reject as an obsolete (referring to last debugger supporting this version).
+* 3.x => Generate a fatal error that this future version is not compatible with existing software and possibly redirect to the tool update page.
+
+Displayed messages should report component name, component base address and current and supported version numbers. It is suggested to display the full hexadecimal value of `tr??Impl` register as it may aid in debugging of possibly incorrect/incompatible component configuration.
+====
+

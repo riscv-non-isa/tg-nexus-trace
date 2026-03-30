@@ -1,0 +1,13 @@
+name: tci
+title: Trace Control Interface
+version: v1.0
+nav:
+- modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    page-group: debug-trace-ras
+    page-card-description: 'Control and configuration interface for trace features.'
+    page-release-date: 'November 2024'
+    page-pdf_url: _attachments/RISC-V-Trace-Control-Interface.pdf
+    more_details_url: https://riscv.atlassian.net/wiki/external/ZmZkYWMzYmU5NzZjNDk0M2FkNmJmOWFhOWVjODk4MzE

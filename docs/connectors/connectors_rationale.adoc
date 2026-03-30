@@ -1,0 +1,20 @@
+== Rationale (looking at Nexus standard)
+Nexus standard does NOT define any small connectors with focus on trace as Nexus defines message-based debug interface and it requires more pins than JTAG. Namely:
+
+* S26x 1-104068-2,	Low performance trace (1 MDO signal).
+
+* S40x 1-104549-6,	Low performance trace (6 MDO signals - labeled as "not recommended").
+
+* S50x	104549-7,	Low performance trace (8 MDO signals).
+
+As the smallest Nexus-recommended connector with reasonable trace bandwidth has 50 pins these are not practical as trace connectors. 
+
+So, it was decided that connectors defined by MIPI and Arm will be used for the RISC-V trace.
+
+* There are a lot of hardware trace probes, which are being used for debugging and tracing of Arm cores. Arm defines two standard connectors for trace:
+
+** Based on MIPI 20-pin connector (defined by MIPI) - this is for medium-performance tracing (4-bit, 100+ MHz double edge captures, max trace bandwidth 800Mbps or even higher for some high-performance trace probes).
+
+** Based on Mictor 38-pin connector (defined by MIPI) - this is for high-performance tracing (16-bit, up to 400MHz double edge, max trace bandwidth 12.8Gbps).
+
+* In July 2021 MIPI Alliance (following recommendations by Nexus TG group) released White Paper updating recommendations for debug and trace connectors and allowing 1/2/4-bit trace via MIPI20 connector.

@@ -1,0 +1,18 @@
+== Trace Protocols and Trace Control
+
+There are two standard RISC-V trace protocols which will utilize this *RISC-V Trace Control Interface*:
+
+[#N-Trace_Specification]
+* *RISC-V N-Trace (Nexus-based Trace) Specification* 
+** Version 1.0 to be ratified together with this specification.
+
+[#E-Trace_Specification]
+* *Efficient Trace for RISC-V Specification*
+** Version 2.0 (ratified May 5-th 2022).
+
+This specification together with details provided in any of above documents should be considered as a complete guideline for any standard RISC-V trace implementation.
+
+Trace is controlled by set of 32-bit memory-mapped registers.
+
+Not all trace protocols and components must support all registers, bits, fields and options. This document includes a chapter <<Minimal Implementation,Minimal Implementation>> which describes the smallest possible set of registers and fields, but each message protocol supported by this standard must clarify the exact meaning of supported registers/fields and bits as some of them define.
+
