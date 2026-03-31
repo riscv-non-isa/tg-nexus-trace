@@ -1,0 +1,13 @@
+name: connectors
+title: Trace Connectors
+version: v1.0
+nav:
+- modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    page-group: debug-trace-ras
+    page-card-description: 'Connector definitions for trace interoperability.'
+    page-release-date: 'November 2024'
+    page-pdf_url: _attachments/RISC-V-Trace-Connectors.pdf
+    more_details_url: https://riscv.atlassian.net/wiki/external/N2E0Mjk1ZDkzZTM0NDQ2YmJmM2IzZDIxNjBlZTkxNTI

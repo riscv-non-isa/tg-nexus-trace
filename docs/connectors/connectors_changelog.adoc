@@ -1,0 +1,8 @@
+[preface]
+== Change Log
+
+PDF generated on: {localdatetime}
+
+=== Version 1.0 (Ratified)
+* 2024-11-21
+** Ratified state (concent identical as in 1.0_rc51 PDF)

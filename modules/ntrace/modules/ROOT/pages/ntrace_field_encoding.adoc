@@ -1,0 +1,1 @@
+../../../../../docs/ntrace/ntrace_field_encoding.adoc

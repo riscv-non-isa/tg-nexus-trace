@@ -1,0 +1,7 @@
+[Preface]
+== Contributors
+Key contributors to RISC-V Trace Connectors specification in alphabetical order: +
+
+Bruce Ableidinger (SiFive) => Working with MIPI Alliance, reviews +
+Robert Chyla (IAR, SiFive) => Most topics, editing, publishing +
+Markus Goehrle (Lauterbach) => Dual voltage, reviews

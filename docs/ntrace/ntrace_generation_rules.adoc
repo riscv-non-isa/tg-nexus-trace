@@ -1,0 +1,245 @@
+== Rules of Generating Messages
+
+This chapter explicitly addresses 16-bit and 32-bit instructions as defined in the currently ratified RISC-V instruction set.
+Nonetheless, the guidelines provided herein are applicable to any instruction size that is a multiple of 16-bit, should such instructions be defined in the future. 
+
+*Main Rules*
+
+. *Inferable Instructions*: This category includes instructions that do not perform control transfers or
+are direct jumps. The subsequent program counter (PC) for these instructions can be determined through static analysis of the binary code. Because these instructions exhibit a predictable
+execution flow, they are termed "inferable," and no trace is generated for them.
+
+. *Uninferable Instructions*: This category comprises conditional branches and indirect jumps, including return and indirect calls. Due to the unpredictability of the next PC as determined through
+static analysis alone, uninferable instructions require trace.
+
+. *Interrupts and Exceptions*: Control flow changes caused by interrupts and exceptions necessitate
+trace generation. These events alter the flow in an unpredictable manner, like uninferable
+instructions, thereby requiring their occurrences to be traced.
+
+*Detailed Rules*
+
+. If tracing is started (or restarted after it was disabled), a <<msg_ProgTraceSync,ProgTraceSync>> message is generated.
+** This message specifies the reason for the start in the <<field_SYNC,SYNC>> field and includes full address in the <<field_F-ADDR,F-ADDR>> field.
+. A retired 16-bit instruction increments the <<field_I-CNT,I-CNT>> counter by 1, while a retired 32-bit instruction increments it by 2.
+. The following types of instructions allow trace decoders to determine the next PC and encoder should not generate any trace for them.
+** Instruction which is not control transfer instructions should advance PC to the next instruction (increment by 2 or 4).
+** Direct (inferable) unconditional jump should set next PC to jump destination (PC plus an offset obtained from opcode).
+** Not-taken direct conditional branch (in BTM mode) should advance PC to the next instruction (increment by 2 or 4).
+. Indirect, unconditional jump instruction is handled as:
+** In BTM mode, an <<msg2_IndirectBranch,IndirectBranch>> message is generated.
+** In HTM mode, an <<msg2_IndirectBranchHist,IndirectBranchHist>> message is generated. Should the <<field_HIST,HIST>> field be empty, an <<msg2_IndirectBranch,IndirectBranch>> message may optionally be generated instead.
+. Direct, conditional branch instruction is handled as:
+** In BTM mode, a <<msg_DirectBranch,DirectBranch>> message is generated, but only if the branch is taken.
+** In HTM mode, the outcome of the branch (1 for taken or 0 for not taken) is appended as a single bit into the branch history buffer (<<field_HIST,HIST>> register).
+. When tracing is stopped or disabled, a <<msg_ProgTraceCorrelation,ProgTraceCorrelation>> message is generated.
+** This message included a reason for stopping or disabling (specified in the <<field_EVCODE,EVCODE>> field), the <<field_I-CNT,I-CNT>> and an optional <<field_HIST,HIST>> field. These details allow for the calculation of the last PC. 
+. When a generated message includes <<field_I-CNT,I-CNT>> counter value or <<field_HIST,HIST>> register value, the corresponding counter and/or register are reset.
+** If the I-CNT counter is full, a <<msg_ResourceFull,ResourceFull>> message, indicating that I-CNT counter is full, is generated. Subsequently, the I-CNT is reset.
+** Similarily, if the HIST register reaches it capacity, a <<msg_ResourceFull,ResourceFull>> message, specifying that the HIST register is full, is generated. The HIST register is then reset.
+
+*Extended Rules*
+
+These rules are augmenting the above rules if the corresponding configuration setting is set.
+
+. Call and return instructions may optionally be handled as described in the <<Implicit Return Optimization,Implicit Return Optimization>> chapter and may generate no trace.
+. By default, the target of an indirect unconditional jump is always considered an uninferable PC discontinuity. However, if the register that specifies the jump target was loaded with a constant
+then it can be considered inferable under some circumstances. 
+** Such instruction sequences may be detected and in such a case no trace is generated.
+** This optional feature is described in detail in the <<Sequential Jump Optimization,Sequential Jump Optimization>> chapter.
+
+=== Custom Instructions
+
+Custom instructions (or any future ratified instructions) which are not changing PC flow do not require any special treatment. Trace decoders should only look at instructions which may change PC flow and for all other instructions only advance PC (+2 or +4).
+
+Custom instruction which may change a PC (other than simple advance to next instruction) should be traced in one of the following ways:
+
+* If the PC just advances to the next instruction, it should only increment I-CNT. Decoder will just advance the PC.
+* If the program flow changes as result of a custom instruction, the custom instruction should be traced as an indirect unconditional jump (even if it is not an indirect unconditional jump). That way, the destination address will be reported (as F-ADDR or U-ADDR fields). Decoder will change PC to an address specified in this message. 
+
+Such an approach will NOT require changes/adaptation in trace decoders. To illustrate this let's consider the following piece of code with custom instruction *XYZ*:
+
+    0x100:  add ...         ; 32-bit instruction
+    0x104:  XYZ             ; 32-bit instruction (custom conditional branch to 0x200 - it does not matter if direct or indirect ...)
+    0x108:  c.add ...       ; 16-bit instruction
+    0x10A:  c.ebreak        ; 16-bit breakpoint (to stop the code)
+    ...
+    0x200:  c.add ...       ; 16-bit instruction
+    0x202:  c.ebreak        ; 16-bit breakpoint (to stop the code)
+
+It can be traced as follows (exact type of messages do not matter):
+
+* Single message (if branch was not taken)
+** *I-CNT=5*     => Instruction XYZ did not change the flow and code in range <0x100..0x10A) got executed
+* Two messages (if branch was taken)
+** *I-CNT=4*, *F-ADDR=0x100* (denote address 0x200)  => Code in range <0x100..0x108) got executed and next PC after instruction XYZ is 0x200
+** *I-CNT=1*                                         => Code in range <0x200..0x202) got executed next
+
+NOTE: If custom instruction will generate some other trace (for example some new type of direct conditional branch which may add HIST bit), decoders must be extended to be aware about the type of this custom instruction.
+
+NOTE: If a custom instruction cannot be mapped into one of existing *itype* encodings, it may use custom encoding. In such a case encoder (and decoder ...) must be enhanced.
+
+=== Pseudo-code of Simple N-Trace Encoder
+
+Code below is a simplified part of actual C-code used by the reference encoder (in C). It defines two functions:
+
+* NTraceEncoderInit(void) - initialize state of encoder
+* NTraceEncoderHandleRetired(uint64_t `addr`, uint32_t `flags`) - handle single retired instruction
+** `addr` - address of retired instruction
+** `info` - information about instruction (type, size, taken/not-taken)
+
+[source,c]
+----
+
+// Use N-Trace TCODE messages
+#define NEXUS_TCODE_Ownership                     2
+#define NEXUS_TCODE_DirectBranch                  3
+#define NEXUS_TCODE_IndirectBranch                4
+#define NEXUS_TCODE_Error                         8
+#define NEXUS_TCODE_ProgTraceSync                 9
+#define NEXUS_TCODE_DirectBranchSync              11
+#define NEXUS_TCODE_IndirectBranchSync            12
+#define NEXUS_TCODE_ResourceFull                  27
+#define NEXUS_TCODE_IndirectBranchHist            28
+#define NEXUS_TCODE_IndirectBranchHistSync        29
+#define NEXUS_TCODE_RepeatBranch                  30
+#define NEXUS_TCODE_ProgTraceCorrelation          33
+
+// Functions/macros which encode bits in 'info' (example...)
+#define INFO_LINEAR   0x1   // Linear (plain instruction or not-taken BRANCH)
+#define INFO_4        0x2   // If not 4, it must be 2 on RISC-V
+#define INFO_INDIRECT 0x8   // Possible for most types above
+#define INFO_BRANCH   0x10  // Always direct on RISC-V (may have LINEAR too)
+
+#define InfoIsBranchTaken(info) (!((info) & INFO_LINEAR))
+#define InfoIsSize32(info)      ((info) & INFO_4)
+#define InfoIsBranch(info)      ((info) & INFO_BRANCH)
+#define InfoIsIndirect(info)    ((info) & INFO_INDIRECT)
+
+// Function which emit N-Trace messages (all are empty here)
+void EmitFix(int nbits, uint32_t value);    // Emit fixed-size field
+void EmitVar(uint64_t value);               // Emit variable size field
+void EmitEnd();                             // Terminate message
+
+// Encoder configuration options
+const bool      enco_opt_branch_history = true;     // Configuration option
+const uint32_t  enco_opt_limICNT    = 0x10000;      // Limit of ICNT (max is 6+6+4 bits)    
+const uint32_t  enco_opt_limHIST    = 0x40000000;   // Limit of HIST (max is 5*6 bits)   
+
+// Encoder state variables
+static uint32_t encoNextEmit = 0;   // TCODE to be emitted next time
+static uint32_t encoICNT = 0;       // ICNT accumulated
+static uint32_t encoHIST = 1;       // HIST accumulated (most significant bit is guardian bit)
+static uint64_t encoADDR = 0;       // Last emitted address
+
+void NTraceEncoderInit()
+{
+    encoADDR = 0;
+    encoICNT = 0;   // Empty ICNT and HIST
+    encoHIST = 1;
+
+    encoNextEmit = NEXUS_TCODE_ProgTraceSync;
+}
+
+void NTraceEncoderHandleRetired(uint64_t addr, uint32_t info)
+{
+    // Optionally emit what was determined previously
+    if (encoNextEmit != 0)
+    {
+        EmitFix(6, encoNextEmit);   // Emit TCODE (as determined)
+
+        // Emit message fields (accordingly ...)
+        if (encoNextEmit == NEXUS_TCODE_ProgTraceSync)
+        {
+            EmitFix(4, 1);          // Emit SYNC=1  (4-bit)
+            EmitVar(encoICNT);      // Emit ICNT    (variable)
+            EmitVar(addr >> 1);     // Emit FADDR   (variable)
+        }
+        else if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist || 
+                 encoNextEmit == NEXUS_TCODE_IndirectBranch)
+        {
+            EmitFix(2, 0);                      // Emit BTYPE=0 (2-bit)
+            EmitVar(encoICNT);                  // Emit ICNT    (variable)
+            EmitVar((encoADDR ^ addr) >> 1);    // Emit UADDR   (variable)
+
+            if (encoNextEmit == NEXUS_TCODE_IndirectBranchHist)
+            {
+                EmitVar(encoHIST);              // Emit HIST    (variable)
+            }
+        }
+        else if (encoNextEmit == NEXUS_TCODE_DirectBranch)
+        {
+            EmitVar(encoICNT);                  // Emit ICNT    (variable)
+        }
+
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        if (encoNextEmit != NEXUS_TCODE_DirectBranch)
+        {
+            encoADDR = addr;  // This is new address
+        }
+        encoNextEmit = 0;   // Only one time
+
+        encoICNT = 0;       // Start from 'empty' ICNT and HIST
+        encoHIST = 1;
+    }
+
+    // Update ICNT
+    uint32_t prevICNT = encoICNT;   // In case ICNT will overflow now, we need to emit previous value ...
+    if (InfoIsSize32(info)) encoICNT += 2; else encoICNT += 1;
+
+    // Determine type of message (only if this is branch or indirect ...)
+    if (InfoIsBranch(info))
+    {
+        if (enco_opt_branch_history)
+        {
+            // Update branch history buffer (add least significant bit)
+            if (InfoIsBranchTaken(info))
+                encoHIST = (encoHIST << 1) | 1; // Mark branch as taken
+            else
+                encoHIST = (encoHIST << 1) | 0; // Mark branch as not-taken
+        }
+        else
+        {
+            if (InfoIsBranchTaken(info))
+                encoNextEmit = NEXUS_TCODE_DirectBranch;    // Emit destination address (next retired)
+            else
+                ;   // Not-taken branch is considered as linear instruction
+        }
+    }
+    else
+    if (InfoIsIndirect(info))
+    {
+        if (enco_opt_branch_history)
+            encoNextEmit = NEXUS_TCODE_IndirectBranchHist;  // Emit destination address (next retired)
+        else
+            encoNextEmit = NEXUS_TCODE_IndirectBranch;      // Emit destination address (next retired)
+    }
+
+    // Optionally emit ICNT full
+    if (encoICNT > enco_opt_limICNT) // Instruction count overflown?
+    {
+        // Emit ResourceFull with ICNT before this instruction
+        EmitFix(6, NEXUS_TCODE_ResourceFull);
+        EmitFix(4, 0);                          // RCODE=0 (ICNT full)
+        EmitVar(prevICNT);                      // RDATA=ICNT (before overflown)
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        // Set ICNT for this instruction
+        if (InfoIsSize32(info)) encoICNT = 2; else encoICNT = 1;
+    }
+
+    // Optionally emit HIST full
+    if (encoHIST & enco_opt_limHIST) // Is HIST buffer overflown?
+    {
+        // Emit history BEFORE this instruction (remove least significant bit)
+        EmitFix(6, NEXUS_TCODE_ResourceFull);
+        EmitFix(4, 1);                          // RCODE=1 (HIST full)
+        EmitVar(encoHIST >> 1);                 // RDATA=HIST (before overflown)
+        EmitEnd();  // It will mark last entry with MSEO=11 and flush it
+
+        // Keep single HIST for this branch (guardian | single least significant bit from encoHIST)
+        encoHIST = (0x1 << 1) | (encoHIST & 0x1);
+    }
+}
+----
+

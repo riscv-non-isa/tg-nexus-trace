@@ -1,0 +1,210 @@
+== Additional Material
+
+=== Minimal Implementation
+
+This (non-normative) chapter gives an of what needs to be done to put together complete RISC-V trace implementation without getting familiar with every detail of every register.
+
+*Minimal General Registers/Fields*
+
+These requirements are applicable to the entire trace sub-system.
+
+* One `Trace Encoder` per hart being traced is required.
+* At least one of Trace RAM or Trace PIB sinks or Trace ATB Bridge is required as the final destination of an encoded RISC-V trace.
+** Implementations providing custom transport only are NOT considered fully compliant with this specification as custom trace tools will be needed.
+* Each trace component in a system is required to implement `tr??Control` and `tr??Impl` registers.
+** `tr??Active` bit must be settable to 0 or 1, although reset itself is NOT required.
+** `tr??Enable` bit must be settable to 0 or 1 and must support flushing (if applicable) when changed from 1 to 0.
+** `tr??Empty` bit must read as 0 when the trace component has some trace data internally buffered (if trace component it not buffering any trace data, this bit may be hard coded to 1).
+** `tr??VerMajor`, `tr??VerMinor` and `tr??CompType` must be implemented.
+
+*Minimal Trace Encoder Register/Fields*
+
+* Bit `trTeInstTracing` must be implemented (to start/stop instruction trace output from Trace Encoder).
+* One of `trTeInstMode` = 3 (Baseline instruction trace) or 6 (Optimized instruction trace) must be implemented (can be a hard coded value).
+* At least one of the non-0 values of `trTeInstSyncMode` must be settable (or hard coded).
+* Field `trTeFormat` must correspond to implemented trace protocol (0 for E-Trace or 1 for N-Trace).
+* Fields `trTeProtocolMajor` and `trTeProtocolMinor` must return versions of implemented protocol.
+* All other registers/fields/bits may be tied to 0.
+
+*Minimal Trace RAM Sink Register/Fields*
+
+SRAM mode only:
+
+* Bit `trRamHasSRAM` must be tied to 1 and `trRamMode` must be tied to 0. 
+* Bit `trRamWrap` must be implemented.
+* Register `trRamLimitLow` must be implemented but can be hard coded to value '2^M-4' (address 0x..FC).
+* Register `trRamWPLow` must at least accept a write of 0.
+* Register `trRamRPLow` must accept any 32-bit aligned value in inclusive range < 0 .. `trRamLimitLow` >.
+** If width of access to SRAM is wider than 32-bits any 32-bit aligned value of `trRamRP` must be allowed and reads must be buffered.
+* Register `trRamData` may be implemented for reading only.
+* All other registers/fields/bits may be tied to 0.
+
+SMEM mode only:
+
+* Bit `trRamHasSMEM` must be tied to 1 and `trRamMode` must be tied to 1.
+* Bit `trRamWrap` must be implemented.
+* Register `trRamStart` must be implemented but can be hard coded to value '2^N' (address 0x..00).
+* Register `trRamLimit` must be implemented but can be hard coded to value '2^N + 2^M-4' (address 0x..FC).
+* Registers `trRamWP` must accept any 32-bit aligned value in inclusive range < `trRamStart` .. `trRamLimit` >.
+* All other registers/fields/bits may be tied to 0.
+
+*Minimal Trace PIB Sink Register/Fields*
+
+It is hard to define required mode as it depends on SoC bandwidth requirements and capabilities, but some general guidance may be provided.
+
+* 4-bit mode is supported by most (if not all) trace probes and less expensive MIPI20 connectors can be used.
+** 1-bit and 2-bit modes should be only used when there are critical constraints on the number of MCU pins. Not all trace probes may support these modes. 
+* Serial mode should be only considered when either limited trace is required, or cores run slowly. Not all trace probes may support this mode and max allowed speeds may vary.
+** Manchester encoding is self-synchronizing and may provide a more reliable trace. However UART mode may provide better bandwidth. It is suggested to support both.
+* 8-bit and 16-bit modes will provide better bandwidth, but require a more expensive Mictor connector and only more advanced trace probe models may support it.
+* It is suggested to provide as fast as possible trace logic clock, and allow a trace tool to set the divider in the `trPibDivider` field.
+* For TRC_CLK frequencies higher than 50MHz, it is suggested to provide a calibration mode.
+** If possible, implement `trPibClkCenter` for better flexibility.
+
+*Minimal ATB Bridge Register/Fields*
+
+* Field `trAtbBridgeID` must be settable by trace tool (hard coded ID may not be handled by all trace tools).
+
+<<<
+=== Reset and Discovery
+
+This chapter describes what trace tools should do to reset and discover trace features.
+
+IMPORTANT: Trace tools must be provided with base addresses of all trace components.
+
+Only the `tr??Active` and the `tr??Enable` bits are reset to 0 on power-up.
+
+These `tr??Active` bits act as independent resets for the respected trace components:
+
+* `trTeActive` - reset for Trace Encoder component (this will disable encoder from single hart)
+* `trFunnelActive` - reset for Trace Funnel component
+* `trPibActive` - reset for PIB component (resets Pin Interface Block only)
+* `trRamActive` - reset for RAM component (resets RAM Sink only)
+* `trAtbBridgeActive` - resets ATB Bridge component (resets ATB Bridge interface)
+* `trTsActive` - resets the Timestamp Unit sub-component (resets timestamp generation logic)
+
+When component is held in reset (`tr??Active` is 0), then `tr??Enable` bit must be reset to 0 as well (what makes component disabled).
+
+Releasing components from reset (by setting `tr??Active` to 1) may take time - debug tools should monitor (with reasonable timeout) if the appropriate bit changed from 0 to 1.
+
+As not all fields/registers are affected by reset (defined as <<Undef,Undef>>), the trace tools must initialize (usually, a write of a value 0) several registers to assure that trace component is in a predictable state.
+
+[NOTE]
+====
+* Some of the reset values are defined as <<SD,SD>> (system dependent) and these values should reset as well and each time to the same value as would be after power-up.
+* Most of fields/registers have <<Undef,Undef>> specified in reset behavior of the field. It should not prevent some implementations from resetting these.
+====
+
+Reset and Discovery should be performed as follows:
+
+* Reset the component by setting `tr??Active` = 0.
+** This should be done by writing a value 0x0 to `tr??Control` register.
+* Read-back and wait until `tr??Active` = 0 is read, which means that a component reached a reset state.
+* Release a component from reset by setting `tr??Active` = 1. 
+** This should be done by writing a value 0x1 to `tr??Control` register. This write will reset most of other enable/mode bits in this register and all WARL and read-only fields will be set to defaults.
+* Read-back and wait until `tr??Active` = 1 is read, which means that a component was released from reset.
+** In this moment `tr??Enable` is set to 0 and the component is not yet enabled.
+** Component clock should be enabled to allow programming of other registers.
+
+* Optionally save `tr??Control` register as it holds all reset values of all fields. It may be cached/shadowed, and trace tool may execute faster write-only (instead a read-modify-write) operations.
+* Handle `tr??VerMinor/Major` as described in 'Versioning of Components' chapter.
+** If `tr??VerMajor` is 0 (for Trace Encoder component) either handle it as pre-ratified/initial version 0 or generate fatal error with an appropriate error message.
+* Read `tr??Impl` and compare `tr??ComType` field with expected value.
+* Set some WARL fields and read back to discover supported component configuration - make sure the component is NOT enabled (by setting `tr??Enable` to 1) by mistake.
+* Configure some initial values in all needed registers/fields. Optionally Read-back to assure these are set properly.
+
+The table below is showing what registers needs to be written to have each trace component in identical, predictable state.
+
+.*Trace Components Reset*
+[cols="20%,20%,10%,~",options="header"]
+|===
+|*Component*|*Register*|*Write*|*Notes*
+|Trace Encoder      |trTeControl            |0x1|Release from reset and set all defaults.
+|                   |trTeInstFeatures       |0x0|Force minimal sub-set of features.
+|                   |trTeInstFilters        |0x0|Disable all filters.
+|                   |trTeDataControl        |0x0|Disable data trace.
+|                   |trTeDataFilters        |0x0|Disable filters for data trace.
+|                   |trTeTrigDbgControl     |0x0|Disable all triggers from Debug module.
+|                   |trTeTrigExtInControl   |0x0|Disable all external trigger inputs.
+|                   |trTeTrigExtOutControl  |0x0|Do not general any external trigger outputs.
+|                   |trTsControl            |0x0|Keep timestamp unit in reset.
+|Trace Funnel       |trFunnelControl        |0x1|Release from reset and set all defaults.
+|                   |trFunnelDisInput       |0x0|Make sure all inputs are enabled.
+|                   |trTsControl            |0x0|Keep timestamp unit in reset.
+|Trace RAM Sink     |trRamControl           |0x1|Release from reset and set all defaults.
+|Trace PIB Sink     |trPibControl           |0x1|Release from reset and set all defaults.
+|Trace ATB Bridge   |trAtbBridgeControl     |0x1|Release from reset and set all defaults.
+|===
+
+As we are dealing with several independent components, it is important to assure that the component which is in reset (or powered down) is keeping its outputs on safe values, so garbage trace data is not emitted.
+
+In general, it is safer to power-up and enable components starting from sinks/bridges, followed by Trace Funnels and Trace Encoders as last. Each implementation should test this sequence to assure trace tools are working seamlessly.
+
+IMPORTANT: Pre-release version of this specification specified that most of fields and registers were reset. It was suggested (by Architecture Review Committee) that reset logic is made minimal to follow RISC-V ISA style.
+Older implementations (which reset more bits) are still compatible with a ratified version. These implementations do not have to change as it is perfectly OK to reset more fields and registers.
+
+<<<
+=== Enabling and Disabling
+
+Enabling should work as follows:
+
+* Release all needed components from reset by setting `tr??Active` = 1 as described above.
+* Set desired mode and verify if that mode is set (regardless of discovery results).
+* For RAM Sink:
+** Setup needed addresses (if possible and desired) as these may not reset.
+* For PIB Sink:
+** Calibrate PIB (if possible and desired).
+** Start physical trace capture (trace probe dependent).
+* Configure RAM Sink/PIB Sink/ATB Bridge in appropriate mode.
+** Verify if a particular mode is set.
+* Set main enable for RAM Sink/PIB Sink/ATB Bridge component by setting `tr??Enable` = 1.
+** Read back and wait for confirmation (`tr??Enable` = 1).
+* Enable Trace Funnel[s] in the same way.
+* Configure and Enable Trace Encoder[s] in the same way (last should be writing `trTeEnable` = 1 followed by reading to verify that it is set).
+** The `trTeInstMode` WARL field should be set to 6 - it may revert to different mode.
+* Either manually set `trTeInstTracing=1` and/or `trTeDataTracing=1` bits or set triggers to start the trace.
+* Start hart[s] to be traced (hart could be already running as well - in this case trace will be generated in the moment when `trTeInstTracing` or `trTeDataTracing` bit is set).
+* Periodically read `trTeControl` for status of trace (as it may stop by itself due to triggers).
+** If RAM Sink was configured with `trRamStopOnWrap` = 1, read `trRamEnable` to see if RAM capture was stopped. 
+
+NOTE: Discovery may not be necessary to enable and test the trace during development of SoC. However, a discovery must be possible and should be tested by SoC designer - this is necessary for trace tools to work with that SoC without any customization.
+
+NOTE: Trace tools may verify a particular setting once per session, so subsequent starts of trace may be faster.
+
+NOTE: Trace tools should provide configuration settings allowing more verbose logging mode during discovery and initialization, so potential compatibility issues may be solved.
+
+Disabling the trace should work as follows:
+
+* It is essential to disable the trace from encoders associated with stopped harts as entering debug mode is NOT flushing any trace pipelines.
+* Disable and flush trace starting from Trace Encoders, then Trace Funnels and finally Trace Sinks or Trace Bridges.
+** Set `tr??Enable` = 0 and wait for `tr??Enable` = 0 and `tr??Empty` = 1 for each trace component.
+** It is important to do it in that order as otherwise data may be lost.
+* Stop physical capture if PIB sink was enabled (trace probe dependent).
+* Read the trace.
+** For RAM Trace Sink read `trRamWP` - depending on `trRamWrap` bit, you may read trace from two ranges.
+** For RAM Trace Sink in SRAM mode, set `trRamRP` and read `trRamData` multiple times.
+** For RAM Trace Sink in SMEM mode, read trace from system memory using memory read.
+** For PIB Trace Sink read trace from trace probe.
+** For ATB Bridge, read trace using Coresight components (ETB/TMC/TPIU).
+
+Decoding trace
+
+* Decoder (in most cases) must have access to code which is running on device either by reading it from device or from a file containing the code (binary/hex/srec/ELF).
+* The trace collected by trace probes can be read and decoded while a trace is being captured (this is called trace streaming mode).
+** There is no guarantee that the last trace packet is completed until the trace is properly flushed and disabled.
+* Decoding of the trace should never affect code being traced.
+
+=== Pre-ratified/Initial Interface Version
+
+The value of `trTeVerMajor` as 0 means this is the pre-ratified/initial version of this trace control interface.
+
+Initially this specification was kept highly compatible, but after the decision to split all components into 4K regions it was very hard to track and list all changes and appropriate chapter was removed.
+
+The migration path from 'ver 0' (for both IP providers and tool vendors) should not be hard as the main concepts remain unchanged.
+
+Original donation from SiFive (which describes implementation of pre-ratified/initial version 0) can be found here:
+https://lists.riscv.org/g/tech-nexus/files/RISC-V-Trace-Control-Interface-Proposed-20200612.pdf[RISC-V-Trace-Control-Interface-Proposed-20200612.pdf]
+
+IMPORTANT: Not all trace tools may support pre-ratified/initial version 0. But all such tools should reject a version 0 with a very clear message.
+
+
