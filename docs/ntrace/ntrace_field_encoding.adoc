@@ -274,37 +274,37 @@ NOTE: Periodic Synchronization (SYNC=2) messages may not be precise and may be d
 
 The following cases are created to help illustrate the type of N-trace <<Synchronizing Messages,synchronizing message>> generated for different scenarios. Events which may occur while a hart is running or halted:
 
-//image:./images/example_key.PNG[image]
+//image:example_key.PNG[image]
 
 image::example_key.PNG[]
 
 *Case1: Enable/disable debug while tracing:*
 
-image::images/case1_enable_disable_debug_while_tracing.PNG[]
+image::case1_enable_disable_debug_while_tracing.PNG[]
 
 *Case2: Enable trace while in debug:*
 
-image::images/case2_enable_trace_while_in_debug.PNG[]
+image::case2_enable_trace_while_in_debug.PNG[]
 
 <<<
 *Case3: Disable trace while in debug:*
 
-image::images/case3_disable_trace_while_in_debug.PNG[]
+image::case3_disable_trace_while_in_debug.PNG[]
 
 *Case4: Sync trigger event (internal or external):*
 
-image::images/case4_sync_trigger_event.PNG[]
+image::case4_sync_trigger_event.PNG[]
 
 *Case5: Enable and disable while in debug:*
 
-image::images/case5_enable_disable_while_in_debug.PNG[]
+image::case5_enable_disable_while_in_debug.PNG[]
 
 *Case6: Periodic synchronization:*
 
 * First possibility provides choice of messages generated at exact periodic synchronization event `P`.
 * Second provides a choice of messages which may be generated delayed after the periodic event `P`.
 
-image::images/case6_periodic.PNG[]
+image::case6_periodic.PNG[]
 
 *Superscript notes:*
 
