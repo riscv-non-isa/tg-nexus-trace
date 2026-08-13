@@ -1498,7 +1498,7 @@ ATB Bridge may optionally insert ATB alignment synchronization packets (controll
 
 === Minimal Implementation
 
-This (non-normative) chapter gives an of what needs to be done to put together complete RISC-V trace implementation without getting familiar with every detail of every register.
+This (non-normative) chapter gives an overview of what needs to be done to put together complete RISC-V trace implementation without getting familiar with every detail of every register.
 
 *Minimal General Registers/Fields*
 
